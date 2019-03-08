@@ -122,7 +122,6 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
     );
 
-
     // Implement montgomery reduction for some number of limbs
     fn mont_impl(limbs: usize) -> proc_macro2::TokenStream {
         let mut gen = proc_macro2::TokenStream::new();
@@ -167,7 +166,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             let temp = get_temp(limbs + i);
 
             gen.extend(quote!{
-                (self.0).0[#i] = #temp;
+                self.0[#i] = #temp;
             });
         }
 
@@ -186,11 +185,11 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 let temp = get_temp(i + j);
                 if i == 0 {
                     gen.extend(quote!{
-                        let #temp = crate::arithmetics::mac_with_carry(0, (#a.0).0[#i], (#a.0).0[#j], &mut carry);
+                        let #temp = crate::arithmetics::mac_with_carry(0, #a.0[#i], #a.0[#j], &mut carry);
                     });
                 } else {
                     gen.extend(quote!{
-                        let #temp = crate::arithmetics::mac_with_carry(#temp, (#a.0).0[#i], (#a.0).0[#j], &mut carry);
+                        let #temp = crate::arithmetics::mac_with_carry(#temp, #a.0[#i], #a.0[#j], &mut carry);
                     });
                 }
             }
@@ -230,11 +229,11 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             let temp1 = get_temp(i * 2 + 1);
             if i == 0 {
                 gen.extend(quote!{
-                    let #temp0 = crate::arithmetics::mac_with_carry(0, (#a.0).0[#i], (#a.0).0[#i], &mut carry);
+                    let #temp0 = crate::arithmetics::mac_with_carry(0, #a.0[#i], #a.0[#i], &mut carry);
                 });
             } else {
                 gen.extend(quote!{
-                    let #temp0 = crate::arithmetics::mac_with_carry(#temp0, (#a.0).0[#i], (#a.0).0[#i], &mut carry);
+                    let #temp0 = crate::arithmetics::mac_with_carry(#temp0, #a.0[#i], #a.0[#i], &mut carry);
                 });
             }
 
@@ -250,7 +249,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         );
 
         gen.extend(quote!{
-            self.mont_reduce(#mont_calling, modulus, mont_inv);
+            self.mont_reduce(modulus, mont_inv, #mont_calling);
         });
 
         gen
@@ -273,11 +272,11 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
 
                 if i == 0 {
                     gen.extend(quote!{
-                        let #temp = crate::arithmetics::mac_with_carry(0, (#a.0).0[#i], (#b.0).0[#j], &mut carry);
+                        let #temp = crate::arithmetics::mac_with_carry(0, #a.0[#i], #b.0[#j], &mut carry);
                     });
                 } else {
                     gen.extend(quote!{
-                        let #temp = crate::arithmetics::mac_with_carry(#temp, (#a.0).0[#i], (#b.0).0[#j], &mut carry);
+                        let #temp = crate::arithmetics::mac_with_carry(#temp, #a.0[#i], #b.0[#j], &mut carry);
                     });
                 }
             }
@@ -296,7 +295,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         );
 
         gen.extend(quote!{
-            self.mont_reduce(#mont_calling, modulus, mont_inv);
+            self.mont_reduce(modulus, mont_inv, #mont_calling);
         });
 
         gen
@@ -316,9 +315,10 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         impl #repr {
             #[inline(always)]
             fn mont_reduce(
-                #mont_paramlist,
+                &mut self,
                 modulus: &#repr,
                 mont_inv: u64,
+                #mont_paramlist
             )
             {
                 // The Montgomery reduction here is based on Algorithm 14.32 in
@@ -333,11 +333,11 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             #[inline(always)]
             fn reduce(
                 &mut self,
-                modulus: &#repr,
+                modulus: &#repr
             )
             {
-                self.0 < modulus {
-                    self.0.sub_noborrow(&modulus);
+                if &*self > modulus {
+                    self.sub_noborrow(&modulus);
                 }
             }
         }
@@ -538,12 +538,14 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             fn mul_assign(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
             {
                 #multiply_impl
+                self.reduce(modulus);
             }
 
             #[inline]
             fn square(&mut self, modulus: &#repr, mont_inv: u64)
             {
                 #squaring_impl
+                self.reduce(modulus);
             }
         }
     }

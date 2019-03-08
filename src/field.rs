@@ -70,7 +70,7 @@ fn biguint_num_bits(mut v: BigUint) -> u32 {
 /// This trait represents an element of a field.
 pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
 {
-    type Repr;
+    type Repr: ElementRepr;
 
     fn modulus(&self) -> Self::Repr;
     fn mont_r(&self) -> Self::Repr;
@@ -124,15 +124,17 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     }
 }
 
-pub fn new_field(modulus:  &[u8]) -> Option<impl SizedPrimeField> {
-    let modulus = BigUint::parse_bytes(&modulus, 16).unwrap();
+pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
+    use num_traits::Num;
+
+    let modulus = BigUint::from_str_radix(&modulus, radix).unwrap();
     let bitlength = modulus.bits();
 
     let mut num_limbs = 0;
 
-    if num_limbs < 256 {
+    if bitlength < 256 {
         num_limbs = 4;
-    } else if num_limbs < 320 {
+    } else if bitlength < 320 {
         num_limbs = 5;
     }
 
@@ -297,6 +299,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E,
         }
     }
 
+    pub fn from_be_bytes(field: &'a F, bytes: &[u8]) -> Result<Self, RepresentationDecodingError> {
+        let mut repr = E::default();
+        repr.read_be(bytes).unwrap();
+        Self::from_repr(field, repr)
+    }
+
     /// Subtracts the modulus from this element if this element is not in the
     /// field. Only used interally.
     #[inline(always)]
@@ -413,13 +421,53 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for PrimeFi
     #[inline]
     fn mul_assign(&mut self, other: &Self)
     {
-        
-        // #multiply_impl
+        self.repr.mul_assign(&other.repr, &self.field.modulus(), self.field.mont_inv());
+        // self.reduce();
     }
 
     #[inline]
     fn square(&mut self)
     {
-        // #squaring_impl
+        self.repr.square(&self.field.modulus(), self.field.mont_inv());
+        // self.reduce();
     }
 }
+
+#[test]
+fn test_bn256_field() {
+    let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    let modulus = field.modulus();
+    println!("{:?}", modulus);
+
+    let one = PrimeFieldElement::one(&field);
+    println!("Modulus = {}", one);
+    println!("R = {}", field.mont_r());
+    println!("R2 = {}", field.mont_r2());
+    println!("Inv = {:016x}", field.mont_inv());
+
+    // this is 7 in BE form
+    let mut be_repr = vec![0u8; 32];
+    be_repr[31] = 7u8;
+    let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
+    println!("Mont form element = {}", element);
+}
+
+#[test]
+fn test_babyjubjub_field() {
+    let field = new_field("2736030358979909402780800718157159386076813972158567259200215660948447373041", 10).unwrap();
+    let modulus = field.modulus();
+    println!("{:?}", modulus);
+
+    let one = PrimeFieldElement::one(&field);
+    println!("Modulus = {}", one);
+    println!("R = {}", field.mont_r());
+    println!("R2 = {}", field.mont_r2());
+    println!("Inv = {:016x}", field.mont_inv());
+
+    // this is 2 in BE form
+    let mut be_repr = vec![0u8; 32];
+    be_repr[31] = 2u8;
+    let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
+    println!("Mont form element = {}", element);
+}
+

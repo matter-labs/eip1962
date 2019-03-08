@@ -413,6 +413,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for PrimeFi
     #[inline]
     fn mul_assign(&mut self, other: &Self)
     {
+        
         // #multiply_impl
     }
 

@@ -100,6 +100,11 @@ pub trait ElementRepr:
 
         Ok(())
     }
+
+    // these two functions are mixing a representation and (Montgommery) form,
+    // but it's a necessary evil
+    fn mul_assign(&mut self, other: &Self, modulus: &Self, mont_inv: u64);
+    fn square(&mut self, modulus: &Self, mont_inv: u64);
 }
 
 // /// This represents an element of a prime field.

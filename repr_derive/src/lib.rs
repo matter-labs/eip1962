@@ -15,7 +15,7 @@ extern crate num_traits;
 // use num_bigint::BigUint;
 // use num_integer::Integer;
 // use num_traits::{One, ToPrimitive, Zero};
-// use quote::TokenStreamExt;
+use quote::TokenStreamExt;
 use std::str::FromStr;
 
 #[proc_macro_derive(ElementRepresentation, attributes(NumberOfLimbs))]
@@ -103,12 +103,244 @@ fn fetch_attr(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
 
 // Implement PrimeFieldRepr for the wrapped ident `repr` with `limbs` limbs.
 fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenStream {
+    // Returns r{n} as an ident.
+    fn get_temp(n: usize) -> syn::Ident {
+        syn::Ident::new(&format!("r{}", n), proc_macro2::Span::call_site())
+    }
+
+    // The parameter list for the mont_reduce() internal method.
+    // r0: u64, mut r1: u64, mut r2: u64, ...
+    let mut mont_paramlist = proc_macro2::TokenStream::new();
+    mont_paramlist.append_separated(
+        (0..(limbs * 2)).map(|i| (i, get_temp(i))).map(|(i, x)| {
+            if i != 0 {
+                quote!{mut #x: u64}
+            } else {
+                quote!{#x: u64}
+            }
+        }),
+        proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
+    );
+
+
+    // Implement montgomery reduction for some number of limbs
+    fn mont_impl(limbs: usize) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+
+        for i in 0..limbs {
+            {
+                let temp = get_temp(i);
+                gen.extend(quote!{
+                    let k = #temp.wrapping_mul(mont_inv);
+                    let mut carry = 0;
+                    crate::arithmetics::mac_with_carry(#temp, k, modulus.0[0], &mut carry);
+                });
+            }
+
+            for j in 1..limbs {
+                let temp = get_temp(i + j);
+                gen.extend(quote!{
+                    #temp = crate::arithmetics::mac_with_carry(#temp, k, modulus.0[#j], &mut carry);
+                });
+            }
+
+            let temp = get_temp(i + limbs);
+
+            if i == 0 {
+                gen.extend(quote!{
+                    #temp = crate::arithmetics::adc(#temp, 0, &mut carry);
+                });
+            } else {
+                gen.extend(quote!{
+                    #temp = crate::arithmetics::adc(#temp, carry2, &mut carry);
+                });
+            }
+
+            if i != (limbs - 1) {
+                gen.extend(quote!{
+                    let carry2 = carry;
+                });
+            }
+        }
+
+        for i in 0..limbs {
+            let temp = get_temp(limbs + i);
+
+            gen.extend(quote!{
+                (self.0).0[#i] = #temp;
+            });
+        }
+
+        gen
+    }
+
+    fn sqr_impl(a: proc_macro2::TokenStream, limbs: usize) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+
+        for i in 0..(limbs - 1) {
+            gen.extend(quote!{
+                let mut carry = 0;
+            });
+
+            for j in (i + 1)..limbs {
+                let temp = get_temp(i + j);
+                if i == 0 {
+                    gen.extend(quote!{
+                        let #temp = crate::arithmetics::mac_with_carry(0, (#a.0).0[#i], (#a.0).0[#j], &mut carry);
+                    });
+                } else {
+                    gen.extend(quote!{
+                        let #temp = crate::arithmetics::mac_with_carry(#temp, (#a.0).0[#i], (#a.0).0[#j], &mut carry);
+                    });
+                }
+            }
+
+            let temp = get_temp(i + limbs);
+
+            gen.extend(quote!{
+                let #temp = carry;
+            });
+        }
+
+        for i in 1..(limbs * 2) {
+            let temp0 = get_temp(limbs * 2 - i);
+            let temp1 = get_temp(limbs * 2 - i - 1);
+
+            if i == 1 {
+                gen.extend(quote!{
+                    let #temp0 = #temp1 >> 63;
+                });
+            } else if i == (limbs * 2 - 1) {
+                gen.extend(quote!{
+                    let #temp0 = #temp0 << 1;
+                });
+            } else {
+                gen.extend(quote!{
+                    let #temp0 = (#temp0 << 1) | (#temp1 >> 63);
+                });
+            }
+        }
+
+        gen.extend(quote!{
+            let mut carry = 0;
+        });
+
+        for i in 0..limbs {
+            let temp0 = get_temp(i * 2);
+            let temp1 = get_temp(i * 2 + 1);
+            if i == 0 {
+                gen.extend(quote!{
+                    let #temp0 = crate::arithmetics::mac_with_carry(0, (#a.0).0[#i], (#a.0).0[#i], &mut carry);
+                });
+            } else {
+                gen.extend(quote!{
+                    let #temp0 = crate::arithmetics::mac_with_carry(#temp0, (#a.0).0[#i], (#a.0).0[#i], &mut carry);
+                });
+            }
+
+            gen.extend(quote!{
+                let #temp1 = crate::arithmetics::adc(#temp1, 0, &mut carry);
+            });
+        }
+
+        let mut mont_calling = proc_macro2::TokenStream::new();
+        mont_calling.append_separated(
+            (0..(limbs * 2)).map(|i| get_temp(i)),
+            proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
+        );
+
+        gen.extend(quote!{
+            self.mont_reduce(#mont_calling, modulus, mont_inv);
+        });
+
+        gen
+    }
+
+    fn mul_impl(
+        a: proc_macro2::TokenStream,
+        b: proc_macro2::TokenStream,
+        limbs: usize,
+    ) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+
+        for i in 0..limbs {
+            gen.extend(quote!{
+                let mut carry = 0;
+            });
+
+            for j in 0..limbs {
+                let temp = get_temp(i + j);
+
+                if i == 0 {
+                    gen.extend(quote!{
+                        let #temp = crate::arithmetics::mac_with_carry(0, (#a.0).0[#i], (#b.0).0[#j], &mut carry);
+                    });
+                } else {
+                    gen.extend(quote!{
+                        let #temp = crate::arithmetics::mac_with_carry(#temp, (#a.0).0[#i], (#b.0).0[#j], &mut carry);
+                    });
+                }
+            }
+
+            let temp = get_temp(i + limbs);
+
+            gen.extend(quote!{
+                let #temp = carry;
+            });
+        }
+
+        let mut mont_calling = proc_macro2::TokenStream::new();
+        mont_calling.append_separated(
+            (0..(limbs * 2)).map(|i| get_temp(i)),
+            proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
+        );
+
+        gen.extend(quote!{
+            self.mont_reduce(#mont_calling, modulus, mont_inv);
+        });
+
+        gen
+    }
+
+    let squaring_impl = sqr_impl(quote!{self}, limbs);
+    let multiply_impl = mul_impl(quote!{self}, quote!{other}, limbs);
+    let montgomery_impl = mont_impl(limbs);
+
     quote! {
 
         #[derive(Copy, Clone, PartialEq, Eq, Default)]
         pub struct #repr(
             pub [u64; #limbs]
         );
+
+        impl #repr {
+            #[inline(always)]
+            fn mont_reduce(
+                #mont_paramlist,
+                modulus: &#repr,
+                mont_inv: u64,
+            )
+            {
+                // The Montgomery reduction here is based on Algorithm 14.32 in
+                // Handbook of Applied Cryptography
+                // <http://cacr.uwaterloo.ca/hac/about/chap14.pdf>.
+
+                #montgomery_impl
+
+                self.reduce(&modulus);
+            }
+
+            #[inline(always)]
+            fn reduce(
+                &mut self,
+                modulus: &#repr,
+            )
+            {
+                self.0 < modulus {
+                    self.0.sub_noborrow(&modulus);
+                }
+            }
+        }
 
         impl ::std::fmt::Debug for #repr
         {
@@ -300,6 +532,18 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
                     *a = crate::arithmetics::sbb(*a, *b, &mut borrow);
                 }
+            }
+
+            #[inline]
+            fn mul_assign(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
+            {
+                #multiply_impl
+            }
+
+            #[inline]
+            fn square(&mut self, modulus: &#repr, mont_inv: u64)
+            {
+                #squaring_impl
             }
         }
     }

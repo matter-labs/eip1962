@@ -421,13 +421,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for PrimeFi
     #[inline]
     fn mul_assign(&mut self, other: &Self)
     {
-        self.repr.mul_assign(&other.repr, &self.field.modulus(), self.field.mont_inv());
+        self.repr.mont_mul_assign(&other.repr, &self.field.modulus(), self.field.mont_inv());
     }
 
     #[inline]
     fn square(&mut self)
     {
-        self.repr.square(&self.field.modulus(), self.field.mont_inv());
+        self.repr.mont_square(&self.field.modulus(), self.field.mont_inv());
     }
 }
 

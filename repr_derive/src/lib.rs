@@ -535,14 +535,14 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             }
 
             #[inline]
-            fn mul_assign(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
+            fn mont_mul_assign(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
             {
                 #multiply_impl
                 self.reduce(modulus);
             }
 
             #[inline]
-            fn square(&mut self, modulus: &#repr, mont_inv: u64)
+            fn mont_square(&mut self, modulus: &#repr, mont_inv: u64)
             {
                 #squaring_impl
                 self.reduce(modulus);

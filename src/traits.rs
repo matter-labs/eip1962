@@ -36,25 +36,7 @@ pub trait FieldElement:
 
     // /// Exponentiates this element by a number represented with `u64` limbs,
     // /// least significant digit first.
-    // fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-    //     let mut res = Self::one();
-
-    //     let mut found_one = false;
-
-    //     for i in BitIterator::new(exp) {
-    //         if found_one {
-    //             res.square();
-    //         } else {
-    //             found_one = i;
-    //         }
-
-    //         if i {
-    //             res.mul_assign(self);
-    //         }
-    //     }
-
-    //     res
-    // }
+    // fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self;
 }
 
 #[derive(Debug)]

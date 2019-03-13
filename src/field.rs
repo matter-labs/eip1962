@@ -30,11 +30,11 @@ struct U576(U576Repr);
 /// operations (mainly precompiled Montgommery constants)
 
 use num_bigint::BigUint;
-use num_integer::Integer;
 use num_traits::{One, ToPrimitive, Zero};
 
 use crate::representation::{ElementRepr, RepresentationDecodingError};
 use crate::traits::FieldElement;
+use crate::traits::BitIterator;
 
 
 /// Convert BigUint into a vector of 64-bit limbs.
@@ -312,6 +312,26 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E,
         if !self.field.is_valid_repr(self.repr) {
             self.repr.sub_noborrow(&self.field.modulus());
         }
+    }
+
+    pub fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        let mut res = Self::one(&self.field);
+
+        let mut found_one = false;
+
+        for i in BitIterator::new(exp) {
+            if found_one {
+                res.square();
+            } else {
+                found_one = i;
+            }
+
+            if i {
+                res.mul_assign(self);
+            }
+        }
+
+        res
     }
 }
 

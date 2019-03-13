@@ -10,6 +10,6 @@ mod arithmetics;
 mod traits;
 mod representation;
 mod field;
-// mod tmp;
+mod weierstrass;
 
 pub use representation::ElementRepr;

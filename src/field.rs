@@ -95,12 +95,12 @@ pub struct PrimeField<E: ElementRepr> {
 //         }
 //     }
 
-//     // fn one(&self) -> PrimeFieldElement<'a, E, Self> {
-//     //     PrimeFieldElement {
-//     //         field: self,
-//     //         repr: self.mont_r
-//     //     }
-//     // }
+//     fn one(&self) -> PrimeFieldElement<'a, E, Self> {
+//         PrimeFieldElement {
+//             field: self,
+//             repr: self.mont_r
+//         }
+//     }
 // }
 
 impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
@@ -187,7 +187,7 @@ pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
 }
 
 pub struct PrimeFieldElement<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    field: &'a F,
+    pub(crate) field: &'a F,
     repr: E
 }
 
@@ -264,7 +264,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Display for Pr
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E, F> {
     #[inline(always)]
-    fn zero(field: &'a F) -> Self {
+    pub fn zero(field: &'a F) -> Self {
         Self {
             field: field,
             repr: E::default()
@@ -272,14 +272,14 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E,
     }
 
     #[inline(always)]
-    fn one(field: &'a F) -> Self {
+    pub fn one(field: &'a F) -> Self {
         Self {
             field: field,
             repr: field.mont_r()
         }
     }
 
-    fn from_repr(field: &'a F, repr: E) -> Result<Self, RepresentationDecodingError> {
+    pub fn from_repr(field: &'a F, repr: E) -> Result<Self, RepresentationDecodingError> {
         if field.is_valid_repr(repr) {
             let mut r = Self {
                 field: field,

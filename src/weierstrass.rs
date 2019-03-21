@@ -87,6 +87,38 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             z: PrimeFieldElement::<'a, FE, F>::one(&curve.field)
         }
     }
+
+    pub fn normalize(&mut self) {
+        if self.is_zero() {
+            return;
+        }
+        let one = PrimeFieldElement::one(self.curve.field);
+        if self.z == one {
+            return;
+        }
+
+        let z_inv = self.z.mont_inverse().unwrap();
+        let mut zinv_powered = z_inv.clone();
+        zinv_powered.square();
+
+        // X/Z^2
+        self.x.mul_assign(&zinv_powered);
+
+        // Y/Z^3
+        zinv_powered.mul_assign(&z_inv);
+        self.y.mul_assign(&zinv_powered);
+    }
+
+    pub fn into_xy(&self) -> (PrimeFieldElement<'a, FE, F>, PrimeFieldElement<'a, FE, F>) {
+        if self.is_zero() {
+            return (PrimeFieldElement::zero(self.curve.field), PrimeFieldElement::zero(self.curve.field));
+        }
+
+        let mut point = self.clone();
+        point.normalize();
+
+        (point.x, point.y)
+    }
     
     fn add_assign_generic_impl(&mut self, other: &Self) {
         if self.is_zero() {

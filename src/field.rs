@@ -72,6 +72,7 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
 {
     type Repr: ElementRepr;
 
+    fn mont_order(&self) -> u64;
     fn modulus(&self) -> Self::Repr;
     fn mont_r(&self) -> Self::Repr;
     fn mont_r2(&self) -> Self::Repr;
@@ -81,6 +82,7 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
 
 #[derive(Debug)]
 pub struct PrimeField<E: ElementRepr> {
+    mont_order: u64,
     modulus: E,
     mont_r: E,
     mont_r2: E,
@@ -105,6 +107,9 @@ pub struct PrimeField<E: ElementRepr> {
 
 impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     type Repr = E;
+
+    #[inline(always)]
+    fn mont_order(&self) -> u64 { self.mont_order }
 
     #[inline(always)]
     fn modulus(&self) -> Self::Repr { self.modulus }
@@ -172,6 +177,7 @@ pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
                 r2_repr.0[i] = r2_el;
             }
             let concrete = PrimeField {
+                        mont_order: 256,
                         modulus: modulus_repr,
                         mont_r: r_repr,
                         mont_r2: r2_repr,
@@ -188,7 +194,7 @@ pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
 
 pub struct PrimeFieldElement<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) field: &'a F,
-    repr: E
+    pub(crate) repr: E
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for PrimeFieldElement<'a, E, F> {

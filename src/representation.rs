@@ -3,8 +3,6 @@ use std::fmt;
 use std::error::Error;
 use std::io::{self, Read, Write};
 
-use crate::traits::FieldElement;
-
 /// This trait represents a wrapper around a biginteger which can encode any element of a particular
 /// prime field. It is a smart wrapper around a sequence of `u64` limbs, least-significant digit
 /// first.

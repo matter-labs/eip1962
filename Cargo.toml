@@ -10,3 +10,6 @@ repr_derive = {path = "repr_derive"}
 num-bigint = "0.2"
 num-traits = "0.2"
 num-integer = "0.1"
+hex = "0.3.2"
+rand = "0.6.5"
+rand_xorshift = "*"

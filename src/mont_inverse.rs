@@ -68,7 +68,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >PrimeFieldElement<'a, E, 
 fn test_mont_inverse() {
     use crate::field::new_field;
     let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let modulus = field.modulus();
     // this is 7 in BE form
     let mut be_repr = vec![0u8; 32];
     be_repr[31] = 7u8;

@@ -4,6 +4,9 @@ extern crate byteorder;
 extern crate num_bigint;
 extern crate num_integer;
 extern crate num_traits;
+extern crate hex;
+extern crate rand;
+extern crate rand_xorshift;
 
 #[macro_use]
 extern crate repr_derive;
@@ -14,6 +17,7 @@ mod representation;
 mod field;
 mod weierstrass;
 mod mont_inverse;
+mod multiexp;
 
 pub use representation::ElementRepr;
 
@@ -29,6 +33,9 @@ mod tests {
     use crate::weierstrass::*;
     use crate::traits::FieldElement;
     use test::Bencher;
+    use crate::multiexp::ben_coster;
+
+    const MULTIEXP_NUM_POINTS: usize = 100;
 
     #[bench]
     fn bench_doubling_bn254(b: &mut Bencher) {
@@ -206,5 +213,94 @@ mod tests {
         let res = point.mul(&scalar);
 
         assert!(res.is_zero());
+    }
+
+    #[bench]
+    fn bench_ben_coster_bn254(b: &mut Bencher) {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = PrimeFieldElement::one(&field);
+        let a_coeff = PrimeFieldElement::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff, 
+            CurveType::Generic);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+            let mut scalar = U256Repr::default();
+            let mut bytes = vec![0u8; 32];
+            rng.fill_bytes(&mut bytes[1..]);
+            scalar.read_be(& bytes[..]).unwrap();
+
+            (point.clone(), scalar)
+        }).collect();
+
+        b.iter(move || ben_coster(pairs.clone()));
+    }
+
+    #[bench]
+    fn bench_naive_multiexp_bn254(b: &mut Bencher) {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = PrimeFieldElement::one(&field);
+        let a_coeff = PrimeFieldElement::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff, 
+            CurveType::Generic);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+            let mut scalar = U256Repr::default();
+            let mut bytes = vec![0u8; 32];
+            rng.fill_bytes(&mut bytes[1..]);
+            scalar.read_be(& bytes[..]).unwrap();
+
+            (point.clone(), scalar)
+        }).collect();
+
+
+        b.iter(move || {
+            let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.mul(el.1)).collect();
+            let mut acc = pairs.pop().unwrap();
+            while let Some(p) = pairs.pop() {
+                acc.add_assign(&p);
+            }
+        });
     }
 }

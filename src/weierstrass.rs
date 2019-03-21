@@ -43,7 +43,7 @@ pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: El
     z: PrimeFieldElement<'a, FE, F>,
 }
 
-pub trait Group {
+pub trait Group: Sized {
     fn add_assign(&mut self, other: &Self);
     fn add_assign_mixed(&mut self, other: &Self);
     fn sub_assign(&mut self, other: &Self);
@@ -235,6 +235,12 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             self.x = other.x.clone();
             self.y = other.y.clone();
             self.z = other.z.clone();
+            return;
+        }
+
+        let one = PrimeFieldElement::one(self.curve.field);
+        if other.z != one {
+            self.add_assign_generic_impl(&other);
             return;
         }
 

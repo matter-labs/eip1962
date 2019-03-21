@@ -17,9 +17,13 @@ pub fn ben_coster<G: Group, E: ElementRepr>(pairs: Vec<(G, E)>) -> G {
     let mut reduced = vec![];
     let num_iter = pairs.len() - 1;
     for _ in 0..num_iter {
+        // this element has a largest scalar
         let mut last = pairs.pop().unwrap();
+        // subtract a scalar
         last.1.sub_noborrow(&pairs.last().unwrap().1);
+        // add a point to the point of the "next scalar"
         pairs.last_mut().unwrap().0.add_assign_mixed(&last.0);
+        // push the result
         reduced.push(last);
     }
 

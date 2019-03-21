@@ -303,4 +303,59 @@ mod tests {
             }
         });
     }
+
+    #[test]
+    fn test_ben_coster_bn254() {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = PrimeFieldElement::one(&field);
+        let a_coeff = PrimeFieldElement::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff, 
+            CurveType::Generic);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+            let mut scalar = U256Repr::default();
+            let mut bytes = vec![0u8; 32];
+            rng.fill_bytes(&mut bytes[1..]);
+            scalar.read_be(& bytes[..]).unwrap();
+
+            (point.clone(), scalar)
+        }).collect();
+
+
+        let naive_res = {
+            let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.mul(el.1)).collect();
+            let mut acc = pairs.pop().unwrap();
+            while let Some(p) = pairs.pop() {
+                acc.add_assign(&p);
+            }
+
+            acc.into_xy()
+        };
+
+        let ben_coster_res = ben_coster(pairs).into_xy();
+
+        assert!(ben_coster_res.0 == naive_res.0);
+        assert!(ben_coster_res.1 == naive_res.1);
+    }
 }

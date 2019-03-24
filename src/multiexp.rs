@@ -1,10 +1,9 @@
 use crate::weierstrass::Group;
 use crate::representation::ElementRepr;
 
-// find what will work fast enough
-
-// start with naive implementation
-pub fn ben_coster<G: Group, E: ElementRepr>(pairs: Vec<(G, E)>) -> G {
+// start with naive implementation. It'll not work faster than
+// a trivial one before wNAF is implemented
+pub(crate) fn ben_coster<G: Group, E: ElementRepr>(pairs: Vec<(G, E)>) -> G {
     // sort the pairs together
     if pairs.len() == 1 {
         return pairs[0].0.mul(pairs[0].1);
@@ -12,7 +11,6 @@ pub fn ben_coster<G: Group, E: ElementRepr>(pairs: Vec<(G, E)>) -> G {
 
     let mut pairs = pairs;
 
-    // pairs.sort_by(|a, b| b.1.cmp(&a.1));
     pairs.sort_by(|a, b| a.1.cmp(&b.1));
     let mut reduced = vec![];
     let num_iter = pairs.len() - 1;

@@ -1,4 +1,3 @@
-#[macro_use]
 use repr_derive::*;
 
 #[derive(ElementRepresentation)]
@@ -56,16 +55,16 @@ fn biguint_to_real_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
     ret
 }
 
-fn biguint_num_bits(mut v: BigUint) -> u32 {
-    let mut bits = 0;
+// fn biguint_num_bits(mut v: BigUint) -> u32 {
+//     let mut bits = 0;
 
-    while v != BigUint::zero() {
-        v = v >> 1;
-        bits += 1;
-    }
+//     while v != BigUint::zero() {
+//         v = v >> 1;
+//         bits += 1;
+//     }
 
-    bits
-}
+//     bits
+// }
 
 /// This trait represents an element of a field.
 pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug

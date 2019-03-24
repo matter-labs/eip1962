@@ -20,13 +20,9 @@ mod mont_inverse;
 mod multiexp;
 mod api;
 
-pub use representation::ElementRepr;
+pub use api::ApiImplementation;
 
 extern crate test;
-
-pub fn add_two(a: i32) -> i32 {
-    a + 2
-}
 
 #[cfg(test)]
 mod tests {

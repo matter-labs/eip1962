@@ -18,6 +18,7 @@ mod field;
 mod weierstrass;
 mod mont_inverse;
 mod multiexp;
+mod api;
 
 pub use representation::ElementRepr;
 

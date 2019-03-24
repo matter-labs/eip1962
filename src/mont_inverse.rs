@@ -50,7 +50,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >PrimeFieldElement<'a, E, 
 
             // phase 2
 
-            for _ in 0..(k-self.field.mont_order()) {
+            for _ in 0..(k-self.field.mont_power()) {
                 if r.is_even() {
                     r.div2();
                 } else {

@@ -72,7 +72,7 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
 {
     type Repr: ElementRepr;
 
-    fn mont_order(&self) -> u64;
+    fn mont_power(&self) -> u64;
     fn modulus(&self) -> Self::Repr;
     fn mont_r(&self) -> Self::Repr;
     fn mont_r2(&self) -> Self::Repr;
@@ -82,34 +82,18 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
 
 #[derive(Debug)]
 pub struct PrimeField<E: ElementRepr> {
-    mont_order: u64,
+    mont_power: u64,
     modulus: E,
     mont_r: E,
     mont_r2: E,
     mont_inv: u64
 }
 
-// impl<E: ElementRepr> PrimeField<E> {
-//     fn zero<'a>(&self) -> PrimeFieldElement<'a, E, Self> {
-//         PrimeFieldElement<'a, E, Self> {
-//             field: &self,
-//             repr: E::default()
-//         }
-//     }
-
-//     fn one(&self) -> PrimeFieldElement<'a, E, Self> {
-//         PrimeFieldElement {
-//             field: self,
-//             repr: self.mont_r
-//         }
-//     }
-// }
-
 impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     type Repr = E;
 
     #[inline(always)]
-    fn mont_order(&self) -> u64 { self.mont_order }
+    fn mont_power(&self) -> u64 { self.mont_power }
 
     #[inline(always)]
     fn modulus(&self) -> Self::Repr { self.modulus }
@@ -129,10 +113,7 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     }
 }
 
-pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
-    use num_traits::Num;
-
-    let modulus = BigUint::from_str_radix(&modulus, radix).unwrap();
+pub fn field_from_modulus(modulus: BigUint) -> Option<impl SizedPrimeField> {
     let bitlength = modulus.bits();
 
     let mut num_limbs = 0;
@@ -177,7 +158,7 @@ pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
                 r2_repr.0[i] = r2_el;
             }
             let concrete = PrimeField {
-                        mont_order: 256,
+                        mont_power: 256,
                         modulus: modulus_repr,
                         mont_r: r_repr,
                         mont_r2: r2_repr,
@@ -190,6 +171,13 @@ pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
     }
 
     None
+}
+
+pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
+    use num_traits::Num;
+    let modulus = BigUint::from_str_radix(&modulus, radix).unwrap();
+
+    field_from_modulus(modulus)
 }
 
 pub struct PrimeFieldElement<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
@@ -210,7 +198,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for PrimeFieldElem
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Ord for PrimeFieldElement<'a, E, F> {
     #[inline(always)]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        for (a, b) in self.repr.as_ref().iter().rev().zip(other.repr.as_ref().iter().rev()) {
+        // use non-montgommery form
+        let modulus = self.field.modulus();
+        let mont_inv = self.field.mont_inv();
+        let this = self.repr.into_normal_repr(&modulus, mont_inv);
+        let that = other.repr.into_normal_repr(&modulus, mont_inv);
+        for (a, b) in this.as_ref().iter().rev().zip(that.as_ref().iter().rev()) {
             if a < b {
                 return std::cmp::Ordering::Less
             } else if a > b {
@@ -303,6 +296,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E,
         } else {
             Err(RepresentationDecodingError::NotInField(format!("{}", repr)))
         }
+    }
+
+    pub fn into_repr(&self) -> E {
+        let modulus = self.field.modulus();
+        let mont_inv = self.field.mont_inv();
+        self.repr.into_normal_repr(&modulus, mont_inv)
     }
 
     pub fn from_be_bytes(field: &'a F, bytes: &[u8]) -> Result<Self, RepresentationDecodingError> {

@@ -27,18 +27,6 @@ pub fn element_repr(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let repr_ident = fetch_wrapped_ident(&ast.data)
         .expect("PrimeField derive only operates over tuple structs of a single item");
 
-    // // The arithmetic in this library only works if the modulus*2 is smaller than the backing
-    // // representation. Compute the number of limbs we need.
-    // let mut limbs = 1;
-    // {
-    //     let mod2 = (&modulus) << 1; // modulus * 2
-    //     let mut cur = BigUint::one() << 64; // always 64-bit limbs for now
-    //     while cur < mod2 {
-    //         limbs += 1;
-    //         cur = cur << 64;
-    //     }
-    // }
-
     let limbs_str = fetch_attr("NumberOfLimbs", &ast.attrs)
         .expect("Please supply a representation length in terms of 64 bit limbs");
 
@@ -119,6 +107,14 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 quote!{#x: u64}
             }
         }),
+        proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
+    );
+
+    let mut into_normal_repr_params = proc_macro2::TokenStream::new();
+    into_normal_repr_params.append_separated(
+        (0..limbs)
+            .map(|i| quote!{ self.0[#i] })
+            .chain((0..limbs).map(|_| quote!{0})),
         proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
     );
 
@@ -546,6 +542,18 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             {
                 #squaring_impl
                 self.reduce(modulus);
+            }
+
+            #[inline(always)]
+            fn into_normal_repr(&self, modulus: &#repr, mont_inv: u64) -> #repr {
+                let mut r = *self;
+                r.mont_reduce(
+                    modulus,
+                    mont_inv,
+                    #into_normal_repr_params
+                );
+
+                r
             }
         }
     }

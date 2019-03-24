@@ -11,8 +11,8 @@ pub enum CurveType {
 }
 
 pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
-    field: &'a F,
-    group: &'a G,
+    pub(crate) field: &'a F,
+    pub(crate) group: &'a G,
     a: PrimeFieldElement<'a, FE, F>,
     b: PrimeFieldElement<'a, FE, F>,
     curve_type: CurveType

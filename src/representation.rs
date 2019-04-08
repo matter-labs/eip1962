@@ -108,20 +108,6 @@ pub trait ElementRepr:
     fn into_normal_repr(&self, modulus: &Self, mont_inv: u64) -> Self;
 }
 
-// /// This represents an element of a prime field.
-// pub trait PrimeFieldElement: FieldElement {
-//     /// The prime field can be converted back and forth into this biginteger
-//     /// representation.
-//     type Repr: ElementRepr + From<Self>;
-
-//     /// Convert this prime field element into a biginteger representation.
-//     fn from_repr(repr: Self::Repr) -> Result<Self, PrimeFieldDecodingError>;
-
-//     /// Convert a biginteger representation into a prime field element, if
-//     /// the number is an element of the field.
-//     fn into_repr(&self) -> Self::Repr;
-// }
-
 /// An error that may occur when trying to interpret a `PrimeFieldRepr` as a
 /// `PrimeField` element.
 #[derive(Debug)]

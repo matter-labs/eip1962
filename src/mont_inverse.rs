@@ -76,10 +76,9 @@ mod tests {
         // this is 7 in BE form
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
-        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
+        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..], false).unwrap();
         let inverse = element.inverse().unwrap();
         let mont_inverse = element.mont_inverse().unwrap();
-        println!("inv = {}, mont_inv = {}", inverse, mont_inverse);
         assert!(inverse == mont_inverse);
     }
 }

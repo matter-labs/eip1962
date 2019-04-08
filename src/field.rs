@@ -120,15 +120,9 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
 fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u64>, Vec<u64>, Vec<u64>, u64)), ()> {
     let bitlength = modulus.bits();
 
-    let mut num_limbs = 0;
+    let mut num_limbs = (bitlength / 64) + 1;
 
-    if bitlength < 256 {
-        num_limbs = 4;
-    } else if bitlength < 320 {
-        num_limbs = 5;
-    }
-
-    if num_limbs == 0 {
+    if num_limbs > 16 {
         return Err(());
     }
 
@@ -314,9 +308,15 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E,
         self.repr.into_normal_repr(&modulus, mont_inv)
     }
 
-    pub fn from_be_bytes(field: &'a F, bytes: &[u8]) -> Result<Self, RepresentationDecodingError> {
+    pub fn from_be_bytes(field: &'a F, bytes: &[u8], allow_padding: bool) -> Result<Self, RepresentationDecodingError> {
         let mut repr = E::default();
-        repr.read_be(bytes).map_err(|_| RepresentationDecodingError::NotInField("BE encoding is not a valid field element".to_string()))?;
+        if bytes.len() >= repr.as_ref().len() * 8 {
+            repr.read_be(bytes).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+        } else {
+            let mut padded = vec![0u8; repr.as_ref().len() * 8 - bytes.len()];
+            padded.extend_from_slice(bytes);
+            repr.read_be(&padded[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+        }
         Self::from_repr(field, repr)
     }
 

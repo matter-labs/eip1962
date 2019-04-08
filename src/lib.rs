@@ -7,8 +7,6 @@ extern crate num_traits;
 extern crate hex;
 extern crate rand;
 extern crate rand_xorshift;
-
-#[macro_use]
 extern crate repr_derive;
 
 mod arithmetics;
@@ -23,7 +21,7 @@ mod api;
 #[cfg(test)]
 mod test;
 
-pub use api::{ApiImplementation, PrecompileAPI};
+pub use api::{API, PrecompileAPI};
 
 extern crate test as rust_test;
 
@@ -50,8 +48,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -77,8 +74,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -107,8 +103,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -140,8 +135,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -165,7 +159,7 @@ mod tests {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
-        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
+        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..], false).unwrap();
         
         b.iter(|| element.inverse().unwrap());
     }
@@ -175,7 +169,7 @@ mod tests {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
-        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
+        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..], false).unwrap();
         
         b.iter(|| element.mont_inverse().unwrap());
     }
@@ -193,8 +187,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -233,8 +226,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -274,8 +266,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();
@@ -322,8 +313,7 @@ mod tests {
         let curve = WeierstrassCurve::new(
             &group, 
             a_coeff, 
-            b_coeff, 
-            CurveType::Generic);
+            b_coeff);
 
         let mut two = one.clone();
         two.double();

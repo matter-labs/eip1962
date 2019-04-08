@@ -1,8 +1,7 @@
 extern crate hex;
 extern crate csv;
 
-use crate::{ApiImplementation, PrecompileAPI};
-use crate::field::{U256Repr, U320Repr};
+use crate::{API, PrecompileAPI};
 use hex::{decode};
 use csv::{Reader};
 
@@ -79,13 +78,13 @@ fn test_mul_from_csv() {
 
         // println!("Result encoding = {}", encode(result.clone()));
 
-        let mul_result = ApiImplementation::<U256Repr, U256Repr>::mul_point(&encoding[..]).expect("must multiply");
+        let mul_result = API::mul_point(&encoding[..]).expect("must multiply");
 
         // println!("Multiplication result encoding = {}", encode(mul_result.clone()));
 
         if result != mul_result {
-            assert!(err);
             // println!("{:?} != {:?}", result, mul_result);
+            assert!(err);
         }
 
         // assert_eq!(result, mul_result);

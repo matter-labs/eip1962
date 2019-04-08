@@ -24,8 +24,11 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         group: &'a G,
         a: PrimeFieldElement<'a, FE, F>, 
         b: PrimeFieldElement<'a, FE, F>,
-        curve_type: CurveType
     ) -> Self {
+        let mut curve_type = CurveType::Generic;
+        if a.is_zero() {
+            curve_type = CurveType::AIsZero;
+        }
         Self {
             field: &a.field,
             group: group,
@@ -97,7 +100,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return;
         }
 
-        let z_inv = self.z.mont_inverse().unwrap();
+        // let z_inv = self.z.mont_inverse().unwrap();
+        let z_inv = self.z.inverse().unwrap();
         let mut zinv_powered = z_inv.clone();
         zinv_powered.square();
 
@@ -503,7 +507,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Group for CurvePoint<'a, FE, F, GE, G> {
     fn add_assign(&mut self, other: &Self) {
         match self.curve.curve_type {
-            CurveType::Generic => {
+            _ => {
                 self.add_assign_generic_impl(&other);
             },
             _ => {unimplemented!()}
@@ -512,7 +516,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn add_assign_mixed(&mut self, other: &Self) {
         match self.curve.curve_type {
-            CurveType::Generic => {
+            _ => {
                 self.add_assign_mixed_generic_impl(&other);
             },
             _ => {unimplemented!()}
@@ -527,7 +531,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn negate(&mut self) {
         match self.curve.curve_type {
-            CurveType::Generic => {
+            _ => {
                 self.negate_impl();
             },
             _ => {unimplemented!()}
@@ -536,7 +540,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn mul<S: AsRef<[u64]>>(&self, exp: S) -> Self {
         match self.curve.curve_type {
-            CurveType::Generic => {
+            _ => {
                 return self.mul_impl(exp);
             },
             _ => {unimplemented!()}
@@ -545,7 +549,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn is_zero(&self) -> bool {
         match self.curve.curve_type {
-            CurveType::Generic => {
+            _ => {
                 return self.is_zero_generic_impl();
             },
             _ => {unimplemented!()}

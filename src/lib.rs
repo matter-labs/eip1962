@@ -155,6 +155,38 @@ mod tests {
     }
 
     #[bench]
+    fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = PrimeFieldElement::one(&field);
+        let a_coeff = PrimeFieldElement::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        // scalar is order - 1
+        let scalar = U256Repr([0x43e1f593f0000000,
+                    0x2833e84879b97091,
+                    0xb85045b68181585d,
+                    0x30644e72e131a029]);
+        
+        b.iter(|| point.wnaf_mul_impl(scalar).into_xy());
+    }
+
+    #[bench]
     fn bench_field_inverse(b: &mut Bencher) {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let mut be_repr = vec![0u8; 32];
@@ -295,6 +327,53 @@ mod tests {
         });
     }
 
+    #[bench]
+    fn bench_wnaf_multiexp_bn254(b: &mut Bencher) {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = PrimeFieldElement::one(&field);
+        let a_coeff = PrimeFieldElement::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+            let mut scalar = U256Repr::default();
+            let mut bytes = vec![0u8; 32];
+            rng.fill_bytes(&mut bytes[1..]);
+            scalar.read_be(& bytes[..]).unwrap();
+
+            (point.clone(), scalar)
+        }).collect();
+
+
+        b.iter(move || {
+            let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.wnaf_mul_impl(el.1)).collect();
+            let mut acc = pairs.pop().unwrap();
+            while let Some(p) = pairs.pop() {
+                acc.add_assign(&p);
+            }
+        });
+    }
+
     #[test]
     fn test_ben_coster_bn254() {
         use crate::representation::ElementRepr;
@@ -347,5 +426,66 @@ mod tests {
 
         assert!(ben_coster_res.0 == naive_res.0);
         assert!(ben_coster_res.1 == naive_res.1);
+    }
+
+    #[test]
+    fn test_wnaf_decomposition() {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let mut scalar = U256Repr::default();
+        let mut bytes = vec![0u8; 32];
+        bytes[31] = 175u8;
+        // rng.fill_bytes(&mut bytes[1..]);
+        scalar.read_be(& bytes[..]).unwrap();
+
+        println!("{:#b}", 175u8);
+        let wnaf = scalar.wnaf(3);
+
+        println!("wnaf = {:?}", wnaf);
+    }
+
+    #[test]
+    fn test_wnaf_mul_bn254() {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = PrimeFieldElement::one(&field);
+        let a_coeff = PrimeFieldElement::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        let mut scalar = U256Repr::default();
+        let mut bytes = vec![0u8; 32];
+        // bytes[31] = 2u8;
+        rng.fill_bytes(&mut bytes[1..]);
+        scalar.read_be(& bytes[..]).unwrap();
+
+        let res_double_and_add  = point.clone().mul(scalar).into_xy();
+        let wnaf_res = point.wnaf_mul_impl(scalar).into_xy();
+
+        assert!(res_double_and_add.0 == wnaf_res.0);
+        assert!(res_double_and_add.1 == wnaf_res.1);
     }
 }

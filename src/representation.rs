@@ -57,6 +57,8 @@ pub trait ElementRepr:
     /// Performs a leftwise bitshift of this number by some amount.
     fn shl(&mut self, amt: u32);
 
+    fn wnaf(&self, window: u32) -> Vec<i64>;
+
     /// Writes this `PrimeFieldRepr` as a big endian integer.
     fn write_be<W: Write>(&self, mut writer: W) -> io::Result<()> {
         use byteorder::{BigEndian, WriteBytesExt};

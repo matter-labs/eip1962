@@ -78,6 +78,23 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         }
     }
 
+    pub fn check_on_curve(&self) -> bool {
+        let mut rhs = self.y.clone();
+        rhs.square();
+
+        let mut lhs = self.curve.b.clone();
+        let mut ax = self.x.clone();
+        ax.mul_assign(&self.curve.a);
+        lhs.add_assign(&ax);
+
+        let mut x_3 = self.x.clone();
+        x_3.square();
+        x_3.mul_assign(&self.x);
+        lhs.add_assign(&x_3);
+
+        rhs == lhs
+    }
+
     pub fn point_from_xy(
         curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
         x: PrimeFieldElement<'a, FE, F>, 
@@ -347,6 +364,59 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             }
         }
 
+        res
+    }
+
+    pub fn wnaf_mul_impl(&self, exp: GE) -> Self {
+        // let one = PrimeFieldElement::<'a, FE, F>::one(&self.curve.field);
+        // if self.z == one {
+        //     return self.mul_impl_mixed_addition(exp);
+        // }
+
+        const WINDOW_SIZE: u32 = 3;
+
+        let mut precomp_table = vec![Self::zero(&self.curve); (1 << (WINDOW_SIZE-1)) as usize];
+
+        let index_for_positive = (1 << (WINDOW_SIZE-2)) as usize;
+
+        let mut two_self = self.clone();
+        two_self.double();
+
+        let mut precomp = self.clone();
+        precomp_table[index_for_positive] = precomp.clone();
+        let mut neg_precomp = precomp.clone();
+        neg_precomp.negate();
+        precomp_table[index_for_positive-1] = neg_precomp;
+
+        for i in 1..index_for_positive {
+            precomp.add_assign(&two_self);
+            precomp_table[index_for_positive+i] = precomp.clone();
+            let mut neg_precomp = precomp.clone();
+            neg_precomp.negate();
+            precomp_table[index_for_positive-1-i] = neg_precomp;
+        }
+
+        let wnaf = exp.wnaf(WINDOW_SIZE);
+
+        let mut res = Self::zero(&self.curve);
+        let mut found_nonzero = false;
+
+        for w in wnaf.into_iter().rev() {
+            if found_nonzero {
+                res.double();
+            }
+            if w != 0 {
+                found_nonzero = true;
+                if w > 0 {
+                    let idx = (w >> 1) as usize;
+                    res.add_assign(&precomp_table[index_for_positive + idx]);
+                } else {
+                    let idx = ((-w) >> 1) as usize;
+                    res.add_assign(&precomp_table[index_for_positive - 1 - idx]);
+                }
+            }
+        }
+        
         res
     }
 

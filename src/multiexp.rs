@@ -29,6 +29,7 @@ pub(crate) fn ben_coster<G: Group, E: ElementRepr>(pairs: Vec<(G, E)>) -> G {
     let mut acc = acc.0.mul(&acc.1);
 
     let mut results: Vec<G> = reduced.into_iter().map(|pair| pair.0.mul(pair.1)).collect();
+    // let mut results: Vec<G> = reduced.into_iter().map(|pair| pair.0.wnaf_mul_impl(pair.1)).collect();
 
     while let Some(p) = results.pop() {
         acc.add_assign(&p);

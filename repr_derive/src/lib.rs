@@ -409,6 +409,8 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         }
 
         impl crate::representation::ElementRepr for #repr {
+            const NUM_LIMBS: usize = #limbs;
+
             #[inline(always)]
             fn is_odd(&self) -> bool {
                 self.0[0] & 1 == 1

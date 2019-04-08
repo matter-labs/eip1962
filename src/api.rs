@@ -27,10 +27,10 @@ const BYTES_FOR_LENGTH_ENCODING: usize = 1;
 
 #[macro_use]
 macro_rules! create_field {
-    ($bytes:expr) => {
+    ($bytes:expr, $repr:tt) => {
         {
             let ((modulus, modulus_len), rest) = get_field_params($bytes)?;
-            let field = field_from_modulus(modulus).ok_or(())?;
+            let field = field_from_modulus::<$repr>(modulus)?;
             if rest.len() < modulus_len {
                 return Err(());
             }
@@ -57,11 +57,11 @@ macro_rules! get_ab {
 }
 
 macro_rules! create_group {
-    ($bytes:expr) => {
+    ($bytes:expr, $repr:tt) => {
         {
             let ((order, order_len), rest) = get_curve_params($bytes)?;
             let order = BigUint::from_bytes_be(&order);
-            let group = field_from_modulus(order).ok_or(())?;
+            let group = field_from_modulus::<$repr>(order)?;
 
             (group, order_len, rest)
         }
@@ -75,13 +75,16 @@ pub trait PrecompileAPI {
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()>;
 }
 
-pub struct ApiImplementation;
+pub struct ApiImplementation<FE: ElementRepr, GE: ElementRepr> {
+    _marker_fe: std::marker::PhantomData<FE>,
+    _marker_ge: std::marker::PhantomData<GE>
+}
 
-impl PrecompileAPI for ApiImplementation {
+impl<FE: ElementRepr, GE: ElementRepr> PrecompileAPI for ApiImplementation<FE, GE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        let (field, modulus_len, rest) = create_field!(bytes);
+        let (field, modulus_len, rest) = create_field!(bytes, FE);
         let (a, b, rest) = get_ab!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest);
+        let (group, order_len, rest) = create_group!(rest, GE);
 
         let curve = WeierstrassCurve::new(&group, a, b, CurveType::Generic);
 
@@ -94,9 +97,9 @@ impl PrecompileAPI for ApiImplementation {
     }
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        let (field, modulus_len, rest) = create_field!(bytes);
+        let (field, modulus_len, rest) = create_field!(bytes, FE);
         let (a, b, rest) = get_ab!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest);
+        let (group, order_len, rest) = create_group!(rest, GE);
 
         let curve = WeierstrassCurve::new(&group, a, b, CurveType::Generic);
 
@@ -109,9 +112,9 @@ impl PrecompileAPI for ApiImplementation {
     }
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        let (field, modulus_len, rest) = create_field!(bytes);
+        let (field, modulus_len, rest) = create_field!(bytes, FE);
         let (a, b, rest) = get_ab!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest);
+        let (group, order_len, rest) = create_group!(rest, GE);
 
         let curve = WeierstrassCurve::new(&group, a, b, CurveType::Generic);
 
@@ -212,7 +215,7 @@ fn get_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ()> {
     }
     let (order_encoding, rest) = rest.split_at(BYTES_FOR_LENGTH_ENCODING);
 
-    Ok(((order_encoding, order_len), rest)
+    Ok(((order_encoding, order_len), rest))
 }
 
 fn decode_point_from_xy<

@@ -68,16 +68,18 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >PrimeFieldElement<'a, E, 
 mod tests {
     use crate::traits::FieldElement;
     use crate::field::{PrimeFieldElement};
+    use crate::field::U256Repr;
     #[test]
     fn test_mont_inverse() {
         use crate::field::new_field;
-        let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         // this is 7 in BE form
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
         let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
         let inverse = element.inverse().unwrap();
         let mont_inverse = element.mont_inverse().unwrap();
+        println!("inv = {}, mont_inv = {}", inverse, mont_inverse);
         assert!(inverse == mont_inverse);
     }
 }

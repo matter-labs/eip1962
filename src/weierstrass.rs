@@ -376,6 +376,75 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return;
         }
 
+        // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#doubling-dbl-2007-bl
+
+        // A = X1^2
+        let mut a = self.x.clone();
+        a.square();
+
+        // B = Y1^2
+        let mut b = self.y.clone();
+        b.square();
+
+        // C = B^2 = Y1^4
+        let mut c = b.clone();
+        c.square();
+
+        let mut z_2 = self.z.clone();
+        z_2.square();
+
+        // D = 2*((X1+B)2-A-C)
+        let mut d = self.x.clone();
+        d.add_assign(&b);
+        d.square();
+        d.sub_assign(&a);
+        d.sub_assign(&c);
+        d.double();
+
+        // E = 3*A + curve_a*z^4
+        let mut e = a.clone();
+        e.double();
+        e.add_assign(&a);
+
+        // curve_a*z^4
+        let mut a_z_4 = z_2.clone();
+        a_z_4.square();
+        a_z_4.mul_assign(&self.curve.a);
+
+        e.add_assign(&a_z_4);
+
+        // T = D^2
+        let mut t = d.clone();
+        t.double();
+
+        // F = E^2 - 2*D
+        let mut f = e.clone();
+        f.square();
+        f.sub_assign(&t);
+
+        self.x = f;
+
+        // Z3 = (Y1+Z1)^2-B-Z^2
+        self.z.add_assign(&self.y);
+        self.z.square();
+        self.z.sub_assign(&b);
+        self.z.sub_assign(&z_2);
+
+        // Y3 = E*(D-X3)-8*C 
+        self.y = d;
+        self.y.sub_assign(&self.x);
+        self.y.mul_assign(&e);
+        c.double();
+        c.double();
+        c.double();
+        self.y.sub_assign(&c);
+    }
+
+    fn double_a_is_zero_impl(&mut self) {
+        if self.is_zero() {
+            return;
+        }
+
         // Other than the point at infinity, no points on E or E'
         // can double to equal the point at infinity, as y=0 is
         // never true for points on the curve.
@@ -488,6 +557,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             CurveType::Generic => {
                 self.double_generic_impl();
             },
+            CurveType::AIsZero => {
+                self.double_a_is_zero_impl();
+            }
             _ => {unimplemented!()}
         }
     }

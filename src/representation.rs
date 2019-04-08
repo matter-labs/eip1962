@@ -22,6 +22,8 @@ pub trait ElementRepr:
     + AsMut<[u64]>
     + From<u64>
 {
+    const NUM_LIMBS: usize;
+
     /// Subtract another represetation from this one.
     fn sub_noborrow(&mut self, other: &Self);
 

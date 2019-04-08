@@ -72,6 +72,7 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
     type Repr: ElementRepr;
 
     fn mont_power(&self) -> u64;
+    fn modulus_bits(&self) -> u64;
     fn modulus(&self) -> Self::Repr;
     fn mont_r(&self) -> Self::Repr;
     fn mont_r2(&self) -> Self::Repr;
@@ -82,6 +83,7 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
 #[derive(Debug)]
 pub struct PrimeField<E: ElementRepr> {
     mont_power: u64,
+    modulus_bits: u64,
     modulus: E,
     mont_r: E,
     mont_r2: E,
@@ -93,6 +95,9 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
 
     #[inline(always)]
     fn mont_power(&self) -> u64 { self.mont_power }
+
+    #[inline(always)]
+    fn modulus_bits(&self) -> u64 { self.modulus_bits }
 
     #[inline(always)]
     fn modulus(&self) -> Self::Repr { self.modulus }
@@ -112,7 +117,7 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     }
 }
 
-pub fn field_from_modulus(modulus: BigUint) -> Option<impl SizedPrimeField> {
+fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u64>, Vec<u64>, Vec<u64>, u64)), ()> {
     let bitlength = modulus.bits();
 
     let mut num_limbs = 0;
@@ -124,8 +129,9 @@ pub fn field_from_modulus(modulus: BigUint) -> Option<impl SizedPrimeField> {
     }
 
     if num_limbs == 0 {
-        return None;
+        return Err(());
     }
+
 
     // Compute R = 2**(64 * limbs) mod m
     let r = (BigUint::one() << (num_limbs * 64)) % &modulus;
@@ -143,40 +149,45 @@ pub fn field_from_modulus(modulus: BigUint) -> Option<impl SizedPrimeField> {
     }
     inv = inv.wrapping_neg();
 
-    match num_limbs {
-        4 => {
-            let mut modulus_repr = U256Repr([0,0,0,0]);
-            let mut r_repr = U256Repr([0,0,0,0]);
-            let mut r2_repr = U256Repr([0,0,0,0]);
-            for (i, ((m_el, r_el), r2_el)) in modulus.into_iter()
-                                            .zip(r.into_iter())
-                                            .zip(r2.into_iter())
-                                            .enumerate() {
-                modulus_repr.0[i] = m_el;
-                r_repr.0[i] = r_el;
-                r2_repr.0[i] = r2_el;
-            }
-            let concrete = PrimeField {
-                        mont_power: 256,
-                        modulus: modulus_repr,
-                        mont_r: r_repr,
-                        mont_r2: r2_repr,
-                        mont_inv: inv,  
-                    };
-
-            return Some(concrete);
-        },
-        _ => {},
-    }
-
-    None
+    Ok(((bitlength, num_limbs), (modulus, r, r2, inv)))
 }
 
-pub fn new_field(modulus: &str, radix: u32) -> Option<impl SizedPrimeField> {
+pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField<R>, ()> {
+    let ((bitlength, num_limbs), (modulus, r, r2, inv)) = calculate_field_dimension(modulus)?;
+    
+    if R::NUM_LIMBS != num_limbs {
+        return Err(());
+    }
+
+    let mut modulus_repr = R::default();
+    let mut r_repr = R::default();
+    let mut r2_repr = R::default();
+    for (i, ((m_el, r_el), r2_el)) in modulus.into_iter()
+                                    .zip(r.into_iter())
+                                    .zip(r2.into_iter())
+                                    .enumerate() {
+        modulus_repr.as_mut()[i] = m_el;
+        r_repr.as_mut()[i] = r_el;
+        r2_repr.as_mut()[i] = r2_el;
+    }
+
+    let concrete = PrimeField {
+        mont_power: (num_limbs*4) as u64,
+        modulus_bits: bitlength as u64,
+        modulus: modulus_repr,
+        mont_r: r_repr,
+        mont_r2: r2_repr,
+        mont_inv: inv,  
+    };
+
+    Ok(concrete)
+}
+
+pub fn new_field<R: ElementRepr>(modulus: &str, radix: u32) -> Result<PrimeField<R>, ()> {
     use num_traits::Num;
     let modulus = BigUint::from_str_radix(&modulus, radix).unwrap();
 
-    field_from_modulus(modulus)
+    field_from_modulus::<R>(modulus)
 }
 
 pub struct PrimeFieldElement<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
@@ -305,7 +316,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PrimeFieldElement<'a, E,
 
     pub fn from_be_bytes(field: &'a F, bytes: &[u8]) -> Result<Self, RepresentationDecodingError> {
         let mut repr = E::default();
-        repr.read_be(bytes).unwrap();
+        repr.read_be(bytes).map_err(|_| RepresentationDecodingError::NotInField("BE encoding is not a valid field element".to_string()))?;
         Self::from_repr(field, repr)
     }
 
@@ -397,9 +408,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for PrimeFi
             let mut u = self.repr;
             let mut v = modulus;
             let mut b = Self {
-                            field: &self.field,
-                            repr: self.field.mont_r2()
-                        }; // Avoids unnecessary reduction step.
+                field: &self.field,
+                repr: self.field.mont_r2()
+            }; // Avoids unnecessary reduction step.
             let mut c = Self::zero(&self.field);
 
             while u != one && v != one {
@@ -453,24 +464,5 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for PrimeFi
     {
         self.repr.mont_square(&self.field.modulus(), self.field.mont_inv());
     }
-}
-
-#[test]
-fn test_bn256_field() {
-    let field = new_field("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let modulus = field.modulus();
-    println!("Modulus = {}", modulus);
-
-    let one = PrimeFieldElement::one(&field);
-    println!("One representation = {}", one);
-    println!("R = {}", field.mont_r());
-    println!("R2 = {}", field.mont_r2());
-    println!("Inv = {:016x}", field.mont_inv());
-
-    // this is 7 in BE form
-    let mut be_repr = vec![0u8; 32];
-    be_repr[31] = 7u8;
-    let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..]).unwrap();
-    println!("Mont form element = {}", element);
 }
 

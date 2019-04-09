@@ -17,6 +17,7 @@ mod weierstrass;
 mod mont_inverse;
 mod multiexp;
 mod api;
+mod extension_towers;
 
 #[cfg(test)]
 mod test;

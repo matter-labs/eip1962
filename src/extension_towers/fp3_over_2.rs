@@ -1,6 +1,6 @@
-use crate::field::{PrimeFieldElement, SizedPrimeField};
+use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use super::{FieldExtension, ExtensionFieldElement};
+use super::{FieldExtension};
 use crate::traits::{FieldElement, BitIterator};
 use super::fp2::{Fp2, Extension2};
 
@@ -18,7 +18,13 @@ pub struct Fp6<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Display for Fp6<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "Fq2({} + {} * v + {} * v^2)", self.c0, self.c1, self.c2)
+        write!(f, "Fq6({} + {} * v + {} * v^2)", self.c0, self.c1, self.c2)
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Debug for Fp6<'a, E, F> {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "Fq6({} + {} * v + {} * v^2)", self.c0, self.c1, self.c2)
     }
 }
 
@@ -71,7 +77,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement for Fp6<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a, E, F> {
     /// Returns true iff this element is zero.
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && 
@@ -269,6 +275,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement fo
 
     fn mul_by_nonresidue(&mut self) {
         self.extension_field.multiply_by_non_residue(self);
+    }
+
+    fn frobenius_map(&mut self, power: usize) {
+        unimplemented!();
     }
 }
 

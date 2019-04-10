@@ -2,14 +2,14 @@ use std::fmt;
 
 /// This trait represents an element of a field.
 pub trait FieldElement:
-    Sized + Eq + Clone + Send + Sync + fmt::Debug + fmt::Display
+    Sized 
+    + Eq 
+    + Clone 
+    + Send 
+    + Sync 
+    + fmt::Debug 
+    + fmt::Display
 {
-    // /// Returns the zero element of the field, the additive identity.
-    // fn zero() -> Self;
-
-    // /// Returns the one element of the field, the multiplicative identity.
-    // fn one() -> Self;
-
     /// Returns true iff this element is zero.
     fn is_zero(&self) -> bool;
 
@@ -34,9 +34,15 @@ pub trait FieldElement:
     /// Computes the multiplicative inverse of this element, if nonzero.
     fn inverse(&self) -> Option<Self>;
 
-    // /// Exponentiates this element by a number represented with `u64` limbs,
-    // /// least significant digit first.
-    // fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self;
+    /// Exponentiates this element by a number represented with `u64` limbs,
+    /// least significant digit first.
+    fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self;
+
+    fn conjugate(&mut self);
+
+    fn mul_by_nonresidue(&mut self);
+
+    fn frobenius_map(&mut self, power: usize);
 }
 
 #[derive(Debug)]

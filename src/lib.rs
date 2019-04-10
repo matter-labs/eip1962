@@ -13,11 +13,13 @@ mod arithmetics;
 mod traits;
 mod representation;
 mod field;
+mod fp;
 mod weierstrass;
 mod mont_inverse;
 mod multiexp;
 mod api;
 mod extension_towers;
+
 
 #[cfg(test)]
 mod test;
@@ -29,7 +31,8 @@ extern crate test as rust_test;
 #[cfg(test)]
 mod tests {
     use crate::field::*;
-    use crate::weierstrass::*;
+    use crate::fp::Fp;
+    use crate::weierstrass::curve::*;
     use crate::traits::FieldElement;
     use rust_test::Bencher;
     use crate::multiexp::ben_coster;
@@ -40,8 +43,8 @@ mod tests {
     fn bench_doubling_bn254(b: &mut Bencher) {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -66,8 +69,8 @@ mod tests {
     fn bench_addition_bn254(b: &mut Bencher) {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -95,8 +98,8 @@ mod tests {
     fn bench_multiplication_bn254(b: &mut Bencher) {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -127,8 +130,8 @@ mod tests {
     fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -159,8 +162,8 @@ mod tests {
     fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -192,7 +195,7 @@ mod tests {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
-        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..], false).unwrap();
+        let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
         
         b.iter(|| element.inverse().unwrap());
     }
@@ -202,7 +205,7 @@ mod tests {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
-        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..], false).unwrap();
+        let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
         
         b.iter(|| element.mont_inverse().unwrap());
     }
@@ -211,8 +214,8 @@ mod tests {
     fn test_multiplication_bn254() {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -250,8 +253,8 @@ mod tests {
         let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -290,8 +293,8 @@ mod tests {
         let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -337,8 +340,8 @@ mod tests {
         let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -384,8 +387,8 @@ mod tests {
         let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);
@@ -458,8 +461,8 @@ mod tests {
         let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let one = PrimeFieldElement::one(&field);
-        let a_coeff = PrimeFieldElement::zero(&field);
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
         b_coeff.double();
         b_coeff.add_assign(&one);

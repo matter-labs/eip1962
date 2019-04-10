@@ -1,8 +1,9 @@
 use crate::representation::{ElementRepr};
 use crate::traits::FieldElement;
-use crate::field::{SizedPrimeField, PrimeFieldElement};
+use crate::field::{SizedPrimeField};
+use crate::fp::Fp;
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >PrimeFieldElement<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
     pub fn mont_inverse(&self) -> Option<Self> {
         if self.is_zero() {
             None
@@ -59,7 +60,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >PrimeFieldElement<'a, E, 
                 }
             }
 
-            Some(PrimeFieldElement::from_repr(self.field, r).unwrap())
+            Some(Fp::from_repr(self.field, r).unwrap())
         }
     }
 }
@@ -67,8 +68,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >PrimeFieldElement<'a, E, 
 #[cfg(test)]
 mod tests {
     use crate::traits::FieldElement;
-    use crate::field::{PrimeFieldElement};
     use crate::field::U256Repr;
+    use crate::fp::Fp;
     #[test]
     fn test_mont_inverse() {
         use crate::field::new_field;
@@ -76,7 +77,7 @@ mod tests {
         // this is 7 in BE form
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
-        let element = PrimeFieldElement::from_be_bytes(&field, &be_repr[..], false).unwrap();
+        let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
         let inverse = element.inverse().unwrap();
         let mont_inverse = element.mont_inverse().unwrap();
         assert!(inverse == mont_inverse);

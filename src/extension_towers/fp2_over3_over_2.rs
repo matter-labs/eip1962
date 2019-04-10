@@ -1,6 +1,6 @@
-use crate::field::{PrimeFieldElement, SizedPrimeField};
+use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use super::{FieldExtension, ExtensionFieldElement};
+use super::{FieldExtension};
 use crate::traits::{FieldElement, BitIterator};
 use super::fp3_over_2::{Fp6, Extension3Over2};
 
@@ -13,7 +13,13 @@ pub struct Fp12<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Display for Fp12<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "Fq2({} + {} * w)", self.c0, self.c1)
+        write!(f, "Fq12({} + {} * w)", self.c0, self.c1)
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Debug for Fp12<'a, E, F> {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "Fq12({} + {} * w)", self.c0, self.c1)
     }
 }
 
@@ -62,7 +68,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a, E, F> {
     /// Returns true iff this element is zero.
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && 
@@ -172,6 +178,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement fo
 
     fn mul_by_nonresidue(&mut self) {
         unreachable!();
+    }
+
+    fn frobenius_map(&mut self, power: usize) {
+        unimplemented!();
     }
 }
 

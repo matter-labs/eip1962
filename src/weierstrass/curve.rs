@@ -1,20 +1,14 @@
-use super::field::{PrimeFieldElement, SizedPrimeField};
-use super::representation::ElementRepr;
+use crate::field::SizedPrimeField;
+use crate::fp::Fp;
+use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator};
-
-#[derive(Eq, PartialEq, Clone, Copy)]
-pub enum CurveType {
-    Generic,
-    AIsMinus3,
-    AIsZero,
-    BIsZero,
-}
+use super::{CurveType, Group};
 
 pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     pub(crate) field: &'a F,
     pub(crate) group: &'a G,
-    a: PrimeFieldElement<'a, FE, F>,
-    b: PrimeFieldElement<'a, FE, F>,
+    a: Fp<'a, FE, F>,
+    b: Fp<'a, FE, F>,
     curve_type: CurveType
 }
 
@@ -22,8 +16,8 @@ pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> WeierstrassCurve<'a, FE, F, GE, G> {
     pub fn new(
         group: &'a G,
-        a: PrimeFieldElement<'a, FE, F>, 
-        b: PrimeFieldElement<'a, FE, F>,
+        a: Fp<'a, FE, F>, 
+        b: Fp<'a, FE, F>,
     ) -> Self {
         let mut curve_type = CurveType::Generic;
         if a.is_zero() {
@@ -41,19 +35,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
 pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    x: PrimeFieldElement<'a, FE, F>,
-    y: PrimeFieldElement<'a, FE, F>,
-    z: PrimeFieldElement<'a, FE, F>,
-}
-
-pub trait Group: Sized {
-    fn add_assign(&mut self, other: &Self);
-    fn add_assign_mixed(&mut self, other: &Self);
-    fn sub_assign(&mut self, other: &Self);
-    fn negate(&mut self);
-    fn double(&mut self);
-    fn mul<S: AsRef<[u64]>>(&self, exp: S) -> Self;
-    fn is_zero(&self) -> bool;
+    x: Fp<'a, FE, F>,
+    y: Fp<'a, FE, F>,
+    z: Fp<'a, FE, F>,
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Clone for CurvePoint<'a, FE, F, GE, G> {
@@ -72,9 +56,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     pub fn zero(curve: &'a WeierstrassCurve<'a, FE, F, GE, G>) -> Self {
         Self {
             curve: curve,
-            x: PrimeFieldElement::<'a, FE, F>::zero(&curve.field),
-            y: PrimeFieldElement::<'a, FE, F>::one(&curve.field),
-            z: PrimeFieldElement::<'a, FE, F>::zero(&curve.field),
+            x: Fp::<'a, FE, F>::zero(&curve.field),
+            y: Fp::<'a, FE, F>::one(&curve.field),
+            z: Fp::<'a, FE, F>::zero(&curve.field),
         }
     }
 
@@ -97,14 +81,14 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     pub fn point_from_xy(
         curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-        x: PrimeFieldElement<'a, FE, F>, 
-        y: PrimeFieldElement<'a, FE, F>
+        x: Fp<'a, FE, F>, 
+        y: Fp<'a, FE, F>
     ) -> CurvePoint<'a, FE, F, GE, G> {
         CurvePoint {
             curve: curve,
             x: x,
             y: y,
-            z: PrimeFieldElement::<'a, FE, F>::one(&curve.field)
+            z: Fp::<'a, FE, F>::one(&curve.field)
         }
     }
 
@@ -112,7 +96,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         if self.is_zero() {
             return;
         }
-        let one = PrimeFieldElement::one(self.curve.field);
+        let one = Fp::one(self.curve.field);
         if self.z == one {
             return;
         }
@@ -130,9 +114,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         self.y.mul_assign(&zinv_powered);
     }
 
-    pub fn into_xy(&self) -> (PrimeFieldElement<'a, FE, F>, PrimeFieldElement<'a, FE, F>) {
+    pub fn into_xy(&self) -> (Fp<'a, FE, F>, Fp<'a, FE, F>) {
         if self.is_zero() {
-            return (PrimeFieldElement::zero(self.curve.field), PrimeFieldElement::zero(self.curve.field));
+            return (Fp::zero(self.curve.field), Fp::zero(self.curve.field));
         }
 
         let mut point = self.clone();
@@ -153,7 +137,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return;
         }
 
-        let one = PrimeFieldElement::<'a, FE, F>::one(&self.curve.field);
+        let one = Fp::<'a, FE, F>::one(&self.curve.field);
         if other.z == one {
             self.add_assign_mixed_generic_impl(&other);
             return;
@@ -195,9 +179,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
             if u1 == u2 {
                 // The two points are equal, so we double.
-                self.x =  PrimeFieldElement::<'a, FE, F>::zero(&self.curve.field);
-                self.y = PrimeFieldElement::<'a, FE, F>::one(&self.curve.field);
-                self.z = PrimeFieldElement::<'a, FE, F>::zero(&self.curve.field);
+                self.x =  Fp::<'a, FE, F>::zero(&self.curve.field);
+                self.y = Fp::<'a, FE, F>::one(&self.curve.field);
+                self.z = Fp::<'a, FE, F>::zero(&self.curve.field);
                 return;
             }
 
@@ -259,7 +243,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return;
         }
 
-        let one = PrimeFieldElement::one(self.curve.field);
+        let one = Fp::one(self.curve.field);
         if other.z != one {
             self.add_assign_generic_impl(&other);
             return;
@@ -342,7 +326,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
     fn mul_impl<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        let one = PrimeFieldElement::<'a, FE, F>::one(&self.curve.field);
+        let one = Fp::<'a, FE, F>::one(&self.curve.field);
         if self.z == one {
             return self.mul_impl_mixed_addition(exp);
         }
@@ -368,7 +352,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
     pub fn wnaf_mul_impl(&self, exp: GE) -> Self {
-        // let one = PrimeFieldElement::<'a, FE, F>::one(&self.curve.field);
+        // let one = Fp::<'a, FE, F>::one(&self.curve.field);
         // if self.z == one {
         //     return self.mul_impl_mixed_addition(exp);
         // }

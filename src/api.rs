@@ -15,9 +15,10 @@
 /// Assumptions:
 /// - one byte for length encoding
 
-use crate::weierstrass::{WeierstrassCurve, CurvePoint, Group};
+use crate::weierstrass::Group;
+use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::field::{SizedPrimeField, field_from_modulus};
-use crate::field::PrimeFieldElement;
+use crate::fp::Fp;
 use crate::field::{U256Repr, U320Repr};
 use crate::representation::ElementRepr;
 
@@ -48,12 +49,12 @@ macro_rules! get_ab {
                 return Err(());
             }
             let (a_encoding, rest) = $rest.split_at($modulus_len);
-            let a = PrimeFieldElement::from_be_bytes(&$field, a_encoding, true).map_err(|_| ())?;
+            let a = Fp::from_be_bytes(&$field, a_encoding, true).map_err(|_| ())?;
             if rest.len() < $modulus_len {
                 return Err(());
             }
             let (b_encoding, rest) = rest.split_at($modulus_len);
-            let b = PrimeFieldElement::from_be_bytes(&$field, b_encoding, true).map_err(|_| ())?;
+            let b = Fp::from_be_bytes(&$field, b_encoding, true).map_err(|_| ())?;
             
             (a, b, rest)
         }
@@ -246,12 +247,12 @@ fn decode_point_from_xy<
         return Err(());
     }
     let (x_encoding, rest) = bytes.split_at(field_byte_len);
-    let x = PrimeFieldElement::from_be_bytes(curve.field, x_encoding, true).map_err(|_| ())?;
+    let x = Fp::from_be_bytes(curve.field, x_encoding, true).map_err(|_| ())?;
     if rest.len() < field_byte_len {
         return Err(());
     }
     let (y_encoding, rest) = rest.split_at(field_byte_len);
-    let y = PrimeFieldElement::from_be_bytes(curve.field, y_encoding, true).map_err(|_| ())?;
+    let y = Fp::from_be_bytes(curve.field, y_encoding, true).map_err(|_| ())?;
     
     let p: CurvePoint<'a, FE, F, GE, G> = CurvePoint::point_from_xy(&curve, x, y);
     

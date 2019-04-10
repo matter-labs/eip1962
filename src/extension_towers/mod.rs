@@ -7,6 +7,8 @@ pub trait FieldExtension {
 }
 
 mod fp2;
+mod fp3_over_2;
+mod fp2_over3_over_2;
 
 /// This trait represents an element of a field.
 pub trait ExtensionFieldElement:
@@ -48,5 +50,7 @@ pub trait ExtensionFieldElement:
 
     /// Exponentiates this element by a number represented with `u64` limbs,
     /// least significant digit first.
-    fn conjugate(& mut self);
+    fn conjugate(&mut self);
+
+    fn mul_by_nonresidue(&mut self);
 }

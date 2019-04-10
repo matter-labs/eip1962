@@ -43,7 +43,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp2<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
-    fn zero(extension_field: &'a Extension2<'a, E, F>) -> Self {
+    pub fn zero(extension_field: &'a Extension2<'a, E, F>) -> Self {
         let zero = PrimeFieldElement::zero(extension_field.field);
         
         Self {
@@ -53,7 +53,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
         }
     }
 
-    fn one(extension_field: &'a Extension2<'a, E, F>) -> Self {
+    pub fn one(extension_field: &'a Extension2<'a, E, F>) -> Self {
         let zero = PrimeFieldElement::zero(extension_field.field);
         let one = PrimeFieldElement::one(extension_field.field);
         
@@ -69,7 +69,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement fo
     /// Returns true iff this element is zero.
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && 
-        self.c0.is_zero()
+        self.c1.is_zero()
     }
 
     fn add_assign(&mut self, other: &Self) {
@@ -89,7 +89,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement fo
 
     fn negate(&mut self) {
         self.c0.negate();
-        self.c0.negate();
+        self.c1.negate();
     }
 
     fn inverse(&self) -> Option<Self> {
@@ -100,8 +100,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement fo
         t0.add_assign(&t1);
         t0.inverse().map(|t| {
             let mut tmp = Self {
-                c0: self.c0,
-                c1: self.c1,
+                c0: self.c0.clone(),
+                c1: self.c1.clone(),
                 extension_field: self.extension_field
             };
             tmp.c0.mul_assign(&t);
@@ -168,6 +168,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ExtensionFieldElement fo
 
         res
     }
+
+    fn mul_by_nonresidue(&mut self) {
+        self.extension_field.multiply_by_non_residue(self);
+    }
 }
 
 pub struct Extension2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
@@ -182,19 +186,24 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
     type Element = Fp2<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
-        // this is mul_assign w/o self-reference
-        let mut aa = el.c0.clone();
-        aa.mul_assign(&self.non_residue_c0);
-        let mut bb = el.c1.clone();
-        bb.mul_assign(&self.non_residue_c1);
-        let mut o = self.non_residue_c0.clone();
-        o.add_assign(&self.non_residue_c1);
-        el.c1.add_assign(&el.c0);
-        el.c1.mul_assign(&o);
-        el.c1.sub_assign(&aa);
-        el.c1.sub_assign(&bb);
-        el.c0 = aa;
-        el.c0.sub_assign(&bb);
+        let mut as_element = el.clone();
+        as_element.c0 = self.non_residue_c0.clone();
+        as_element.c1 = self.non_residue_c1.clone();
+        el.mul_assign(&as_element);
+
+        // // this is mul_assign w/o self-reference
+        // let mut aa = el.c0.clone();
+        // aa.mul_assign(&self.non_residue_c0);
+        // let mut bb = el.c1.clone();
+        // bb.mul_assign(&self.non_residue_c1);
+        // let mut o = self.non_residue_c0.clone();
+        // o.add_assign(&self.non_residue_c1);
+        // el.c1.add_assign(&el.c0);
+        // el.c1.mul_assign(&o);
+        // el.c1.sub_assign(&aa);
+        // el.c1.sub_assign(&bb);
+        // el.c0 = aa;
+        // el.c0.sub_assign(&bb);
     }
 
 }

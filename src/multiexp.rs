@@ -74,3 +74,72 @@ pub(crate) fn ben_coster_wnaf<G: Group, E: ElementRepr + IntoWnaf>(pairs: Vec<(G
 
     acc
 }
+
+
+use crate::weierstrass::curve::CurvePoint;
+use crate::field::SizedPrimeField;
+pub(crate) fn peppinger<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE> >
+    ( pairs: Vec<(CurvePoint<'a, FE, F, GE, G>, GE)> ) -> CurvePoint<'a, FE, F, GE, G>
+{
+    let mut g = vec![];
+    let mut s = vec![];
+
+    for (point, scalar) in pairs.into_iter() {
+        g.push(point);
+        s.push(scalar);
+    }
+
+    let c = if s.len() < 32 {
+        3u32
+    } else {
+        (f64::from(s.len() as u32)).ln().ceil() as u32
+    };
+
+    let mut windows = vec![];
+    let mut buckets = vec![];
+
+    let mask = (1u64 << c) - 1u64;
+    let mut cur = 0;
+    let num_bits = g[0].curve.scalar_field.modulus().num_bits();
+    let zero_point = CurvePoint::zero(g[0].curve);
+    while cur <= num_bits {
+        let mut acc = zero_point.clone();
+
+        buckets.truncate(0);
+        buckets.resize((1 << c) - 1, zero_point.clone());
+
+        let g = g.clone();
+
+        for (s, g) in s.iter_mut().zip(g) {
+            let index = (s.as_ref()[0] & mask) as usize;
+
+            if index != 0 {
+                buckets[index - 1].add_assign_mixed(&g);
+            }
+
+            s.shr(c as u32);
+        }
+
+        let mut running_sum = zero_point.clone();
+        for exp in buckets.iter().rev() {
+            running_sum.add_assign(exp);
+            acc.add_assign(&running_sum);
+        }
+
+        windows.push(acc);
+
+        cur += c;
+    }
+
+    let mut acc = zero_point.clone();
+
+    for window in windows.into_iter().rev() {
+        for _ in 0..c {
+            acc.double();
+        }
+
+        acc.add_assign(&window);
+    }
+
+    acc
+}

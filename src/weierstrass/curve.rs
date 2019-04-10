@@ -34,7 +34,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 }
 
 pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
-    curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
+    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
     x: Fp<'a, FE, F>,
     y: Fp<'a, FE, F>,
     z: Fp<'a, FE, F>,

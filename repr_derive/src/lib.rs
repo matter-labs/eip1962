@@ -408,6 +408,38 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             }
         }
 
+        impl crate::representation::IntoWnaf for #repr {
+            #[inline]
+            fn wnaf(&self, window: u32) -> Vec<i64> {
+                let mut res = vec![];
+
+                let mut e = *self;
+                let max = (1 << window) as i64;
+                let midpoint = (1 << (window-1)) as i64;
+                let modulus_mask = ((1 << window) - 1) as u64;
+                while !e.is_zero() {
+                    let mut z: i64 = 0;
+                    if e.is_odd() {
+                        let masked_bits = (e.0[0] & modulus_mask) as i64;
+                        // z = midpoint - (e.0[0] & modulus_mask) as i64;
+                        if masked_bits > midpoint {
+                            z = masked_bits - max;
+                            e.add_nocarry(&Self::from((-z) as u64));
+                        } else {
+                            z = masked_bits;
+                            e.sub_noborrow(&Self::from(z as u64));
+                        }
+                    } else {
+                        z = 0;
+                    }
+                    res.push(z);
+                    e.div2();
+                }
+
+                res
+            }
+        }
+
         impl crate::representation::ElementRepr for #repr {
             const NUM_LIMBS: usize = #limbs;
 
@@ -530,36 +562,6 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
                     *a = crate::arithmetics::sbb(*a, *b, &mut borrow);
                 }
-            }
-
-            #[inline]
-            fn wnaf(&self, window: u32) -> Vec<i64> {
-                let mut res = vec![];
-
-                let mut e = *self;
-                let max = (1 << window) as i64;
-                let midpoint = (1 << (window-1)) as i64;
-                let modulus_mask = ((1 << window) - 1) as u64;
-                while !e.is_zero() {
-                    let mut z: i64 = 0;
-                    if e.is_odd() {
-                        let masked_bits = (e.0[0] & modulus_mask) as i64;
-                        // z = midpoint - (e.0[0] & modulus_mask) as i64;
-                        if masked_bits > midpoint {
-                            z = masked_bits - max;
-                            e.add_nocarry(&Self::from((-z) as u64));
-                        } else {
-                            z = masked_bits;
-                            e.sub_noborrow(&Self::from(z as u64));
-                        }
-                    } else {
-                        z = 0;
-                    }
-                    res.push(z);
-                    e.div2();
-                }
-
-                res
             }
 
             #[inline]

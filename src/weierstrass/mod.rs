@@ -13,6 +13,7 @@ pub trait Group: Sized {
     fn negate(&mut self);
     fn double(&mut self);
     fn mul<S: AsRef<[u64]>>(&self, exp: S) -> Self;
+    fn wnaf_mul<S: crate::representation::IntoWnaf>(&self, exp: S) -> Self;
     fn is_zero(&self) -> bool;
 }
 

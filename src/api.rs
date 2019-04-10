@@ -247,12 +247,12 @@ fn decode_point_from_xy<
         return Err(());
     }
     let (x_encoding, rest) = bytes.split_at(field_byte_len);
-    let x = Fp::from_be_bytes(curve.field, x_encoding, true).map_err(|_| ())?;
+    let x = Fp::from_be_bytes(curve.base_field, x_encoding, true).map_err(|_| ())?;
     if rest.len() < field_byte_len {
         return Err(());
     }
     let (y_encoding, rest) = rest.split_at(field_byte_len);
-    let y = Fp::from_be_bytes(curve.field, y_encoding, true).map_err(|_| ())?;
+    let y = Fp::from_be_bytes(curve.base_field, y_encoding, true).map_err(|_| ())?;
     
     let p: CurvePoint<'a, FE, F, GE, G> = CurvePoint::point_from_xy(&curve, x, y);
     

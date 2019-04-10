@@ -35,7 +35,8 @@ mod tests {
     use crate::weierstrass::curve::*;
     use crate::traits::FieldElement;
     use rust_test::Bencher;
-    use crate::multiexp::ben_coster;
+    use crate::multiexp::{ben_coster, ben_coster_wnaf};
+    use crate::weierstrass::Group;
 
     const MULTIEXP_NUM_POINTS: usize = 100;
 
@@ -285,6 +286,46 @@ mod tests {
     }
 
     #[bench]
+    fn bench_ben_coster_bn254_using_wnaf(b: &mut Bencher) {
+        use crate::representation::ElementRepr;
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let one = Fp::one(&field);
+        let a_coeff = Fp::zero(&field);
+        let mut b_coeff = one.clone();
+        b_coeff.double();
+        b_coeff.add_assign(&one);
+
+        let curve = WeierstrassCurve::new(
+            &group, 
+            a_coeff, 
+            b_coeff);
+
+        let mut two = one.clone();
+        two.double();
+
+        let point = CurvePoint::point_from_xy(
+            &curve, 
+            one, 
+            two);
+
+        let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+            let mut scalar = U256Repr::default();
+            let mut bytes = vec![0u8; 32];
+            rng.fill_bytes(&mut bytes[1..]);
+            scalar.read_be(& bytes[..]).unwrap();
+
+            (point.clone(), scalar)
+        }).collect();
+
+        b.iter(move || ben_coster_wnaf(pairs.clone()));
+    }
+
+    #[bench]
     fn bench_naive_multiexp_bn254(b: &mut Bencher) {
         use crate::representation::ElementRepr;
         use rand::{RngCore, SeedableRng};
@@ -437,6 +478,7 @@ mod tests {
         use crate::representation::ElementRepr;
         use rand::{RngCore, SeedableRng};
         use rand_xorshift::XorShiftRng;
+        use crate::representation::IntoWnaf;
 
         let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
@@ -487,7 +529,7 @@ mod tests {
         scalar.read_be(& bytes[..]).unwrap();
 
         let res_double_and_add  = point.clone().mul(scalar).into_xy();
-        let wnaf_res = point.wnaf_mul_impl(scalar).into_xy();
+        let wnaf_res = point.wnaf_mul(scalar).into_xy();
 
         assert!(res_double_and_add.0 == wnaf_res.0);
         assert!(res_double_and_add.1 == wnaf_res.1);

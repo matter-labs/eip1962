@@ -24,7 +24,7 @@ pub trait PairingEngine: Sized {
     // fn prepare_twist_point<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
     //     (&self, twist_point: &'a TwistPoint<'a, FE, F, GE, G>) -> PreparedTwistPoint<'a, FE, F>;
 
-    fn pair<'b> (&self, point: &'b Self::G1, twist: &'b Self::G2) -> Option<Self::PairingResult>;
+    fn pair<'b> (&self, points: &'b [Self::G1], twists: &'b [Self::G2]) -> Option<Self::PairingResult>;
     
     // fn pair<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
         // (&self, point: &'a CurvePoint<'a, FE, F, GE, G>, twist_point: &'a TwistPoint<'a, FE, F, GE, G>) -> Self::PairingResult;
@@ -286,7 +286,7 @@ mod tests {
 
         let one = Fp::one(&base_field);
 
-        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        let mut fp2_non_residue = Fp2::zero(&extension_2); // non-residue is 1 + u
         fp2_non_residue.c0 = one.clone();
         fp2_non_residue.c1 = one.clone();
 
@@ -368,4 +368,6 @@ mod tests {
         println!("C_1 = {}", coeffs[1]);
         println!("C_10 = {}", coeffs[10]);
     }
+
+
 }

@@ -291,7 +291,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         f
     }
 
-    fn final_exponentiation(self, f: &Fp12<'a, FE, F>) -> Option<Fp12<'a, FE, F>> {
+    fn final_exponentiation(&self, f: &Fp12<'a, FE, F>) -> Option<Fp12<'a, FE, F>> {
         // Computing the final exponentation following
         // https://eprint.iacr.org/2016/130.pdf.
         // We don't use their "faster" formula because it is difficult to make
@@ -378,7 +378,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     type G2 = TwistPoint<'a, FE, F, GE, G>;
 
     fn pair<'b>
-        (&self, point: &'b CurvePoint<'a, FE, F, GE, G>, twist_point: &'b TwistPoint<'a, FE, F, GE, G>) -> Option<Self::PairingResult> {
-            Some(Fp12::one(self.fp12_extension))
+        (&self, points: &'b [CurvePoint<'a, FE, F, GE, G>], twists: &'b [TwistPoint<'a, FE, F, GE, G>]) -> Option<Self::PairingResult> {
+            let mut pairs = vec![];
+            for (p, q) in points.iter().zip(twists.iter()) {
+                pairs.push((p, q));
+            }
+            let loop_result = self.miller_loop(&pairs[..]);
+
+            self.final_exponentiation(&loop_result)
         }   
 }

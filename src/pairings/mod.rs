@@ -166,61 +166,61 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
         debug_assert!(rem.is_zero());
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_6 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_7 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_8 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_9 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
         let f_10 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        let mut q_power = modulus.clone();
+        q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&six);
         debug_assert!(rem.is_zero());
@@ -366,5 +366,6 @@ mod tests {
 
         println!("C_0 = {}", coeffs[0]);
         println!("C_1 = {}", coeffs[1]);
+        println!("C_10 = {}", coeffs[10]);
     }
 }

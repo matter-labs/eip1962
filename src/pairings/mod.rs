@@ -29,7 +29,7 @@ pub trait PairingEngine: Sized {
     // fn prepare_twist_point<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
     //     (&self, twist_point: &'a TwistPoint<'a, FE, F, GE, G>) -> PreparedTwistPoint<'a, FE, F>;
 
-    fn pair<'b> (&self, point: &'b Self::G1, twist: &'b Self::G2) -> Self::PairingResult;
+    fn pair<'b> (&self, point: &'b Self::G1, twist: &'b Self::G2) -> Option<Self::PairingResult>;
     
     // fn pair<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
         // (&self, point: &'a CurvePoint<'a, FE, F, GE, G>, twist_point: &'a TwistPoint<'a, FE, F, GE, G>) -> Self::PairingResult;

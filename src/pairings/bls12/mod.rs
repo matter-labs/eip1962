@@ -16,6 +16,17 @@ pub enum TwistType {
     M
 }
 
+pub struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    is_infinity: bool,
+    pub ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
+}
+
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, FE, F> {
+    pub fn is_zero(&self) -> bool {
+        self.is_infinity
+    }
+}
+
 pub struct Bls12Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     pub x: Vec<u64>,
     pub x_is_negative: bool,
@@ -204,6 +215,160 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             TwistType::D => (lambda, theta, j),
         }
     }
+
+    pub fn prepare(&self, twist_point: & TwistPoint<'a, FE, F, GE, G>) -> PreparedTwistPoint<'a, FE, F> {
+        debug_assert!(twist_point.is_normalized());
+
+        let mut two_inv = Fp::one(self.base_field);
+        two_inv.double();
+        let two_inv = two_inv.inverse().unwrap();
+
+        if twist_point.is_zero() {
+            return PreparedTwistPoint {
+                ell_coeffs: vec![],
+                is_infinity:   true,
+            };
+        }
+
+        let mut ell_coeffs = vec![];
+        let mut r = TwistPoint::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
+
+        for i in BitIterator::new(&self.x).skip(1) {
+            ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
+
+            if i {
+                ell_coeffs.push(self.addition_step(&mut r, &twist_point));
+            }
+        }
+
+        PreparedTwistPoint {
+            ell_coeffs,
+            is_infinity: false,
+        }
+    }
+
+    fn miller_loop<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
+    where 'a: 'b,
+        I: IntoIterator<
+            Item = &'b (&'b CurvePoint<'a, FE, F, GE, G>, 
+                &'b TwistPoint<'a, FE, F, GE, G>)
+        >
+    {
+        let mut g1_references = vec![];
+        let mut prepared_coeffs = vec![];
+
+        for (p, q) in i.into_iter() {
+            if !p.is_zero() && !q.is_zero() {
+                let coeffs = self.prepare(&q.clone());
+                let ell_coeffs = coeffs.ell_coeffs;
+                prepared_coeffs.push(ell_coeffs);
+                g1_references.push(p);
+            }
+        }
+
+        let mut prepared_coeffs: Vec<_> = prepared_coeffs.into_iter().map(|el| el.into_iter()).collect();
+
+        let mut f = Fp12::one(self.fp12_extension);
+
+        for i in BitIterator::new(&self.x).skip(1) {
+            f.square();
+
+            for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
+                self.ell(&mut f, &coeffs.next().unwrap(), &*p);
+            }
+
+            if i {
+                for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
+                    self.ell(&mut f, &coeffs.next().unwrap(), &*p);
+                }
+            }
+        }
+
+        if self.x_is_negative {
+            f.conjugate();
+        }
+
+        f
+    }
+
+    fn final_exponentiation(self, f: &Fp12<'a, FE, F>) -> Option<Fp12<'a, FE, F>> {
+        // Computing the final exponentation following
+        // https://eprint.iacr.org/2016/130.pdf.
+        // We don't use their "faster" formula because it is difficult to make
+        // it work for curves with odd `P::X`.
+        // Hence we implement the algorithm from Table 1 below.
+
+        // f1 = r.conjugate() = f^(p^6)
+        let mut f1 = f.clone();
+        f1.frobenius_map(6);
+
+        match f.inverse() {
+            Some(mut f2) => {
+                // f2 = f^(-1);
+                // r = f^(p^6 - 1)
+                let mut r = f1.clone();
+                f1.mul_assign(&f2);
+
+                // f2 = f^(p^6 - 1)
+                f2 = r.clone();
+                // r = f^((p^6 - 1)(p^2))
+                r.frobenius_map(2);
+
+                // r = f^((p^6 - 1)(p^2) + (p^6 - 1))
+                // r = f^((p^6 - 1)(p^2 + 1))
+                r.mul_assign(&f2);
+
+                // Hard part of the final exponentation is below:
+                // From https://eprint.iacr.org/2016/130.pdf, Table 1
+                let mut y0 = r.clone();
+                y0.cyclotomic_square();
+                y0.conjugate();
+
+                let mut y5 = r.clone();
+                self.exp_by_x(&mut y5);
+
+                let mut y1 = y5.clone();
+                y1.cyclotomic_square();
+                let mut y3 = y0.clone();
+                y3.mul_assign(&y5);
+
+                let mut y0 = y3.clone();
+                self.exp_by_x(&mut y0);
+            
+                let mut y2 = y0.clone();
+                self.exp_by_x(&mut y2);
+
+                let mut y4 = y2.clone();
+                self.exp_by_x(&mut y4);
+                y4.mul_assign(&y1);
+
+                let mut y1 = y4.clone();
+                self.exp_by_x(&mut y1);
+
+                y3.conjugate();
+                y1.mul_assign(&y3);
+                y1.mul_assign(&r);
+
+                let mut y3 = r.clone();
+                y3.conjugate();
+                y0.mul_assign(&r);
+                y0.frobenius_map(3);
+
+                y4.mul_assign(&y3);
+                y4.frobenius_map(1);
+                
+                y5.mul_assign(&y2);
+                y5.frobenius_map(2);
+
+                y5.mul_assign(&y0);
+                y5.mul_assign(&y4);
+                y5.mul_assign(&y1);
+
+                Some(y5)
+            },
+            None => None,
+        }
+    }
 }
 
 
@@ -213,7 +378,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     type G2 = TwistPoint<'a, FE, F, GE, G>;
 
     fn pair<'b>
-        (&self, point: &'b CurvePoint<'a, FE, F, GE, G>, twist_point: &'b TwistPoint<'a, FE, F, GE, G>) -> Self::PairingResult {
-            Fp12::one(self.fp12_extension)
+        (&self, point: &'b CurvePoint<'a, FE, F, GE, G>, twist_point: &'b TwistPoint<'a, FE, F, GE, G>) -> Option<Self::PairingResult> {
+            Some(Fp12::one(self.fp12_extension))
         }   
 }

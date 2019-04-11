@@ -133,9 +133,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         if bytes.len() >= repr.as_ref().len() * 8 {
             repr.read_be(bytes).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
         } else {
-            let mut padded = vec![0u8; repr.as_ref().len() * 8 - bytes.len()];
-            padded.extend_from_slice(bytes);
-            repr.read_be(&padded[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+            if allow_padding {
+                let mut padded = vec![0u8; repr.as_ref().len() * 8 - bytes.len()];
+                padded.extend_from_slice(bytes);
+                repr.read_be(&padded[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+            } else {
+                repr.read_be(&bytes[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes without padding, {}", e)))?;
+            }
         }
         Self::from_repr(field, repr)
     }

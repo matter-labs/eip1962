@@ -127,8 +127,6 @@ pub fn frobenius_calculator_fp6<'a, FE: ElementRepr, F: SizedPrimeField<Repr = F
         debug_assert!(rem.is_zero());
         let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
 
-
-
         let f_0_c2 = f_0.clone();
 
         let mut f_1_c2 = f_1.clone();
@@ -368,6 +366,5 @@ mod tests {
         println!("C_1 = {}", coeffs[1]);
         println!("C_10 = {}", coeffs[10]);
     }
-
 
 }

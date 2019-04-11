@@ -200,9 +200,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
     type Element = Fp<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
-        // let mut as_element = el.clone();
-        // as_element.c0 = self.non_residue_c0.clone();
-        // as_element.c1 = self.non_residue_c1.clone();
         el.mul_assign(&self.non_residue);
     }
 }

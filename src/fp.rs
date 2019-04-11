@@ -66,7 +66,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Debug for Fp<'
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "0x")?;
-        for i in self.repr.as_ref().iter().rev() {
+        // for i in self.repr.as_ref().iter().rev() {
+        for i in self.into_repr().as_ref().iter().rev() {
             write!(f, "{:016x}", *i)?;
         }
 
@@ -77,7 +78,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Debug for Fp<'
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Display for Fp<'a, E, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "0x")?;
-        for i in self.repr.as_ref().iter().rev() {
+        // for i in self.repr.as_ref().iter().rev() {
+        for i in self.into_repr().as_ref().iter().rev() {
             write!(f, "{:016x}", *i)?;
         }
 

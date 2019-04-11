@@ -116,8 +116,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
         self.c1.sub_assign(&aa);
         self.c1.sub_assign(&bb);
         self.c0 = bb;
+        // println!("Mul 014 C0 = {}", self.c0);
         self.c0.mul_by_nonresidue(self.extension_field);
+        // println!("Mul 014 C0 = {}", self.c0);
         self.c0.add_assign(&aa);
+        // println!("Mul 014 C0 = {}", self.c0);
     }
 
     pub fn cyclotomic_square(&mut self) {
@@ -404,7 +407,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
     type Element = Fp6<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
-        el.mul_assign(&self.non_residue);
+        let mut new_c0 = el.c2.clone();
+        new_c0.mul_by_nonresidue(&*el.extension_field);
+        el.c2 = el.c1.clone();
+        el.c1 = el.c0.clone();
+        el.c0 = new_c0;
     }
 
 }

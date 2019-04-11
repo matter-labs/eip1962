@@ -75,6 +75,77 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
             extension_field: extension_field
         }
     }
+
+    pub fn mul_by_1(&mut self, c1: &Fp2<'a, E, F>) {
+        let mut b_b = self.c1.clone();
+        b_b.mul_assign(c1);
+
+        let mut t1 = c1.clone();
+        {
+            let mut tmp = self.c1.clone();
+            tmp.add_assign(&self.c2);
+
+            t1.mul_assign(&tmp);
+            t1.sub_assign(&b_b);
+            t1.mul_by_nonresidue();
+        }
+
+        let mut t2 = c1.clone();
+        {
+            let mut tmp = self.c0.clone();
+            tmp.add_assign(&self.c1);
+
+            t2.mul_assign(&tmp);
+            t2.sub_assign(&b_b);
+        }
+
+        self.c0 = t1;
+        self.c1 = t2;
+        self.c2 = b_b;
+    }
+
+    pub fn mul_by_01(&mut self, c0: &Fp2<'a, E, F>, c1: &Fp2<'a, E, F>) {
+        let mut a_a = self.c0.clone();
+        let mut b_b = self.c1.clone();
+        a_a.mul_assign(c0);
+        b_b.mul_assign(c1);
+
+        let mut t1 = c1.clone();
+        {
+            let mut tmp = self.c1.clone();
+            tmp.add_assign(&self.c2);
+
+            t1.mul_assign(&tmp);
+            t1.sub_assign(&b_b);
+            t1.mul_by_nonresidue();
+            t1.add_assign(&a_a);
+        }
+
+        let mut t3 = c0.clone();
+        {
+            let mut tmp = self.c0.clone();
+            tmp.add_assign(&self.c2);
+
+            t3.mul_assign(&tmp);
+            t3.sub_assign(&a_a);
+            t3.add_assign(&b_b);
+        }
+
+        let mut t2 = c0.clone();
+        t2.add_assign(c1);
+        {
+            let mut tmp = self.c0.clone();
+            tmp.add_assign(&self.c1);
+
+            t2.mul_assign(&tmp);
+            t2.sub_assign(&a_a);
+            t2.sub_assign(&b_b);
+        }
+
+        self.c0 = t1;
+        self.c1 = t2;
+        self.c2 = t3;
+    }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a, E, F> {
@@ -278,7 +349,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
-        unimplemented!();
+        self.c0.frobenius_map(power);
+        self.c1.frobenius_map(power);
+        self.c2.frobenius_map(power);
+
+        self.c1.mul_assign(&self.extension_field.frobenius_coeffs_c1[power % 6]);
+        self.c2.mul_assign(&self.extension_field.frobenius_coeffs_c2[power % 6]);
     }
 }
 
@@ -286,7 +362,9 @@ pub struct Extension3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub non_residue_c0: Fp2<'a, E, F>,
     pub non_residue_c1: Fp2<'a, E, F>,
     pub non_residue_c2: Fp2<'a, E, F>,
-    pub field: &'a Extension2<'a, E, F>
+    pub field: &'a Extension2<'a, E, F>,
+    pub frobenius_coeffs_c1: [Fp2<'a, E, F>; 6],
+    pub frobenius_coeffs_c2: [Fp2<'a, E, F>; 6],
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension3Over2<'a, E, F> {

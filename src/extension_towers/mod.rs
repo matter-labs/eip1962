@@ -6,9 +6,9 @@ pub trait FieldExtension {
     fn multiply_by_non_residue(&self, el: &mut Self::Element);
 }
 
-mod fp2;
-mod fp3_over_2;
-mod fp2_over3_over_2;
+pub mod fp2;
+pub mod fp6_as_3_over_2;
+pub mod fp12_as_2_over3_over_2;
 
 // /// This trait represents an element of a field.
 // pub trait ExtensionFieldElement:

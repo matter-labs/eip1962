@@ -7,8 +7,8 @@ use super::{CurveType, Group};
 pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     pub(crate) base_field: &'a F,
     pub(crate) scalar_field: &'a G,
-    a: Fp<'a, FE, F>,
-    b: Fp<'a, FE, F>,
+    pub(crate) a: Fp<'a, FE, F>,
+    pub(crate) b: Fp<'a, FE, F>,
     curve_type: CurveType
 }
 
@@ -35,9 +35,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
 pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    x: Fp<'a, FE, F>,
-    y: Fp<'a, FE, F>,
-    z: Fp<'a, FE, F>,
+    pub(crate) x: Fp<'a, FE, F>,
+    pub(crate) y: Fp<'a, FE, F>,
+    pub(crate) z: Fp<'a, FE, F>,
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Clone for CurvePoint<'a, FE, F, GE, G> {
@@ -90,6 +90,16 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             y: y,
             z: Fp::<'a, FE, F>::one(&curve.base_field)
         }
+    }
+
+    pub fn is_normalized(&self) -> bool {
+        if self.is_zero() {
+            return true;
+        }
+
+        let one = Fp::one(self.curve.base_field);
+        
+        self.z == one
     }
 
     pub fn normalize(&mut self) {

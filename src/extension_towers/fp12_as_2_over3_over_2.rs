@@ -1,7 +1,6 @@
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use super::{FieldExtension};
-use crate::traits::{FieldElement, BitIterator};
+use crate::traits::{FieldElement, BitIterator, FieldExtension};
 use super::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use super::fp2::Fp2;
 
@@ -95,7 +94,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
 
 
         let mut t1 = b.clone();
-        t1.mul_by_nonresidue();
+        t1.mul_by_nonresidue(self.extension_field);
         self.c0 = a;
         self.c0.add_assign(&t1);
     }
@@ -117,7 +116,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
         self.c1.sub_assign(&aa);
         self.c1.sub_assign(&bb);
         self.c0 = bb;
-        self.c0.mul_by_nonresidue();
+        self.c0.mul_by_nonresidue(self.extension_field);
         self.c0.add_assign(&aa);
     }
 
@@ -136,11 +135,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
         let mut a0 = z0.clone();
         a0.add_assign(&z1);
         let mut a1 = z1.clone();
-        a1.mul_by_nonresidue();
+        a1.mul_by_nonresidue(self.extension_field.field);
         a1.add_assign(&z0);
 
         let mut a2 = tmp.clone();
-        a2.mul_by_nonresidue();
+        a2.mul_by_nonresidue(self.extension_field.field);
 
         let mut t0 = a0;
         t0.mul_assign(&a1);
@@ -156,11 +155,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
         let mut a0 = z2.clone();
         a0.add_assign(&z3);
         let mut a1 = z3.clone();
-        a1.mul_by_nonresidue();
+        a1.mul_by_nonresidue(self.extension_field.field);
         a1.add_assign(&z2);
 
         let mut a2 = tmp.clone();
-        a2.mul_by_nonresidue();
+        a2.mul_by_nonresidue(self.extension_field.field);
 
         let mut t2 = a0;
         t2.mul_assign(&a1);
@@ -177,11 +176,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
         let mut a0 = z4.clone();
         a0.add_assign(&z5);
         let mut a1 = z5.clone();
-        a1.mul_by_nonresidue();
+        a1.mul_by_nonresidue(self.extension_field.field);
         a1.add_assign(&z4);
 
         let mut a2 = tmp.clone();
-        a2.mul_by_nonresidue();
+        a2.mul_by_nonresidue(self.extension_field.field);
 
         let mut t4 = a0;
         t4.mul_assign(&a1);
@@ -212,7 +211,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
 
         // g2 = 3 * (xi * t5) + 2 * z2
         let mut tmp = t5.clone();
-        tmp.mul_by_nonresidue();
+        tmp.mul_by_nonresidue(self.extension_field.field);
         let mut g2 = tmp.clone();
         g2.add_assign(&z2);
         g2.double();
@@ -296,7 +295,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         c0s.square();
         let mut c1s = self.c1.clone();
         c1s.square();
-        c1s.mul_by_nonresidue();
+        c1s.mul_by_nonresidue(self.extension_field);
         c0s.sub_assign(&c1s);
 
         c0s.inverse().map(|t| {
@@ -326,7 +325,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         self.c1.sub_assign(&aa);
         self.c1.sub_assign(&bb);
         self.c0 = bb;
-        self.c0.mul_by_nonresidue();
+        self.c0.mul_by_nonresidue(self.extension_field);
         self.c0.add_assign(&aa);
     }
 
@@ -337,13 +336,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         let mut c0c1 = self.c0.clone();
         c0c1.add_assign(&self.c1);
         let mut c0 = self.c1.clone();
-        c0.mul_by_nonresidue();
+        c0.mul_by_nonresidue(self.extension_field);
         c0.add_assign(&self.c0);
         c0.mul_assign(&c0c1);
         c0.sub_assign(&ab);
         self.c1 = ab.clone();
         self.c1.add_assign(&ab);
-        ab.mul_by_nonresidue();
+        ab.mul_by_nonresidue(self.extension_field);
         c0.sub_assign(&ab);
         self.c0 = c0;
     }
@@ -372,8 +371,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         res
     }
 
-    fn mul_by_nonresidue(&mut self) {
-        unreachable!();
+    fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
+        for_extesion.multiply_by_non_residue(self);
+        // self.extension_field.multiply_by_non_residue(self);
     }
 
     fn frobenius_map(&mut self, power: usize) {
@@ -393,8 +393,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
 }
 
 pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    pub non_residue_c0: Fp6<'a, E, F>,
-    pub non_residue_c1: Fp6<'a, E, F>,
+    pub non_residue: Fp6<'a, E, F>,
+    // pub non_residue_c1: Fp6<'a, E, F>,
     pub field: &'a Extension3Over2<'a, E, F>,
     pub frobenius_coeffs_c1: [Fp2<'a, E, F>; 12],
 }
@@ -402,10 +402,10 @@ pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension2Over3Over2<'a, E, F> {
     const EXTENSION_DEGREE: usize = 2;
     
-    type Element = Fp12<'a, E, F>;
+    type Element = Fp6<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
-        
+        el.mul_assign(&self.non_residue);
     }
 
 }

@@ -1,6 +1,7 @@
 use crate::representation::{ElementRepr, RepresentationDecodingError};
 use crate::traits::FieldElement;
 use crate::traits::BitIterator;
+use crate::traits::FieldExtension;
 use crate::field::SizedPrimeField;
 
 pub struct Fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
@@ -284,9 +285,14 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
         res
     }
 
-    fn mul_by_nonresidue(&mut self) {
-        unreachable!();
+    fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
+        for_extesion.multiply_by_non_residue(self);
+        // self.extension_field.multiply_by_non_residue(self);
     }
+
+    // fn mul_by_nonresidue(&mut self) {
+    //     unreachable!();
+    // }
 
     fn conjugate(&mut self) {
         unreachable!();

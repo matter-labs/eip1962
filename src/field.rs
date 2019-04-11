@@ -36,7 +36,7 @@ use crate::traits::FieldElement;
 use crate::traits::BitIterator;
 
 /// Convert BigUint into a vector of 64-bit limbs.
-fn biguint_to_real_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
+fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
     let m = BigUint::one() << 64;
     let mut ret = vec![];
 
@@ -50,6 +50,18 @@ fn biguint_to_real_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
     }
 
     assert!(ret.len() == limbs);
+
+    ret
+}
+
+pub fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
+    let m = BigUint::one() << 64;
+    let mut ret = vec![];
+
+    while v > BigUint::zero() {
+        ret.push((&v % &m).to_u64().unwrap());
+        v = v >> 64;
+    }
 
     ret
 }
@@ -117,10 +129,10 @@ fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u
     // Compute R = 2**(64 * limbs) mod m
     let r = (BigUint::one() << (num_limbs * 64)) % &modulus;
     // Compute R^2 mod m
-    let r2 = biguint_to_real_u64_vec((&r * &r) % &modulus, num_limbs);
+    let r2 = biguint_to_fixed_length_u64_vec((&r * &r) % &modulus, num_limbs);
 
-    let r = biguint_to_real_u64_vec(r, num_limbs);
-    let modulus = biguint_to_real_u64_vec(modulus, num_limbs);
+    let r = biguint_to_fixed_length_u64_vec(r, num_limbs);
+    let modulus = biguint_to_fixed_length_u64_vec(modulus, num_limbs);
 
     // Compute -m^-1 mod 2**64 by exponentiating by totient(2**64) - 1
     let mut inv = 1u64;

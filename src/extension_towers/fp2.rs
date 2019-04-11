@@ -1,14 +1,10 @@
 use crate::fp::Fp;
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use super::{FieldExtension};
-use crate::traits::{FieldElement, BitIterator};
+use crate::traits::{FieldElement, BitIterator, FieldExtension};
 
 
-// this implementation assumes extension using polynomial u^2 + 1 = 0
-// multiply_by_non_residue function in the extension field actually depends
-// on the nature of the higher extension, but is supplied at runtime
-// e.g. BLS12-381 curve multiplies by (u+1), while BN254 uses (u+9)
+// this implementation assumes extension using polynomial u^2 + m = 0
 pub struct Fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
     pub c0: Fp<'a, E, F>,
     pub c1: Fp<'a, E, F>,
@@ -181,8 +177,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
         res
     }
 
-    fn mul_by_nonresidue(&mut self) {
-        self.extension_field.multiply_by_non_residue(self);
+    fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
+        for_extesion.multiply_by_non_residue(self);
+        // self.extension_field.multiply_by_non_residue(self);
     }
 
     fn frobenius_map(&mut self, power: usize) {
@@ -191,22 +188,22 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
 }
 
 pub struct Extension2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    pub non_residue_c0: Fp<'a, E, F>,
-    pub non_residue_c1: Fp<'a, E, F>,
+    // pub non_residue_c0: Fp<'a, E, F>,
+    // pub non_residue_c1: Fp<'a, E, F>,
     pub field: &'a F,
+    pub non_residue: Fp<'a, E, F>,
     pub frobenius_coeffs_c1: [Fp<'a, E, F>; 2],
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension2<'a, E, F> {
     const EXTENSION_DEGREE: usize = 2;
     
-    type Element = Fp2<'a, E, F>;
+    type Element = Fp<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
-        let mut as_element = el.clone();
-        as_element.c0 = self.non_residue_c0.clone();
-        as_element.c1 = self.non_residue_c1.clone();
-        el.mul_assign(&as_element);
+        // let mut as_element = el.clone();
+        // as_element.c0 = self.non_residue_c0.clone();
+        // as_element.c1 = self.non_residue_c1.clone();
+        el.mul_assign(&self.non_residue);
     }
-
 }

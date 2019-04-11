@@ -40,9 +40,17 @@ pub trait FieldElement:
 
     fn conjugate(&mut self);
 
-    fn mul_by_nonresidue(&mut self);
+    fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extension: &EXT);
 
     fn frobenius_map(&mut self, power: usize);
+}
+
+pub trait FieldExtension {
+    const EXTENSION_DEGREE: usize;
+
+    type Element;
+
+    fn multiply_by_non_residue(&self, el: &mut Self::Element);
 }
 
 #[derive(Debug)]

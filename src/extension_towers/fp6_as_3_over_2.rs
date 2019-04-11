@@ -358,6 +358,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 }
 
+// For example, BLS12-381 has non-residue = 1 + u;
 pub struct Extension3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub non_residue: Fp2<'a, E, F>,
     pub field: &'a Extension2<'a, E, F>,

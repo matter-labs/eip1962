@@ -372,8 +372,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
     }
 
     fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
-        for_extesion.multiply_by_non_residue(self);
-        // self.extension_field.multiply_by_non_residue(self);
+        unreachable!();
+        // for_extesion.multiply_by_non_residue(self);
     }
 
     fn frobenius_map(&mut self, power: usize) {
@@ -394,7 +394,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
 
 pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub non_residue: Fp6<'a, E, F>,
-    // pub non_residue_c1: Fp6<'a, E, F>,
     pub field: &'a Extension3Over2<'a, E, F>,
     pub frobenius_coeffs_c1: [Fp2<'a, E, F>; 12],
 }

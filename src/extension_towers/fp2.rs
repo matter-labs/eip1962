@@ -101,23 +101,34 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
     }
 
     fn inverse(&self) -> Option<Self> {
-        let mut t1 = self.c1.clone();
-        t1.square();
-        let mut t0 = self.c0.clone();
-        t0.square();
-        t0.add_assign(&t1);
-        t0.inverse().map(|t| {
-            let mut tmp = Self {
-                c0: self.c0.clone(),
-                c1: self.c1.clone(),
-                extension_field: self.extension_field
-            };
-            tmp.c0.mul_assign(&t);
-            tmp.c1.mul_assign(&t);
-            tmp.c1.negate();
+        if self.is_zero() {
+            None
+        } else {
+            // Guide to Pairing-based Cryptography, Algorithm 5.19.
+            // v0 = c0.square()
+            let mut v0 = self.c0.clone();
+            v0.square();
+            // v1 = c1.square()
+            let mut v1 = self.c1.clone();
+            v1.square();
+            // v0 = v0 - beta * v1
+            let mut v1_by_nonresidue = v1.clone();
+            v1_by_nonresidue.mul_by_nonresidue(self.extension_field);
+            v0.sub_assign(&v1_by_nonresidue);
+            v0.inverse().map(|v1| {
+                let mut c0 = self.c0.clone();
+                c0.mul_assign(&v1);
+                let mut c1 = self.c1.clone();
+                c1.mul_assign(&v1);
+                c1.negate();
 
-            tmp
-        })
+                Self {
+                    c0: c0, 
+                    c1: c1,
+                    extension_field: self.extension_field
+                }
+            })
+        }
     }
 
     fn mul_assign(&mut self, other: &Self)

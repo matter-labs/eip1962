@@ -15,19 +15,14 @@ use num_integer::Integer;
 use num_traits::Zero;
 
 pub mod bls12;
+pub mod bn;
 
 pub trait PairingEngine: Sized {
     type PairingResult: FieldElement;
     type G1: Group;
     type G2: Group;
 
-    // fn prepare_twist_point<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
-    //     (&self, twist_point: &'a TwistPoint<'a, FE, F, GE, G>) -> PreparedTwistPoint<'a, FE, F>;
-
     fn pair<'b> (&self, points: &'b [Self::G1], twists: &'b [Self::G2]) -> Option<Self::PairingResult>;
-    
-    // fn pair<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
-        // (&self, point: &'a CurvePoint<'a, FE, F, GE, G>, twist_point: &'a TwistPoint<'a, FE, F, GE, G>) -> Self::PairingResult;
 }
 
 pub fn frobenius_calculator_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
@@ -225,6 +220,57 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
         let f_11 = non_residue.pow(&biguint_to_u64_vec(power));
 
         Ok([f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11])
+}
+
+pub fn into_ternary_wnaf(repr: Vec<u64>) -> Vec<i64> {
+        fn is_zero(repr: &[u64]) -> bool {
+
+            for el in repr.iter() {
+                if *el != 0 {
+                    return false;
+                }
+            }
+
+            true
+        }
+
+        fn is_odd(repr: &[u64]) -> bool {
+            if repr.len() == 0 {
+                return false;
+            }
+
+            repr[0] & 1u64 == 1u64
+        }
+
+        fn div2(repr: &mut [u64]) {
+            let mut t = 0;
+            for i in repr.iter_mut().rev() {
+                let t2 = *i << 63;
+                *i >>= 1;
+                *i |= t;
+                t = t2;
+            }
+        }
+
+        let mut res = vec![];
+        let mut e = repr;
+        while is_zero(&e) {
+            let z: i64;
+            if is_odd(&e) {
+                z = 2 - (e[0] % 4) as i64;
+                if z >= 0 {
+                    e[0] -= z as u64;
+                } else {
+                    e[0] += -z as u64;
+                }
+            } else {
+                z = 0;
+            }
+            res.push(z);
+            div2(&mut e);
+        }
+
+        res
 }
 
 #[cfg(test)]

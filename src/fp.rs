@@ -293,12 +293,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
 
     fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
         for_extesion.multiply_by_non_residue(self);
-        // self.extension_field.multiply_by_non_residue(self);
     }
-
-    // fn mul_by_nonresidue(&mut self) {
-    //     unreachable!();
-    // }
 
     fn conjugate(&mut self) {
         unreachable!();

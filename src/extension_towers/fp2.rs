@@ -133,39 +133,51 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
 
     fn mul_assign(&mut self, other: &Self)
     {
-        let mut aa = self.c0.clone();
-        aa.mul_assign(&other.c0);
-        let mut bb = self.c1.clone();
-        bb.mul_assign(&other.c1);
-        let mut o = other.c0.clone();
-        o.add_assign(&other.c1);
+        let mut v0 = self.c0.clone();
+        v0.mul_assign(&other.c0);
+        let mut v1 = self.c1.clone();
+        v1.mul_assign(&other.c1);
+
         self.c1.add_assign(&self.c0);
-        self.c1.mul_assign(&o);
-        self.c1.sub_assign(&aa);
-        self.c1.sub_assign(&bb);
-        self.c0 = aa;
-        self.c0.sub_assign(&bb);
+        let mut t0 = other.c0.clone();
+        t0.add_assign(&other.c1);
+        self.c1.mul_assign(&t0);
+        self.c1.sub_assign(&v0);
+        self.c1.sub_assign(&v1);
+        self.c0 = v0;
+        v1.mul_by_nonresidue(self.extension_field);
+        self.c0.add_assign(&v1);
     }
 
     fn square(&mut self)
     {
-        let mut ab = self.c0.clone();
-        ab.mul_assign(&self.c1);
-        let mut c0c1 = self.c0.clone();
-        c0c1.add_assign(&self.c1);
-        let mut c0 = self.c1.clone();
-        c0.negate();
-        c0.add_assign(&self.c0);
-        c0.mul_assign(&c0c1);
-        c0.sub_assign(&ab);
-        self.c1 = ab.clone();
-        self.c1.add_assign(&ab);
-        c0.add_assign(&ab);
-        self.c0 = c0;
+        // v0 = c0 - c1
+        let mut v0 = self.c0.clone();
+        v0.sub_assign(&self.c1);
+        // v3 = c0 - beta * c1
+        let mut v3 = self.c0.clone();
+        let mut t0 = self.c1.clone();
+        t0.mul_by_nonresidue(self.extension_field);
+        v3.sub_assign(&t0);
+        // v2 = c0 * c1
+        let mut v2 = self.c0.clone();
+        v2.mul_assign(&self.c1);
+
+        // v0 = (v0 * v3) + v2
+        v0.mul_assign(&v3);
+        v0.add_assign(&v2);
+
+        self.c1 = v2.clone();
+        self.c1.double();
+        self.c0 = v0;
+        v2.mul_by_nonresidue(self.extension_field);
+        self.c0.add_assign(&v2);
+
     }
 
     fn conjugate(&mut self) {
-        self.c1.negate();
+        unreachable!();
+        // self.c1.negate();
     }
 
     fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {

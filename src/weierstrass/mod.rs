@@ -19,3 +19,4 @@ pub trait Group: Sized {
 
 pub mod curve;
 pub mod twist;
+pub mod cubic_twist;

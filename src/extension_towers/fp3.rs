@@ -1,0 +1,278 @@
+use crate::fp::Fp;
+use crate::field::{SizedPrimeField};
+use crate::representation::ElementRepr;
+use crate::traits::{FieldElement, BitIterator, FieldExtension};
+
+// this implementation assumes extension using polynomial u^3 + m = 0
+pub struct Fp3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
+    pub c0: Fp<'a, E, F>,
+    pub c1: Fp<'a, E, F>,
+    pub c2: Fp<'a, E, F>,
+    pub extension_field: &'a Extension3<'a, E, F>
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Display for Fp3<'a, E, F> {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Fq2({} + {} * u + {} * u^2)", self.c0, self.c1, self.c2)
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Debug for Fp3<'a, E, F> {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Fq2({} + {} * u) + {} * u^2", self.c0, self.c1, self.c2)
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp3<'a, E, F> {
+    #[inline(always)]
+    fn clone(&self) -> Self {
+        Self{
+            c0: self.c0.clone(),
+            c1: self.c1.clone(),
+            c2: self.c2.clone(),
+            extension_field: self.extension_field
+        }
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PartialEq for Fp3<'a, E, F> {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        self.c0 == other.c0 && 
+        self.c1 == other.c1 &&
+        self.c2 == other.c2
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp3<'a, E, F> {
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp3<'a, E, F> {
+    pub fn zero(extension_field: &'a Extension3<'a, E, F>) -> Self {
+        let zero = Fp::zero(extension_field.field);
+        
+        Self {
+            c0: zero.clone(),
+            c1: zero.clone(),
+            c2: zero,
+            extension_field: extension_field
+        }
+    }
+
+    pub fn one(extension_field: &'a Extension3<'a, E, F>) -> Self {
+        let zero = Fp::zero(extension_field.field);
+        let one = Fp::one(extension_field.field);
+        
+        Self {
+            c0: one,
+            c1: zero.clone(),
+            c2: zero,
+            extension_field: extension_field
+        }
+    }
+
+    pub fn mul_by_fp(&mut self, element: &Fp<'a, E, F>) {
+        self.c0.mul_assign(&element);
+        self.c1.mul_assign(&element);
+        self.c2.mul_assign(&element);
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a, E, F> {
+    /// Returns true iff this element is zero.
+    fn is_zero(&self) -> bool {
+        self.c0.is_zero() && 
+        self.c1.is_zero() &&
+        self.c2.is_zero()
+    }
+
+    fn add_assign(&mut self, other: &Self) {
+        self.c0.add_assign(&other.c0);
+        self.c1.add_assign(&other.c1);
+        self.c2.add_assign(&other.c2);
+    }
+
+    fn double(&mut self) {
+        self.c0.double();
+        self.c1.double();
+        self.c2.double();
+    }
+
+    fn sub_assign(&mut self, other: &Self) {
+        self.c0.sub_assign(&other.c0);
+        self.c1.sub_assign(&other.c1);
+        self.c2.sub_assign(&other.c2);
+    }
+
+    fn negate(&mut self) {
+        self.c0.negate();
+        self.c1.negate();
+        self.c2.negate();
+    }
+
+    fn inverse(&self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            let mut t0 = self.c0.clone();
+            t0.square();
+            let mut t1 = self.c1.clone();
+            t1.square();
+            let mut t2 = self.c2.clone();
+            t2.square();
+            let mut t3 = self.c0.clone();
+            t3.mul_assign(&self.c1);
+            let mut t4 = self.c0.clone();
+            t4.mul_assign(&self.c2);
+            let mut t5 = self.c1.clone();
+            t5.mul_assign(&self.c2);
+            let mut n5 = t5.clone();
+            n5.mul_by_nonresidue(self.extension_field);
+
+            let mut s0 = t0.clone();
+            s0.sub_assign(&n5);
+            let mut s1 = t2.clone();
+            s1.mul_by_nonresidue(self.extension_field);
+            s1.sub_assign(&t3);
+            let mut s2 = t1.clone();
+            s2.sub_assign(&t4); // typo in paper referenced above. should be "-" as per Scott, but is "*"
+
+            let mut a1 = self.c2.clone();
+            a1.mul_assign(&s1);
+            let mut a2 = self.c1.clone();
+            a2.mul_assign(&s2);
+            let mut a3 = a1.clone();
+            a3.add_assign(&a2);
+            a3.mul_by_nonresidue(self.extension_field);
+            let mut t6 = self.c0.clone();
+            t6.mul_assign(&s0);
+            t6.add_assign(&a3);
+            let t6 = t6.inverse();
+            if t6.is_none() {
+                return None;
+            }
+
+            let t6 = t6.unwrap();
+
+            let mut c0 = t6.clone();
+            c0.mul_assign(&s0);
+            let mut c1 = t6.clone();
+            c1.mul_assign(&s1);
+            let mut c2 = t6.clone();
+            c2.mul_assign(&s2);
+
+
+            Some(Self{
+                c0, 
+                c1, 
+                c2,
+                extension_field: self.extension_field
+            })
+        }
+    }
+
+    fn mul_assign(&mut self, other: &Self)
+    {
+        let mut aa = self.c0.clone();
+        aa.mul_assign(&other.c0);
+        let mut bb = self.c1.clone();
+        bb.mul_assign(&other.c1);
+        let mut o = other.c0.clone();
+        o.add_assign(&other.c1);
+        self.c1.add_assign(&self.c0);
+        self.c1.mul_assign(&o);
+        self.c1.sub_assign(&aa);
+        self.c1.sub_assign(&bb);
+        self.c0 = aa;
+        self.c0.sub_assign(&bb);
+    }
+
+    fn square(&mut self)
+    {
+        let a = self.c0.clone();
+        let b = self.c1.clone();
+        let c = self.c2.clone();
+
+        let mut s0 = a.clone();
+        s0.square();
+        let mut ab = a.clone();
+        ab.mul_assign(&b);
+        let mut s1 = ab.clone();
+        s1.double();
+        let mut s2 = a.clone();
+        s2.sub_assign(&b);
+        s2.add_assign(&c);
+        s2.square();
+        let mut bc = b.clone();
+        bc.mul_assign(&c);
+        let mut s3 = bc.clone();
+        s3.double();
+        let mut s4 = c.clone();
+        s4.square();
+
+        self.c0 = s0.clone();
+        let mut t0 = s3.clone();
+        t0.mul_by_nonresidue(self.extension_field);
+        self.c0.add_assign(&t0);
+
+        self.c1 = s1.clone();
+        let mut t1 = s4.clone();
+        t1.mul_by_nonresidue(self.extension_field);
+        self.c1.add_assign(&t1);
+        self.c2 = s1;
+        self.c2.add_assign(&s2);
+        self.c2.add_assign(&s3);
+        self.c2.sub_assign(&s0);
+        self.c2.sub_assign(&s4);
+    }
+
+    fn conjugate(&mut self) {
+        self.c1.negate();
+    }
+
+    fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        let mut res = Self::one(&self.extension_field);
+
+        let mut found_one = false;
+
+        for i in BitIterator::new(exp) {
+            if found_one {
+                res.square();
+            } else {
+                found_one = i;
+            }
+
+            if i {
+                res.mul_assign(self);
+            }
+        }
+
+        res
+    }
+
+    fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
+        for_extesion.multiply_by_non_residue(self);
+    }
+
+    fn frobenius_map(&mut self, power: usize) {
+        self.c1.mul_assign(&self.extension_field.frobenius_coeffs_c1[power % 3]);
+        self.c2.mul_assign(&self.extension_field.frobenius_coeffs_c2[power % 3]);
+    }
+}
+
+pub struct Extension3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
+    pub field: &'a F,
+    pub non_residue: Fp<'a, E, F>,
+    pub frobenius_coeffs_c1: [Fp<'a, E, F>; 3],
+    pub frobenius_coeffs_c2: [Fp<'a, E, F>; 3],
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension3<'a, E, F> {
+    const EXTENSION_DEGREE: usize = 3;
+    
+    type Element = Fp<'a, E, F>;
+
+    fn multiply_by_non_residue(&self, el: &mut Self::Element) {
+        el.mul_assign(&self.non_residue);
+    }
+}

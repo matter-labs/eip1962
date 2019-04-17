@@ -3,22 +3,22 @@ use crate::fp::Fp;
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator};
 use super::{CurveType, Group};
-use crate::extension_towers::fp2::{Fp2, Extension2};
+use crate::extension_towers::fp3::{Fp3, Extension3};
 
 pub struct WeierstrassCurveTwist<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
-    pub(crate) base_field: &'a Extension2<'a, FE, F>,
+    pub(crate) base_field: &'a Extension3<'a, FE, F>,
     pub(crate) scalar_field: &'a G,
-    pub(crate) a: Fp2<'a, FE, F>,
-    pub(crate) b: Fp2<'a, FE, F>,
+    pub(crate) a: Fp3<'a, FE, F>,
+    pub(crate) b: Fp3<'a, FE, F>,
     curve_type: CurveType
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> WeierstrassCurveTwist<'a, FE, F, GE, G> {
     pub fn new(
         scalar_field: &'a G,
-        extension_field: &'a Extension2<'a, FE, F>,
-        a: Fp2<'a, FE, F>, 
-        b: Fp2<'a, FE, F>,
+        extension_field: &'a Extension3<'a, FE, F>,
+        a: Fp3<'a, FE, F>, 
+        b: Fp3<'a, FE, F>,
     ) -> Self {
         let mut curve_type = CurveType::Generic;
         if a.is_zero() {
@@ -37,9 +37,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
 pub struct TwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     pub(crate) curve: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
-    pub(crate) x: Fp2<'a, FE, F>,
-    pub(crate) y: Fp2<'a, FE, F>,
-    pub(crate) z: Fp2<'a, FE, F>,
+    pub(crate) x: Fp3<'a, FE, F>,
+    pub(crate) y: Fp3<'a, FE, F>,
+    pub(crate) z: Fp3<'a, FE, F>,
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Clone for TwistPoint<'a, FE, F, GE, G> {
@@ -58,9 +58,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     pub fn zero(curve: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>) -> Self {
         Self {
             curve: curve,
-            x: Fp2::<'a, FE, F>::zero(&curve.base_field),
-            y: Fp2::<'a, FE, F>::one(&curve.base_field),
-            z: Fp2::<'a, FE, F>::zero(&curve.base_field),
+            x: Fp3::<'a, FE, F>::zero(&curve.base_field),
+            y: Fp3::<'a, FE, F>::one(&curve.base_field),
+            z: Fp3::<'a, FE, F>::zero(&curve.base_field),
         }
     }
 
@@ -83,14 +83,14 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     pub fn point_from_xy(
         curve: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
-        x: Fp2<'a, FE, F>, 
-        y: Fp2<'a, FE, F>
+        x: Fp3<'a, FE, F>, 
+        y: Fp3<'a, FE, F>
     ) -> TwistPoint<'a, FE, F, GE, G> {
         TwistPoint {
             curve: curve,
             x: x,
             y: y,
-            z: Fp2::<'a, FE, F>::one(&curve.base_field)
+            z: Fp3::<'a, FE, F>::one(&curve.base_field)
         }
     }
 
@@ -99,7 +99,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return true;
         }
 
-        let one = Fp2::one(self.curve.base_field);
+        let one = Fp3::one(self.curve.base_field);
         
         self.z == one
     }
@@ -108,7 +108,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         if self.is_zero() {
             return;
         }
-        let one = Fp2::one(self.curve.base_field);
+        let one = Fp3::one(self.curve.base_field);
         if self.z == one {
             return;
         }
@@ -126,9 +126,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         self.y.mul_assign(&zinv_powered);
     }
 
-    pub fn into_xy(&self) -> (Fp2<'a, FE, F>, Fp2<'a, FE, F>) {
+    pub fn into_xy(&self) -> (Fp3<'a, FE, F>, Fp3<'a, FE, F>) {
         if self.is_zero() {
-            return (Fp2::zero(self.curve.base_field), Fp2::zero(self.curve.base_field));
+            return (Fp3::zero(self.curve.base_field), Fp3::zero(self.curve.base_field));
         }
 
         let mut point = self.clone();
@@ -149,7 +149,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return;
         }
 
-        let one = Fp2::<'a, FE, F>::one(&self.curve.base_field);
+        let one = Fp3::<'a, FE, F>::one(&self.curve.base_field);
         if other.z == one {
             self.add_assign_mixed_generic_impl(&other);
             return;
@@ -191,9 +191,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
             if u1 == u2 {
                 // this is a point of infinity
-                self.x =  Fp2::<'a, FE, F>::zero(&self.curve.base_field);
-                self.y = Fp2::<'a, FE, F>::one(&self.curve.base_field);
-                self.z = Fp2::<'a, FE, F>::zero(&self.curve.base_field);
+                self.x =  Fp3::<'a, FE, F>::zero(&self.curve.base_field);
+                self.y = Fp3::<'a, FE, F>::one(&self.curve.base_field);
+                self.z = Fp3::<'a, FE, F>::zero(&self.curve.base_field);
                 return;
             }
 
@@ -255,7 +255,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             return;
         }
 
-        let one = Fp2::one(self.curve.base_field);
+        let one = Fp3::one(self.curve.base_field);
         if other.z != one {
             self.add_assign_generic_impl(&other);
             return;
@@ -338,7 +338,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
     fn mul_impl<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        let one = Fp2::<'a, FE, F>::one(&self.curve.base_field);
+        let one = Fp3::<'a, FE, F>::one(&self.curve.base_field);
         if self.z == one {
             return self.mul_impl_mixed_addition(exp);
         }

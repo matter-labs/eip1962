@@ -11,6 +11,8 @@ use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::pairings::{PairingEngine, into_ternary_wnaf};
 use crate::field::U256Repr;
 
+// TODO: fix using https://eprint.iacr.org/2013/722.pdf
+
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum TwistType {
     D,
@@ -229,6 +231,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         }
 
         let mut ell_coeffs = vec![];
+        println!("Q.x = {}", twist_point.x);
         let mut r = TwistPoint::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
 
         // let wnaf = into_ternary_wnaf(self.u)
@@ -240,6 +243,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
                 ell_coeffs.push(self.addition_step(&mut r, &twist_point));
             }
         }
+
+        println!("coeffs first = {}", ell_coeffs[0].0);
+        println!("coeffs last = {}", ell_coeffs.last().unwrap().0);
 
         let mut q = twist_point.clone();
 
@@ -286,6 +292,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
         let mut f = Fp12::one(self.fp12_extension);
 
+        let wnaf = into_ternary_wnaf(self.six_u_plus_2.clone());
+        println!("wnaf len = {}, wnaf = {:?}", wnaf.len(), wnaf);
+
         for i in BitIterator::new(&self.six_u_plus_2).skip(1) {
             f.square();
 
@@ -300,6 +309,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             }
         }
 
+        println!("F = {}", f);
+
         for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
             self.ell(&mut f, &coeffs.next().unwrap(), p);
         }
@@ -307,6 +318,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
             self.ell(&mut f, &coeffs.next().unwrap(), p);
         }
+
+        println!("F = {}", f);
 
         if self.u_is_negative {
             f.conjugate();
@@ -555,9 +568,7 @@ mod tests {
         two.mul2();
         six_u_plus_2.add_nocarry(&two);
 
-
-
-        let bls12_engine = super::BnInstance {
+        let engine = super::BnInstance {
             u: vec![4965661367192848881],
             u_is_negative: false,
             six_u_plus_2: six_u_plus_2.0[..].to_vec(),
@@ -571,7 +582,7 @@ mod tests {
             non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2
         };
 
-        let pairing_result = bls12_engine.pair(&[p], &[q]).unwrap();
+        let pairing_result = engine.pair(&[p], &[q]).unwrap();
 
         // let expected_c0_c0_c0 = BigUint::from_str_radix("2819105605953691245277803056322684086884703000473961065716485506033588504203831029066448642358042597501014294104502", 10).unwrap();
         

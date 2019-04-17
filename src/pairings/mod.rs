@@ -223,54 +223,54 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
 }
 
 pub fn into_ternary_wnaf(repr: Vec<u64>) -> Vec<i64> {
-        fn is_zero(repr: &[u64]) -> bool {
+    fn is_zero(repr: &[u64]) -> bool {
 
-            for el in repr.iter() {
-                if *el != 0 {
-                    return false;
-                }
-            }
-
-            true
-        }
-
-        fn is_odd(repr: &[u64]) -> bool {
-            if repr.len() == 0 {
+        for el in repr.iter() {
+            if *el != 0 {
                 return false;
             }
-
-            repr[0] & 1u64 == 1u64
         }
 
-        fn div2(repr: &mut [u64]) {
-            let mut t = 0;
-            for i in repr.iter_mut().rev() {
-                let t2 = *i << 63;
-                *i >>= 1;
-                *i |= t;
-                t = t2;
-            }
+        true
+    }
+
+    fn is_odd(repr: &[u64]) -> bool {
+        if repr.len() == 0 {
+            return false;
         }
 
-        let mut res = vec![];
-        let mut e = repr;
-        while is_zero(&e) {
-            let z: i64;
-            if is_odd(&e) {
-                z = 2 - (e[0] % 4) as i64;
-                if z >= 0 {
-                    e[0] -= z as u64;
-                } else {
-                    e[0] += -z as u64;
-                }
+        repr[0] & 1u64 == 1u64
+    }
+
+    fn div2(repr: &mut [u64]) {
+        let mut t = 0;
+        for i in repr.iter_mut().rev() {
+            let t2 = *i << 63;
+            *i >>= 1;
+            *i |= t;
+            t = t2;
+        }
+    }
+
+    let mut res = vec![];
+    let mut e = repr;
+    while !is_zero(&e) {
+        let z: i64;
+        if is_odd(&e) {
+            z = 2 - (e[0] % 4) as i64;
+            if z >= 0 {
+                e[0] -= z as u64;
             } else {
-                z = 0;
+                e[0] += -z as u64;
             }
-            res.push(z);
-            div2(&mut e);
+        } else {
+            z = 0;
         }
+        res.push(z);
+        div2(&mut e);
+    }
 
-        res
+    res
 }
 
 #[cfg(test)]

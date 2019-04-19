@@ -13,13 +13,13 @@ pub struct Fp3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Display for Fp3<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Fq2({} + {} * u + {} * u^2)", self.c0, self.c1, self.c2)
+        write!(f, "Fq3({} + {} * u + {} * u^2)", self.c0, self.c1, self.c2)
     }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Debug for Fp3<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Fq2({} + {} * u) + {} * u^2", self.c0, self.c1, self.c2)
+        write!(f, "Fq3({} + {} * u) + {} * u^2", self.c0, self.c1, self.c2)
     }
 }
 
@@ -173,18 +173,62 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
 
     fn mul_assign(&mut self, other: &Self)
     {
-        let mut aa = self.c0.clone();
-        aa.mul_assign(&other.c0);
-        let mut bb = self.c1.clone();
-        bb.mul_assign(&other.c1);
-        let mut o = other.c0.clone();
-        o.add_assign(&other.c1);
-        self.c1.add_assign(&self.c0);
-        self.c1.mul_assign(&o);
-        self.c1.sub_assign(&aa);
-        self.c1.sub_assign(&bb);
-        self.c0 = aa;
-        self.c0.sub_assign(&bb);
+        let a = other.c0.clone();
+        let b = other.c1.clone();
+        let c = other.c2.clone();
+
+        let d = self.c0.clone();
+        let e = self.c1.clone();
+        let f = self.c2.clone();
+
+        let mut ad = d.clone();
+        ad.mul_assign(&a);
+        let mut be = e.clone();
+        be.mul_assign(&b);
+        let mut cf = f.clone();
+        cf.mul_assign(&c);
+
+        let mut t0 = b.clone();
+        t0.add_assign(&c);
+
+        let mut x = e.clone();
+        x.add_assign(&f);
+        x.mul_assign(&t0);
+        x.sub_assign(&be);
+        x.sub_assign(&cf);
+
+        let mut t0 = a.clone();
+        t0.add_assign(&b);
+
+        let mut y = d.clone();
+        y.add_assign(&e);
+        y.mul_assign(&t0);
+        y.sub_assign(&ad);
+        y.sub_assign(&be);
+
+        let mut t0 = a.clone();
+        t0.add_assign(&c);
+
+        let mut z = d.clone();
+        z.add_assign(&f);
+        z.mul_assign(&t0);
+        z.sub_assign(&ad);
+        z.add_assign(&be);
+        z.sub_assign(&cf);
+
+        let mut t0 = x.clone();
+        t0.mul_by_nonresidue(self.extension_field);
+
+        self.c0 = t0;
+        self.c0.add_assign(&ad);
+
+        let mut t0 = cf;
+        t0.mul_by_nonresidue(self.extension_field);
+
+        self.c1 = t0;
+        self.c1.add_assign(&y);
+
+        self.c2 = z;
     }
 
     fn square(&mut self)
@@ -219,6 +263,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         let mut t1 = s4.clone();
         t1.mul_by_nonresidue(self.extension_field);
         self.c1.add_assign(&t1);
+
         self.c2 = s1;
         self.c2.add_assign(&s2);
         self.c2.add_assign(&s3);

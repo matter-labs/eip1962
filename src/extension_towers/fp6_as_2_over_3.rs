@@ -12,13 +12,13 @@ pub struct Fp6<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Display for Fp6<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Fq2({} + {} * v)", self.c0, self.c1)
+        write!(f, "Fq6({} + {} * v)", self.c0, self.c1)
     }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Debug for Fp6<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Fq2({} + {} * v)", self.c0, self.c1)
+        write!(f, "Fq6({} + {} * v)", self.c0, self.c1)
     }
 }
 
@@ -203,15 +203,16 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
 
         let mut t0 = b.clone();
         t0.mul_by_nonresidue(self.extension_field);
+        t0.add_assign(&a);
 
         let mut t1 = ab_mul.clone();
         t1.mul_by_nonresidue(self.extension_field);
 
         let mut c0 = ab_add;
-        c0.add_assign(&a);
-        c0.add_assign(&t0);
+        c0.mul_assign(&t0);
         c0.sub_assign(&ab_mul);
         c0.sub_assign(&t1);
+        
         let mut c1 = ab_mul;
         c1.double();
 

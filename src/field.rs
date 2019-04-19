@@ -24,6 +24,26 @@ struct U512(U512Repr);
 #[NumberOfLimbs = "9"]
 struct U576(U576Repr);
 
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "10"]
+struct U640(U640Repr);
+
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "11"]
+struct U704(U704Repr);
+
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "12"]
+struct U768(U768Repr);
+
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "13"]
+struct U832(U832Repr);
+
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "14"]
+struct U896(U896Repr);
+
 /// PrimeField is a structure that it instantiated at the runtime 
 /// and holds all the necessary information for further arithmetic
 /// operations (mainly precompiled Montgommery constants)

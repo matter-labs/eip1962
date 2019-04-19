@@ -56,10 +56,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
                 c2.mul_by_fp(&p.y);
                 c1.mul_by_fp(&p.x);
                 f.mul_by_014(&c0, &c1, &c2);
-                // println!("C0 = {}", c0);
-                // println!("C1 = {}", c1);
-                // println!("C2 = {}", c2);
-                // println!("F.0.0.0 = {}", f.c0.c0.c0);
             },
             TwistType::D => {
                 c0.mul_by_fp(&p.y);
@@ -269,8 +265,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
         let mut f = Fp12::one(self.fp12_extension);
 
-        // let mut k = 0;
-
         for i in BitIterator::new(&self.x).skip(1) {
             f.square();
 
@@ -283,12 +277,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
                     self.ell(&mut f, &coeffs.next().unwrap(), p);
                 }
             }
-
-            // println!("F.0.0.0 = {}", f.c0.c0.c0);
-            // k += 1;
-            // if k == 2 {
-            //     break;
-            // }
         }
 
         if self.x_is_negative {
@@ -410,7 +398,7 @@ mod tests {
     use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
     use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
     use num_traits::Num;
-    use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6, frobenius_calculator_fp12};
+    use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
     use crate::weierstrass::{Group};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
@@ -450,7 +438,7 @@ mod tests {
             frobenius_coeffs_c2: f_c1,
         };
 
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6(modulus.clone(), &extension_6).unwrap();
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;
@@ -573,7 +561,7 @@ mod tests {
             frobenius_coeffs_c2: f_c1,
         };
 
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6(modulus.clone(), &extension_6).unwrap();
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;

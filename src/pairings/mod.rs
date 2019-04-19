@@ -6,9 +6,11 @@ use crate::traits::{FieldElement, BitIterator};
 use crate::weierstrass::Group;
 use crate::weierstrass::curve::CurvePoint;
 use crate::weierstrass::twist::TwistPoint;
-use crate::extension_towers::fp2::{Fp2, Extension2};
-use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
-use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
+use crate::extension_towers::{fp2::Fp2, fp2::Extension2};
+use crate::extension_towers::{fp3::Fp3, fp3::Extension3};
+use crate::extension_towers::fp6_as_2_over_3;
+use crate::extension_towers::fp6_as_3_over_2;
+use crate::extension_towers::{fp12_as_2_over3_over_2::Fp12, fp12_as_2_over3_over_2::Extension2Over3Over2};
 use num_bigint::BigUint;
 use num_traits::FromPrimitive;
 use num_integer::Integer;
@@ -60,9 +62,98 @@ pub fn frobenius_calculator_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = F
         Ok([f_0, f_1])
 }
 
-pub fn frobenius_calculator_fp6<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub fn frobenius_calculator_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
-        extension: &Extension3Over2<'a, FE, F>
+        extension: &Extension3<'a, FE, F>
+    ) -> Result<([Fp<'a, FE, F>; 3], [Fp<'a, FE, F>; 3]), ()> {
+        use crate::field::biguint_to_u64_vec;
+        let one = BigUint::from_u64(1).unwrap();
+        let three = BigUint::from_u64(3).unwrap();
+    
+        // NON_RESIDUE**(((q^0) - 1) / 3)
+        let non_residue = extension.non_residue.clone();
+        let f_0 = Fp::one(extension.field);
+
+        // NON_RESIDUE**(((q^1) - 1) / 3)
+        let mut q_power = modulus.clone();
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&three);
+        debug_assert!(rem.is_zero());
+        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // NON_RESIDUE**(((q^2) - 1) / 3)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&three);
+        debug_assert!(rem.is_zero());
+        let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
+
+
+        let f_0_c2 = f_0.clone();
+
+        let mut f_1_c2 = f_1.clone();
+        let mut f_2_c2 = f_2.clone();
+
+        f_1_c2.square();
+        f_2_c2.square();
+
+        Ok(([f_0, f_1, f_2], [f_0_c2, f_1_c2, f_2_c2]))
+}
+
+pub fn frobenius_calculator_fp6_as_2_over_3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+        modulus: BigUint,
+        extension: &fp6_as_2_over_3::Extension2Over3<'a, FE, F>
+    ) -> Result<[Fp3<'a, FE, F>; 6], ()> {
+        use crate::field::biguint_to_u64_vec;
+
+        let one = BigUint::from_u64(1).unwrap();
+        let divisor = BigUint::from_u64(6).unwrap();
+    
+        // NON_REDISUE**(((q^0) - 1) / 6)
+        let non_residue = extension.non_residue.clone();
+        let f_0 = Fp3::one(extension.field);
+
+        // Fq2(u + 1)**(((q^1) - 1) / 3)
+        let mut q_power = modulus.clone();
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // Fq2(u + 1)**(((q^2) - 1) / 3)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // Fq2(u + 1)**(((q^3) - 1) / 3)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // Fq2(u + 1)**(((q^4) - 1) / 3)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // Fq2(u + 1)**(((q^5) - 1) / 3)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        Ok([f_0, f_1, f_2, f_3, f_4, f_5])
+}
+
+pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+        modulus: BigUint,
+        extension: &fp6_as_3_over_2::Extension3Over2<'a, FE, F>
     ) -> Result<([Fp2<'a, FE, F>; 6], [Fp2<'a, FE, F>; 6]), ()> {
         use crate::field::biguint_to_u64_vec;
         // let mut two = Fp::one(field);
@@ -223,7 +314,7 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
         Ok([f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11])
 }
 
-pub fn into_ternary_wnaf(repr: Vec<u64>) -> Vec<i64> {
+pub fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
     fn is_zero(repr: &[u64]) -> bool {
 
         for el in repr.iter() {
@@ -254,7 +345,7 @@ pub fn into_ternary_wnaf(repr: Vec<u64>) -> Vec<i64> {
     }
 
     let mut res = vec![];
-    let mut e = repr;
+    let mut e = repr.to_vec();
     while !is_zero(&e) {
         let z: i64;
         if is_odd(&e) {
@@ -280,11 +371,13 @@ mod tests {
     use num_traits::FromPrimitive;
     use num_integer::Integer;
     use num_traits::Zero;
-    use crate::field::{U384Repr, new_field};
+    use crate::field::{U384Repr, U832Repr, new_field};
     use crate::fp::Fp;
     use crate::traits::{FieldElement};
     use crate::extension_towers::fp2::{Fp2, Extension2};
-    use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
+    use crate::extension_towers::fp3::{Fp3, Extension3};
+    use crate::extension_towers::fp6_as_2_over_3;
+    use crate::extension_towers::fp6_as_3_over_2;
     use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
     use num_traits::Num;
 
@@ -314,6 +407,83 @@ mod tests {
     }
 
     #[test]
+    fn test_frob_fp3_calculator() {
+        let modulus = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let base_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let nonres_repr = U832Repr::from(13);
+        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+
+        let extension = Extension3 {
+            field: &base_field,
+            non_residue: fp_non_residue,
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
+            frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+
+        let (coeffs_0, coeffs_1) = super::frobenius_calculator_fp3(modulus, &extension).unwrap();
+
+        println!("C_0 = {}", coeffs_0[0].repr);
+        println!("C_1 = {}", coeffs_0[1].repr);
+        println!("C_2 = {}", coeffs_0[2].repr);
+
+        println!("C_0 = {}", coeffs_1[0].repr);
+        println!("C_1 = {}", coeffs_1[1].repr);
+        println!("C_2 = {}", coeffs_1[2].repr);
+    }
+
+    #[test]
+    fn test_frob_fp6_as_2_over_3() {
+        let modulus = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let base_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let nonres_repr = U832Repr::from(13);
+        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+
+        let mut extension_3 = Extension3 {
+            field: &base_field,
+            non_residue: fp_non_residue.clone(),
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
+            frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+
+        let (coeffs_1, coeffs_2) = super::frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
+        extension_3.frobenius_coeffs_c1 = coeffs_1;
+        extension_3.frobenius_coeffs_c2 = coeffs_2;
+
+        let one = Fp::one(&base_field);
+
+        let mut fp3_non_residue = Fp3::zero(&extension_3); // non-residue is 13 + 0*u + 0*u^2
+        fp3_non_residue.c0 = fp_non_residue;
+
+        let f_c1 = [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field),
+                    Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)];
+
+        let extension_6 = fp6_as_2_over_3::Extension2Over3 {
+            non_residue: fp3_non_residue,
+            field: &extension_3,
+            frobenius_coeffs_c1: f_c1
+        };
+
+        let coeffs = super::frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
+
+        println!("C_0_0 = {}", coeffs[0].c0.repr);
+        println!("C_0_1 = {}", coeffs[0].c1.repr);
+        println!("C_0_2 = {}", coeffs[0].c2.repr);
+
+        println!("C_1_0 = {}", coeffs[1].c0.repr);
+        println!("C_1_1 = {}", coeffs[1].c1.repr);
+        println!("C_1_2 = {}", coeffs[1].c2.repr);
+
+        println!("C_2_0 = {}", coeffs[2].c0.repr);
+        println!("C_2_1 = {}", coeffs[2].c1.repr);
+        println!("C_2_2 = {}", coeffs[2].c2.repr);
+
+        println!("C_3_0 = {}", coeffs[3].c0.repr);
+        println!("C_3_1 = {}", coeffs[3].c1.repr);
+        println!("C_3_2 = {}", coeffs[3].c2.repr);
+
+    }
+
+    #[test]
     fn test_bls12_381_frob_fp6() {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
@@ -338,14 +508,14 @@ mod tests {
         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
 
-        let extension_6 = Extension3Over2 {
+        let extension_6 = fp6_as_3_over_2::Extension3Over2 {
             non_residue: fp2_non_residue,
             field: &extension_2,
             frobenius_coeffs_c1: f_c1.clone(),
             frobenius_coeffs_c2: f_c1,
         };
 
-        let coeffs = super::frobenius_calculator_fp6(modulus, &extension_6).unwrap();
+        let coeffs = super::frobenius_calculator_fp6_as_3_over_2(modulus, &extension_6).unwrap();
 
         println!("C_0_0 = {}", coeffs.0[0]);
         println!("C_0_1 = {}", coeffs.0[1]);
@@ -382,14 +552,14 @@ mod tests {
         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
 
-        let mut extension_6 = Extension3Over2 {
+        let mut extension_6 = fp6_as_3_over_2::Extension3Over2 {
             non_residue: fp2_non_residue,
             field: &extension_2,
             frobenius_coeffs_c1: f_c1.clone(),
             frobenius_coeffs_c2: f_c1,
         };
 
-        let (coeffs_c1, coeffs_c2) = super::frobenius_calculator_fp6(modulus.clone(), &extension_6).unwrap();
+        let (coeffs_c1, coeffs_c2) = super::frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;
@@ -402,7 +572,7 @@ mod tests {
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
 
         let mut extension_12 = Extension2Over3Over2 {
-            non_residue: Fp6::zero(&extension_6),
+            non_residue: fp6_as_3_over_2::Fp6::zero(&extension_6),
             field: &extension_6,
             frobenius_coeffs_c1: f_c1,
         };

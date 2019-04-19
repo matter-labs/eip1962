@@ -66,10 +66,33 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
         }
     }
 
-    // pub fn mul_by_fp(&mut self, element: &Fp<'a, E, F>) {
-    //     self.c0.mul_assign(&element);
-    //     self.c1.mul_assign(&element);
-    // }
+    pub fn cyclotomic_exp<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        let mut res = Self::one(self.extension_field);
+        let mut self_inverse = self.clone();
+        self_inverse.conjugate();
+
+        let mut found_nonzero = false;
+        use crate::pairings::into_ternary_wnaf;
+        let naf = into_ternary_wnaf(exp.as_ref());
+
+        for &value in naf.iter().rev() {
+            if found_nonzero {
+                res.square();
+            }
+
+            if value != 0 {
+                found_nonzero = true;
+
+                if value > 0 {
+                    res.mul_assign(&self);
+                } else {
+                    res.mul_assign(&self_inverse);
+                }
+            }
+        }
+
+        res
+    }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a, E, F> {
@@ -197,8 +220,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 
     fn conjugate(&mut self) {
-        unreachable!();
-        // self.c1.negate();
+        self.c1.negate();
     }
 
     fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
@@ -229,14 +251,15 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
         self.c0.frobenius_map(power);
         self.c1.frobenius_map(power);
         self.c1.mul_by_fp(&self.extension_field.frobenius_coeffs_c1[power % 6]);
+        // self.c1.mul_assign(&self.extension_field.frobenius_coeffs_c1[power % 6]);
     }
 }
 
-// For example, BLS12-381 has non-residue = -1;
 pub struct Extension2Over3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub field: &'a Extension3<'a, E, F>,
     pub non_residue: Fp3<'a, E, F>,
     pub frobenius_coeffs_c1: [Fp<'a, E, F>; 6],
+    // pub frobenius_coeffs_c1: [Fp3<'a, E, F>; 6],
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension2Over3<'a, E, F> {

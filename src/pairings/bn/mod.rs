@@ -9,7 +9,6 @@ use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::pairings::{PairingEngine, into_ternary_wnaf};
-use crate::field::U256Repr;
 
 // TODO: fix using https://eprint.iacr.org/2013/722.pdf
 
@@ -292,7 +291,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
         let mut f = Fp12::one(self.fp12_extension);
 
-        let wnaf = into_ternary_wnaf(self.six_u_plus_2.clone());
+        let wnaf = into_ternary_wnaf(&self.six_u_plus_2);
         println!("wnaf len = {}, wnaf = {:?}", wnaf.len(), wnaf);
 
         for i in BitIterator::new(&self.six_u_plus_2).skip(1) {
@@ -436,7 +435,7 @@ mod tests {
     use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
     use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
     use num_traits::Num;
-    use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6, frobenius_calculator_fp12};
+    use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
     use crate::weierstrass::{Group};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
@@ -470,8 +469,6 @@ mod tests {
         fp2_non_residue.c0 = fp_9.clone();
         fp2_non_residue.c1 = one.clone();
 
-
-
         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
 
@@ -482,7 +479,7 @@ mod tests {
             frobenius_coeffs_c2: f_c1,
         };
 
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6(modulus.clone(), &extension_6).unwrap();
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;

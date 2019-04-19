@@ -21,5 +21,12 @@ Features (WIP):
   - [ ] BN family
   - [ ] MNT6 family
   - [ ] MNT4 family
-  - [ ] Cocks-Pinch method generated curves in Weierstrass form
+  - [ ] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing)
  
+# Resources to consult and use 
+
+So I do not forget it
+
+- https://eprint.iacr.org/2012/072.pdf
+- https://eprint.iacr.org/2013/722.pdf
+- https://eprint.iacr.org/2016/130.pdf

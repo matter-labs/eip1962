@@ -269,11 +269,14 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
     type Element = Fp3<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
+        // IMPORTANT: This only works cause the structure of extension field for Fp6
+        // is w^2 - u = 0!
+        // take an element in Fp6 as 2 over 3 and mutplity
+        // (c0 + c1 * u)*u with u^2 - xi = 0 -> (c1*xi + c0 * u)
         let mut c0 = el.c2.clone();
         el.c2 = el.c1.clone();
         el.c1 = el.c0.clone();
         c0.mul_by_nonresidue(&*el.extension_field);
         el.c0 = c0;
-
     }
 }

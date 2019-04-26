@@ -1,4 +1,4 @@
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum CurveType {
     Generic,
     AIsMinus3,

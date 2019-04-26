@@ -10,7 +10,7 @@ pub struct WeierstrassCurveTwist<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
     pub(crate) scalar_field: &'a G,
     pub(crate) a: Fp3<'a, FE, F>,
     pub(crate) b: Fp3<'a, FE, F>,
-    curve_type: CurveType
+    pub(crate) curve_type: CurveType
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> WeierstrassCurveTwist<'a, FE, F, GE, G> {
@@ -124,6 +124,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         // Y/Z^3
         zinv_powered.mul_assign(&z_inv);
         self.y.mul_assign(&zinv_powered);
+
+        self.z = one;
     }
 
     pub fn into_xy(&self) -> (Fp3<'a, FE, F>, Fp3<'a, FE, F>) {
@@ -135,6 +137,22 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         point.normalize();
 
         (point.x, point.y)
+    }
+
+    pub fn into_xy_from_homogenious(&self) -> (Fp3<'a, FE, F>, Fp3<'a, FE, F>) {
+        if self.is_zero() {
+            return (Fp3::zero(self.curve.base_field), Fp3::zero(self.curve.base_field));
+        }
+
+        let z_inv = self.z.clone().inverse().unwrap();
+
+        let mut x = self.x.clone();
+        x.mul_assign(&z_inv);
+
+        let mut y = self.y.clone();
+        y.mul_assign(&z_inv);
+
+        (x, y)
     }
     
     fn add_assign_generic_impl(&mut self, other: &Self) {

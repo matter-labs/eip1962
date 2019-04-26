@@ -372,6 +372,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
     type Element = Fp2<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
+        // this is simply a multiplication by non-residue that is Fp element cause everything else 
+        // is covered in explicit formulas for multiplications for Fp2
         el.mul_assign(&self.non_residue);
     }
 

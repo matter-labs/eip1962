@@ -1,7 +1,7 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator};
+use crate::traits::{FieldElement, BitIterator, MsbBitIterator};
 use crate::weierstrass::Group;
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::weierstrass::twist::{WeierstrassCurveTwist, TwistPoint};
@@ -230,12 +230,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         }
 
         let mut ell_coeffs = vec![];
-        println!("Q.x = {}", twist_point.x);
+        // println!("Q.x = {}", twist_point.x);
         let mut r = TwistPoint::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
 
         // let wnaf = into_ternary_wnaf(self.u)
 
-        for i in BitIterator::new(&self.six_u_plus_2).skip(1) {
+        for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1){
+        // for i in BitIterator::new(&self.six_u_plus_2).skip(1) {
             ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
 
             if i {
@@ -291,10 +292,11 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
         let mut f = Fp12::one(self.fp12_extension);
 
-        let wnaf = into_ternary_wnaf(&self.six_u_plus_2);
-        println!("wnaf len = {}, wnaf = {:?}", wnaf.len(), wnaf);
+        // let wnaf = into_ternary_wnaf(&self.six_u_plus_2);
+        // println!("wnaf len = {}, wnaf = {:?}", wnaf.len(), wnaf);
 
-        for i in BitIterator::new(&self.six_u_plus_2).skip(1) {
+        for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1){    
+        // for i in BitIterator::new(&self.six_u_plus_2).skip(1) {
             f.square();
 
             for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
@@ -581,9 +583,7 @@ mod tests {
 
         let pairing_result = engine.pair(&[p], &[q]).unwrap();
 
-        // let expected_c0_c0_c0 = BigUint::from_str_radix("2819105605953691245277803056322684086884703000473961065716485506033588504203831029066448642358042597501014294104502", 10).unwrap();
-        
-        // let expected_c0_c0_c0 = BigUint::from_str_radix("1250ebd871fc0a92a7b2d83168d0d727272d441befa15c503dd8e90ce98db3e7b6d194f60839c508a84305aaca1789b6", 16).unwrap();
+        // let expected_c0_c0_c0 = BigUint::from_str_radix("0x12c70e90e12b7874510cd1707e8856f71bf7f61d72631e268fca81000db9a1f5", 16).unwrap();
         
         
         println!("Res = {}", pairing_result);

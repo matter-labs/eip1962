@@ -83,6 +83,58 @@ impl<E: AsRef<[u64]>> Iterator for BitIterator<E> {
     }
 }
 
+
+// this bit iterator skips initial zeroes until reaches MSB
+#[derive(Debug)]
+pub struct MsbBitIterator<E> {
+    t: E,
+    n: usize,
+}
+
+impl<E: AsRef<[u64]>> MsbBitIterator<E> {
+    pub fn new(t: E) -> Self {
+        let r = t.as_ref();
+        let mut n = r.len() * 64;
+        let mut found_one = false;
+        for limb in (0..r.len()).rev() {
+            if found_one {
+                break;
+            }
+            if r[limb] == 0 {
+                n -= 64;
+                continue;
+            }
+            // counting from MSB in limb
+            for bit in 0..64 {
+                if r[limb] & (1 << (63 - bit)) == 0 {
+                    n -= 1;
+                } else {
+                    found_one = true;
+                    break;
+                }
+            }
+        }
+
+        MsbBitIterator { t, n }
+    }
+}
+
+impl<E: AsRef<[u64]>> Iterator for MsbBitIterator<E> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<bool> {
+        if self.n == 0 {
+            None
+        } else {
+            self.n -= 1;
+            let part = self.n / 64;
+            let bit = self.n - (64 * part);
+
+            Some(self.t.as_ref()[part] & (1 << bit) > 0)
+        }
+    }
+}
+
 /// This trait represents an element of a field that has a square root operation described for it.
 pub trait SqrtFieldElement: FieldElement {
     /// Returns the Legendre symbol of the field element.
@@ -101,4 +153,17 @@ pub enum LegendreSymbol {
 }
 
 
-
+#[cfg(test)]
+mod bit_iter_tests {
+    #[test]
+    fn test_msb_iter() {
+        use super::MsbBitIterator;
+        let word: u64 = 0x0103;
+        let iter = MsbBitIterator::new([word, 0]);
+        let bits: Vec<bool> = iter.collect();
+        assert!(bits.len() == 9);
+        assert!(bits == vec![true,
+                            false, false, false, false,
+                            false, false, true, true]);
+    }
+}

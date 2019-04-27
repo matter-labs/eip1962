@@ -645,4 +645,113 @@ mod tests {
             bls12_engine.pair(&[p.clone()], &[q.clone()]).unwrap();
         });
     }
+
+    #[test]
+    fn test_bls12_377_pairing() {
+        let modulus = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
+        let base_field = new_field::<U384Repr>("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
+        let scalar_field = new_field::<U256Repr>("8444461749428370424248824938781546531375899335154063827935233455917409239041", 10).unwrap();
+        let fp_nonres_repr = U384Repr::from(5);
+        let mut fp_non_residue = Fp::from_repr(&base_field, fp_nonres_repr).unwrap();
+        fp_non_residue.negate();
+
+        let mut extension_2 = Extension2 {
+            field: &base_field,
+            non_residue: fp_non_residue,
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+        let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
+        extension_2.frobenius_coeffs_c1 = coeffs;
+
+        let one = Fp::one(&base_field);
+
+        // it's just 0 + u
+        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        fp2_non_residue.c1 = one.clone();
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_6 = Extension3Over2 {
+            non_residue: fp2_non_residue.clone(),
+            field: &extension_2,
+            frobenius_coeffs_c1: f_c1.clone(),
+            frobenius_coeffs_c2: f_c1,
+        };
+
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
+
+        extension_6.frobenius_coeffs_c1 = coeffs_c1;
+        extension_6.frobenius_coeffs_c2 = coeffs_c2;
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_12 = Extension2Over3Over2 {
+            non_residue: Fp6::zero(&extension_6),
+            field: &extension_6,
+            frobenius_coeffs_c1: f_c1,
+        };
+
+        let coeffs = frobenius_calculator_fp12(modulus, &extension_12).unwrap();
+        extension_12.frobenius_coeffs_c1 = coeffs;
+
+        let b_fp = Fp::from_repr(&base_field, U384Repr::from(1)).unwrap();
+        let mut b_fp2 = fp2_non_residue.clone().inverse().unwrap();
+        b_fp2.mul_by_fp(&b_fp);
+
+        let a_fp = Fp::zero(&base_field);
+        let a_fp2 = Fp2::zero(&extension_2);
+
+        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+
+        let p_x = BigUint::from_str_radix("008848defe740a67c8fc6225bf87ff5485951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef", 16).unwrap().to_bytes_be();
+        let p_y = BigUint::from_str_radix("01914a69c5102eff1f674f5d30afeec4bd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6", 16).unwrap().to_bytes_be();
+
+        let q_x_0 = BigUint::from_str_radix("018480be71c785fec89630a2a3841d01c565f071203e50317ea501f557db6b9b71889f52bb53540274e3e48f7c005196", 16).unwrap().to_bytes_be();
+        let q_x_1 = BigUint::from_str_radix("00ea6040e700403170dc5a51b1b140d5532777ee6651cecbe7223ece0799c9de5cf89984bff76fe6b26bfefa6ea16afe", 16).unwrap().to_bytes_be();
+        let q_y_0 = BigUint::from_str_radix("00690d665d446f7bd960736bcbb2efb4de03ed7274b49a58e458c282f832d204f2cf88886d8c7c2ef094094409fd4ddf", 16).unwrap().to_bytes_be();
+        let q_y_1 = BigUint::from_str_radix("00f8169fd28355189e549da3151a70aa61ef11ac3d591bf12463b01acee304c24279b83f5e52270bd9a1cdd185eb8f93", 16).unwrap().to_bytes_be();
+
+        let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
+        let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
+
+        let q_x_0 = Fp::from_be_bytes(&base_field, &q_x_0, true).unwrap();
+        let q_x_1 = Fp::from_be_bytes(&base_field, &q_x_1, true).unwrap();
+        let q_y_0 = Fp::from_be_bytes(&base_field, &q_y_0, true).unwrap();
+        let q_y_1 = Fp::from_be_bytes(&base_field, &q_y_1, true).unwrap();
+
+        let mut q_x = Fp2::zero(&extension_2);
+        q_x.c0 = q_x_0;
+        q_x.c1 = q_x_1;
+
+        let mut q_y = Fp2::zero(&extension_2);
+        q_y.c0 = q_y_0;
+        q_y.c1 = q_y_1;
+
+        let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
+        let q = TwistPoint::point_from_xy(&twist, q_x, q_y);
+
+        assert!(p.check_on_curve());
+        assert!(q.check_on_curve());
+
+        let bls12_engine = super::Bls12Instance {
+            x: vec![0x8508c00000000001],
+            x_is_negative: false,
+            twist_type: super::TwistType::D,
+            base_field: &base_field,
+            curve: &curve,
+            curve_twist: &twist,
+            fp2_extension: &extension_2,
+            fp6_extension: &extension_6,
+            fp12_extension: &extension_12,
+        };
+
+        let pairing_result = bls12_engine.pair(&[p], &[q]).unwrap();
+
+        assert!(format!("{}",pairing_result.c0.c0.c0) == "0x00b718ff624a95f189bfb44bcd6d6556226837c1f74d1afbf4bea573b71c17d3a243cae41d966e2164aad0991fd790cc");
+    }
 }

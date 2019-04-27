@@ -69,6 +69,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         rhs.square();
 
         let mut lhs = self.curve.b.clone();
+
         let mut ax = self.x.clone();
         ax.mul_assign(&self.curve.a);
         lhs.add_assign(&ax);

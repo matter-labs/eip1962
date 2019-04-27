@@ -387,69 +387,90 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
         match f.inverse() {
             Some(mut f2) => {
-                // f2 = f^(-1);
-                // r = f^(p^6 - 1)
                 let mut r = f1.clone();
                 r.mul_assign(&f2);
 
-                // f2 = f^(p^6 - 1)
                 f2 = r.clone();
-                // r = f^((p^6 - 1)(p^2))
-                r.frobenius_map(2);
 
-                // r = f^((p^6 - 1)(p^2) + (p^6 - 1))
-                // r = f^((p^6 - 1)(p^2 + 1))
+                r.frobenius_map(2);
                 r.mul_assign(&f2);
 
-                // Hard part of the final exponentation is below:
-                // From https://eprint.iacr.org/2016/130.pdf, Table 1
-                let mut y0 = r.clone();
-                y0.cyclotomic_square();
-                y0.conjugate();
+                let mut fp = r.clone();
+                fp.frobenius_map(1);
 
-                let mut y5 = r.clone();
-                self.exp_by_x(&mut y5);
+	            let mut fp2 = r.clone();
+                fp2.frobenius_map(2);
+                let mut fp3 = fp2.clone();
+                fp3.frobenius_map(1);
 
-                let mut y1 = y5.clone();
-                y1.cyclotomic_square();
+                let mut fu = r.clone();
+                self.exp_by_x(&mut fu);
+                // exp_by_x(&mut fu, x);
 
-                let mut y3 = y0.clone();
-                y3.mul_assign(&y5);
+                let mut fu2 = fu.clone();
+                self.exp_by_x(&mut fu2);
+                // exp_by_x(&mut fu2, x);
 
-                let mut y0 = y3.clone();
-                self.exp_by_x(&mut y0);
-            
-                let mut y2 = y0.clone();
-                self.exp_by_x(&mut y2);
+                let mut fu3 = fu2.clone();
+                self.exp_by_x(&mut fu3);
+                // exp_by_x(&mut fu3, x);
 
-                let mut y4 = y2.clone();
-                self.exp_by_x(&mut y4);
-                y4.mul_assign(&y1);
+                let mut y3 = fu.clone();
+                y3.frobenius_map(1);
 
-                let mut y1 = y4.clone();
-                self.exp_by_x(&mut y1);
+                let mut fu2p = fu2.clone();
+                fu2p.frobenius_map(1);
+
+                let mut fu3p = fu3.clone();
+                fu3p.frobenius_map(1);
+
+                let mut y2 = fu2.clone();
+                y2.frobenius_map(2);
+
+                let mut y0 = fp.clone();
+                y0.mul_assign(&fp2);
+                y0.mul_assign(&fp3);
+
+                let mut y1 = r.clone();
+                y1.conjugate();
+
+                let mut y5 = fu2.clone();
+                y5.conjugate();
 
                 y3.conjugate();
-                y1.mul_assign(&y3);
-                y1.mul_assign(&r);
 
-                let mut y3 = r.clone();
-                y3.conjugate();
-                y0.mul_assign(&r);
-                y0.frobenius_map(3);
+                let mut y4 = fu.clone();
+                y4.mul_assign(&fu2p);
+                y4.conjugate();
 
-                y4.mul_assign(&y3);
-                y4.frobenius_map(1);
-                
-                y5.mul_assign(&y2);
-                y5.frobenius_map(2);
+                let mut y6 = fu3.clone();
+                y6.mul_assign(&fu3p);
+                y6.conjugate();
 
-                y5.mul_assign(&y0);
-                y5.mul_assign(&y4);
-                y5.mul_assign(&y1);
+                y6.square();
+                y6.mul_assign(&y4);
+                y6.mul_assign(&y5);
 
-                Some(y5)
-            },
+                let mut t1 = y3.clone();
+                t1.mul_assign(&y5);
+                t1.mul_assign(&y6);
+
+                y6.mul_assign(&y2);
+
+                t1.square();
+                t1.mul_assign(&y6);
+                t1.square();
+
+                let mut t0 = t1.clone();
+                t0.mul_assign(&y1);
+
+                t1.mul_assign(&y0);
+
+                t0.square();
+                t0.mul_assign(&t1);
+
+                Some(t0)
+            }
             None => None,
         }
     }
@@ -511,154 +532,6 @@ mod tests {
         let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let mut fp_non_residue = Fp::one(&base_field);
-        fp_non_residue.negate(); // non-residue is -1
-
-        let mut extension_2 = Extension2 {
-            field: &base_field,
-            non_residue: fp_non_residue,
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
-
-        let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
-        extension_2.frobenius_coeffs_c1 = coeffs;
-
-        let one = Fp::one(&base_field);
-
-        // non-residue is u+9
-        let mut fp2_non_residue = Fp2::zero(&extension_2);
-        let fp_9_repr = U256Repr::from(9u64);
-        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
-        fp2_non_residue.c0 = fp_9.clone();
-        fp2_non_residue.c1 = one.clone();
-
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-        let mut extension_6 = Extension3Over2 {
-            non_residue: fp2_non_residue.clone(),
-            field: &extension_2,
-            frobenius_coeffs_c1: f_c1.clone(),
-            frobenius_coeffs_c2: f_c1,
-        };
-
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
-
-        extension_6.frobenius_coeffs_c1 = coeffs_c1;
-        extension_6.frobenius_coeffs_c2 = coeffs_c2;
-
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-        let mut extension_12 = Extension2Over3Over2 {
-            non_residue: Fp6::zero(&extension_6),
-            field: &extension_6,
-            frobenius_coeffs_c1: f_c1,
-        };
-
-        let coeffs = frobenius_calculator_fp12(modulus, &extension_12).unwrap();
-        extension_12.frobenius_coeffs_c1 = coeffs;
-
-        let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
-        // here it's b/(u+9)
-        let mut b_fp2 = fp2_non_residue.inverse().unwrap();
-        b_fp2.mul_by_fp(&b_fp);
-
-        let a_fp = Fp::zero(&base_field);
-        let a_fp2 = Fp2::zero(&extension_2);
-
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
-
-        let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
-        let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
-
-        let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
-        let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
-        let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
-        let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
-
-        let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
-        let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
-
-        let q_x_0 = Fp::from_be_bytes(&base_field, &q_x_0, true).unwrap();
-        let q_x_1 = Fp::from_be_bytes(&base_field, &q_x_1, true).unwrap();
-        let q_y_0 = Fp::from_be_bytes(&base_field, &q_y_0, true).unwrap();
-        let q_y_1 = Fp::from_be_bytes(&base_field, &q_y_1, true).unwrap();
-
-        let mut q_x = Fp2::zero(&extension_2);
-        q_x.c0 = q_x_0;
-        q_x.c1 = q_x_1;
-
-        let mut q_y = Fp2::zero(&extension_2);
-        q_y.c0 = q_y_0;
-        q_y.c1 = q_y_1;
-
-        let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
-        // println!("P.x = {}", p.x.into_repr());
-        let q = TwistPoint::point_from_xy(&twist, q_x, q_y);
-        // println!("Q.x = {}", q.x.c0.repr);
-        // println!("Q.y = {}", q.y.c0.repr);
-
-        // let x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap();
-        // println!("x = {}", x);
-        // println!("x = {:x}", x);
-
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
-
-        let mut minus_one_over_2 = Fp::one(&base_field);
-        minus_one_over_2.negate();
-        let mut two = Fp::one(&base_field);
-        two.double();
-        let two_inv = two.inverse().unwrap();
-        minus_one_over_2.mul_assign(&two_inv);
-
-        let non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(&minus_one_over_2.into_repr());
-
-        let u = U256Repr::from(4965661367192848881);
-        let mut six_u_plus_2 = u;
-        six_u_plus_2.mul2();
-        let two_u = six_u_plus_2;
-        six_u_plus_2.mul2();
-        six_u_plus_2.add_nocarry(&two_u);
-        let mut two = U256Repr::from(1);
-        two.mul2();
-        six_u_plus_2.add_nocarry(&two);
-
-        // println!("Expected coeff = {:x}", BigUint::from_str_radix("827617134098165717451808940080463277390770457691666780560712143809003953598", 10).unwrap());
-        // println!("Expected coeff = {:x}", BigUint::from_str_radix("987776078024262725561041258416387561158070255475504730561661362421251696401", 10).unwrap());
-        // println!("Expected coeff = {:x}", BigUint::from_str_radix("2813988028633040066320201189843971639620433430176492766961373503539074898364", 10).unwrap());
-
-        let engine = super::BnInstance {
-            u: vec![4965661367192848881],
-            u_is_negative: false,
-            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
-            twist_type: super::TwistType::D,
-            base_field: &base_field,
-            curve: &curve,
-            curve_twist: &twist,
-            fp2_extension: &extension_2,
-            fp6_extension: &extension_6,
-            fp12_extension: &extension_12,
-            non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2
-        };
-
-        let pairing_result = engine.pair(&[p], &[q]).unwrap();
-
-        // let expected_c0_c0_c0 = BigUint::from_str_radix("0x12c70e90e12b7874510cd1707e8856f71bf7f61d72631e268fca81000db9a1f5", 16).unwrap();
-        
-        println!("Res = {}", pairing_result);
-    }
-
-    #[test]
-    fn test_final_exponentiation() {
-        let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let r = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
@@ -776,9 +649,9 @@ mod tests {
         two.mul2();
         six_u_plus_2.add_nocarry(&two);
 
-        println!("Expected coeff = {:x}", BigUint::from_str_radix("827617134098165717451808940080463277390770457691666780560712143809003953598", 10).unwrap());
-        println!("Expected coeff = {:x}", BigUint::from_str_radix("987776078024262725561041258416387561158070255475504730561661362421251696401", 10).unwrap());
-        println!("Expected coeff = {:x}", BigUint::from_str_radix("2813988028633040066320201189843971639620433430176492766961373503539074898364", 10).unwrap());
+        // println!("Expected coeff = {:x}", BigUint::from_str_radix("827617134098165717451808940080463277390770457691666780560712143809003953598", 10).unwrap());
+        // println!("Expected coeff = {:x}", BigUint::from_str_radix("987776078024262725561041258416387561158070255475504730561661362421251696401", 10).unwrap());
+        // println!("Expected coeff = {:x}", BigUint::from_str_radix("2813988028633040066320201189843971639620433430176492766961373503539074898364", 10).unwrap());
 
         let engine = super::BnInstance {
             u: vec![4965661367192848881],
@@ -794,9 +667,292 @@ mod tests {
             non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2
         };
 
+        let pairing_result = engine.pair(&[p], &[q]).unwrap();
+        assert!(format!("{}", pairing_result.c0.c0.c0) == "0x12c70e90e12b7874510cd1707e8856f71bf7f61d72631e268fca81000db9a1f5");
+    }
+
+    #[bench]
+    fn bench_bn254_pairing(b: &mut Bencher) {
+        let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let mut fp_non_residue = Fp::one(&base_field);
+        fp_non_residue.negate(); // non-residue is -1
+
+        let mut extension_2 = Extension2 {
+            field: &base_field,
+            non_residue: fp_non_residue,
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+
+        let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
+        extension_2.frobenius_coeffs_c1 = coeffs;
+
+        let one = Fp::one(&base_field);
+
+        // non-residue is u+9
+        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        let fp_9_repr = U256Repr::from(9u64);
+        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
+        fp2_non_residue.c0 = fp_9.clone();
+        fp2_non_residue.c1 = one.clone();
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_6 = Extension3Over2 {
+            non_residue: fp2_non_residue.clone(),
+            field: &extension_2,
+            frobenius_coeffs_c1: f_c1.clone(),
+            frobenius_coeffs_c2: f_c1,
+        };
+
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
+
+        extension_6.frobenius_coeffs_c1 = coeffs_c1;
+        extension_6.frobenius_coeffs_c2 = coeffs_c2;
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_12 = Extension2Over3Over2 {
+            non_residue: Fp6::zero(&extension_6),
+            field: &extension_6,
+            frobenius_coeffs_c1: f_c1,
+        };
+
+        let coeffs = frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap();
+        extension_12.frobenius_coeffs_c1 = coeffs;
+
+        let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
+        // here it's b/(u+9)
+        let mut b_fp2 = fp2_non_residue.inverse().unwrap();
+        b_fp2.mul_by_fp(&b_fp);
+
+        let a_fp = Fp::zero(&base_field);
+        let a_fp2 = Fp2::zero(&extension_2);
+
+        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+
+        let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
+        let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
+
+        let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
+        let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
+        let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
+        let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+
+        let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
+        let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
+
+        let q_x_0 = Fp::from_be_bytes(&base_field, &q_x_0, true).unwrap();
+        let q_x_1 = Fp::from_be_bytes(&base_field, &q_x_1, true).unwrap();
+        let q_y_0 = Fp::from_be_bytes(&base_field, &q_y_0, true).unwrap();
+        let q_y_1 = Fp::from_be_bytes(&base_field, &q_y_1, true).unwrap();
+
+        let mut q_x = Fp2::zero(&extension_2);
+        q_x.c0 = q_x_0;
+        q_x.c1 = q_x_1;
+
+        let mut q_y = Fp2::zero(&extension_2);
+        q_y.c0 = q_y_0;
+        q_y.c1 = q_y_1;
+
+        let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
+        // println!("P.x = {}", p.x.into_repr());
+        let q = TwistPoint::point_from_xy(&twist, q_x, q_y);
+        // println!("Q.x = {}", q.x.c0.repr);
+        // println!("Q.y = {}", q.y.c0.repr);
+
+        // let x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap();
+        // println!("x = {}", x);
+        // println!("x = {:x}", x);
+
+        assert!(p.check_on_curve());
+        assert!(q.check_on_curve());
+
+        let mut minus_one_over_2 = Fp::one(&base_field);
+        minus_one_over_2.negate();
+        let mut two = Fp::one(&base_field);
+        two.double();
+        let two_inv = two.inverse().unwrap();
+        minus_one_over_2.mul_assign(&two_inv);
+
+        let non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(&minus_one_over_2.into_repr());
+
+        let u = U256Repr::from(4965661367192848881);
+        let mut six_u_plus_2 = u;
+        six_u_plus_2.mul2();
+        let two_u = six_u_plus_2;
+        six_u_plus_2.mul2();
+        six_u_plus_2.add_nocarry(&two_u);
+        let mut two = U256Repr::from(1);
+        two.mul2();
+        six_u_plus_2.add_nocarry(&two);
+
+        // println!("Expected coeff = {:x}", BigUint::from_str_radix("827617134098165717451808940080463277390770457691666780560712143809003953598", 10).unwrap());
+        // println!("Expected coeff = {:x}", BigUint::from_str_radix("987776078024262725561041258416387561158070255475504730561661362421251696401", 10).unwrap());
+        // println!("Expected coeff = {:x}", BigUint::from_str_radix("2813988028633040066320201189843971639620433430176492766961373503539074898364", 10).unwrap());
+
+        let engine = super::BnInstance {
+            u: vec![4965661367192848881],
+            u_is_negative: false,
+            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
+            twist_type: super::TwistType::D,
+            base_field: &base_field,
+            curve: &curve,
+            curve_twist: &twist,
+            fp2_extension: &extension_2,
+            fp6_extension: &extension_6,
+            fp12_extension: &extension_12,
+            non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2
+        };
+
+        b.iter(|| {
+            engine.pair(&[p.clone()], &[q.clone()]).unwrap();
+        });
+    }
+
+    #[test]
+    fn test_final_exponentiation() {
+        let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let r = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let mut fp_non_residue = Fp::one(&base_field);
+        fp_non_residue.negate(); // non-residue is -1
+
+        let mut extension_2 = Extension2 {
+            field: &base_field,
+            non_residue: fp_non_residue,
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+
+        let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
+        extension_2.frobenius_coeffs_c1 = coeffs;
+
+        let one = Fp::one(&base_field);
+
+        // non-residue is u+9
+        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        let fp_9_repr = U256Repr::from(9u64);
+        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
+        fp2_non_residue.c0 = fp_9.clone();
+        fp2_non_residue.c1 = one.clone();
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_6 = Extension3Over2 {
+            non_residue: fp2_non_residue.clone(),
+            field: &extension_2,
+            frobenius_coeffs_c1: f_c1.clone(),
+            frobenius_coeffs_c2: f_c1,
+        };
+
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
+
+        extension_6.frobenius_coeffs_c1 = coeffs_c1;
+        extension_6.frobenius_coeffs_c2 = coeffs_c2;
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_12 = Extension2Over3Over2 {
+            non_residue: Fp6::zero(&extension_6),
+            field: &extension_6,
+            frobenius_coeffs_c1: f_c1,
+        };
+
+        let coeffs = frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap();
+        extension_12.frobenius_coeffs_c1 = coeffs;
+
+        let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
+        // here it's b/(u+9)
+        let mut b_fp2 = fp2_non_residue.inverse().unwrap();
+        b_fp2.mul_by_fp(&b_fp);
+
+        let a_fp = Fp::zero(&base_field);
+        let a_fp2 = Fp2::zero(&extension_2);
+
+        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+
+        let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
+        let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
+
+        let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
+        let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
+        let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
+        let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+
+        let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
+        let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
+
+        let q_x_0 = Fp::from_be_bytes(&base_field, &q_x_0, true).unwrap();
+        let q_x_1 = Fp::from_be_bytes(&base_field, &q_x_1, true).unwrap();
+        let q_y_0 = Fp::from_be_bytes(&base_field, &q_y_0, true).unwrap();
+        let q_y_1 = Fp::from_be_bytes(&base_field, &q_y_1, true).unwrap();
+
+        let mut q_x = Fp2::zero(&extension_2);
+        q_x.c0 = q_x_0;
+        q_x.c1 = q_x_1;
+
+        let mut q_y = Fp2::zero(&extension_2);
+        q_y.c0 = q_y_0;
+        q_y.c1 = q_y_1;
+
+        let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
+        let q = TwistPoint::point_from_xy(&twist, q_x, q_y);
+
+        assert!(p.check_on_curve());
+        assert!(q.check_on_curve());
+
+        let mut minus_one_over_2 = Fp::one(&base_field);
+        minus_one_over_2.negate();
+        let mut two = Fp::one(&base_field);
+        two.double();
+        let two_inv = two.inverse().unwrap();
+        minus_one_over_2.mul_assign(&two_inv);
+
+        let non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(&minus_one_over_2.into_repr());
+
+        let u = U256Repr::from(4965661367192848881);
+        let mut six_u_plus_2 = u;
+        six_u_plus_2.mul2();
+        let two_u = six_u_plus_2;
+        six_u_plus_2.mul2();
+        six_u_plus_2.add_nocarry(&two_u);
+        let mut two = U256Repr::from(1);
+        two.mul2();
+        six_u_plus_2.add_nocarry(&two);
+
+        let engine = super::BnInstance {
+            u: vec![4965661367192848881],
+            u_is_negative: false,
+            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
+            twist_type: super::TwistType::D,
+            base_field: &base_field,
+            curve: &curve,
+            curve_twist: &twist,
+            fp2_extension: &extension_2,
+            fp6_extension: &extension_6,
+            fp12_extension: &extension_12,
+            non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2
+        };
 
         let mut fp12 = Fp12::zero(&extension_12);
         fp12.c0.c0 = fp2_non_residue.clone();
+        fp12.c0.c1 = fp2_non_residue.clone();
+        fp12.c0.c2 = fp2_non_residue.clone();
+        fp12.c1.c0 = fp2_non_residue.clone();
+        fp12.c1.c1 = fp2_non_residue.clone();
+        fp12.c1.c2 = fp2_non_residue.clone();
 
         let final_exp = engine.final_exponentiation(&fp12).unwrap();
 
@@ -808,7 +964,7 @@ mod tests {
         }
         power = power - one;
         power = power / r;
-        let naive = fp12.pow(&biguint_to_u64_vec(power));
+        let naive = fp12.pow(&biguint_to_u64_vec(power.clone()));
 
         assert!(naive == final_exp);
     }

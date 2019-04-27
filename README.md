@@ -4,11 +4,11 @@ Rust library for EC arithmetics and pairing calculations over various curves wit
 
 Features (WIP):
 - [x] Fields implementation
-- [ ] Weierstrass curves implementation
+- [x] Weierstrass curves implementation
   - [x] a = 0
   - [x] generic case (a != 0, b != 0)
-  - [ ] b = 0 
-  - [ ] a = -3
+  - [ ] b = 0 (most likely will not be implemented to avoid point (0,0) being on curve)
+  - [ ] a = -3 (not a priority, can be covered by generic case w/o much performance hit and with simpler gas cost schedule)
 - [ ] Extension towers
   - [x] Fp2
   - [x] Fp3
@@ -18,10 +18,11 @@ Features (WIP):
   - [x] Fp12 as 2 over 3 over 2
 - [ ] Pairings
   - [x] BLS12 curves family
-  - [ ] BN family
+  - [x] BN family
   - [ ] MNT6 family
   - [ ] MNT4 family
   - [ ] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing)
+    - [x] Test over a single k=6 curve from Zexe 
  
 # Resources to consult and use 
 

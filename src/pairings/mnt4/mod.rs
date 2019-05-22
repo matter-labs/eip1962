@@ -416,21 +416,16 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
     fn final_exponentiation_part_one(&self, elt: &Fp4<'a, FE, F>, elt_inv: &Fp4<'a, FE, F>) -> Fp4<'a, FE, F> {
-        // (q^3-1)*(q+1)
+        /* (q^2-1) */
 
-        // elt_q3 = elt^(q^3)
-        let mut elt_q3 = elt.clone();
-        elt_q3.frobenius_map(3);
-        // elt_q3_over_elt = elt^(q^3-1)
-        let mut elt_q3_over_elt = elt_q3;
-        elt_q3_over_elt.mul_assign(&elt_inv);
-        // alpha = elt^((q^3-1) * q)
-        let mut alpha = elt_q3_over_elt.clone();
-        alpha.frobenius_map(1);
-        // beta = elt^((q^3-1)*(q+1)
-        alpha.mul_assign(&elt_q3_over_elt);
+        /* elt_q2 = elt^(q^2) */
+        let mut elt_q2 = elt.clone();
+        elt_q2.frobenius_map(2);
+        /* elt_q2_over_elt = elt^(q^2-1) */
+        let mut elt_q2_over_elt = elt_q2;
+        elt_q2_over_elt.mul_assign(&elt_inv);
 
-        alpha
+        elt_q2_over_elt
     }
 
     fn final_exponentiation_part_two(&self, elt: &Fp4<'a, FE, F>, elt_inv: &Fp4<'a, FE, F>) -> Fp4<'a, FE, F> {
@@ -594,10 +589,10 @@ mod tests {
             fp4_extension: &extension_4,
         };
 
-        let mut p2 = p.mul(vec![2]);
+        let mut p2 = p.mul(vec![12345678]);
         p2.normalize();
 
-        let mut q2 = q.mul(vec![2]);
+        let mut q2 = q.mul(vec![12345678]);
         q2.normalize();
 
         let pairing_result = engine.pair(&[p.clone()], &[q.clone()]).unwrap();

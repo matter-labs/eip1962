@@ -19,6 +19,7 @@ use num_traits::Zero;
 pub mod bls12;
 pub mod bn;
 pub mod cp;
+pub mod mnt6;
 
 pub trait PairingEngine: Sized {
     type PairingResult: FieldElement;

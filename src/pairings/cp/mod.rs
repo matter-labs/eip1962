@@ -311,10 +311,6 @@ mod tests {
         let mut a_fp3 = twist_squared.clone();
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = Fp3::zero(&extension_3);
-        b_fp3.c0 = one.clone();
-        b_fp3.c0.mul_assign(&b_fp);
-
         let mut b_fp3 = twist_cubed.clone();
         b_fp3.mul_by_fp(&b_fp);
 
@@ -459,10 +455,6 @@ mod tests {
 
         let mut a_fp3 = twist_squared.clone();
         a_fp3.mul_by_fp(&a_fp);
-
-        let mut b_fp3 = Fp3::zero(&extension_3);
-        b_fp3.c0 = one.clone();
-        b_fp3.c0.mul_assign(&b_fp);
 
         let mut b_fp3 = twist_cubed.clone();
         b_fp3.mul_by_fp(&b_fp);

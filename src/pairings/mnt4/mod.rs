@@ -597,10 +597,13 @@ mod tests {
 
         let pairing_result = engine.pair(&[p.clone()], &[q.clone()]).unwrap();
 
-        let ans1 = engine.pair(&[p], &[q2]).unwrap();
-        let ans2 = engine.pair(&[p2], &[q]).unwrap();
+        let ans1 = engine.pair(&[p.clone()], &[q2]).unwrap();
+        let ans2 = engine.pair(&[p2], &[q.clone()]).unwrap();
+        let ans3 = engine.pair(&[p], &[q]).unwrap();
+        let ans3 = ans3.pow(&vec![12345678]);
 
         assert!(ans1 == ans2);
+        assert!(ans1 == ans3);
 
         // // let expected_c0_c0_c0 = BigUint::from_str_radix("2819105605953691245277803056322684086884703000473961065716485506033588504203831029066448642358042597501014294104502", 10).unwrap();
         

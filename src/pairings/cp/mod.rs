@@ -544,4 +544,41 @@ mod tests {
             engine.pair(&[p.clone()], &[q.clone()]).unwrap();
         });
     }
+
+    #[bench]
+    fn bench_cp6_frobenius(b: &mut Bencher) {
+        let modulus = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let base_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let nonres_repr = U832Repr::from(13);
+        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+
+        let mut extension_3 = Extension3 {
+            field: &base_field,
+            non_residue: fp_non_residue.clone(),
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
+            frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+
+        let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
+        extension_3.frobenius_coeffs_c1 = coeffs_1;
+        extension_3.frobenius_coeffs_c2 = coeffs_2;
+
+        let one = Fp::one(&base_field);
+
+        let mut fp3_non_residue = Fp3::zero(&extension_3); // non-residue is 13 + 0*u + 0*u^2
+        fp3_non_residue.c0 = fp_non_residue;
+
+        let f_c1 = [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field),
+                    Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)];
+
+        let mut extension_6 = Extension2Over3 {
+            non_residue: fp3_non_residue,
+            field: &extension_3,
+            frobenius_coeffs_c1: f_c1
+        };
+
+        b.iter(|| {
+            frobenius_calculator_fp6_as_2_over_3(modulus.clone(), &extension_6).unwrap()
+        });
+    }
 }

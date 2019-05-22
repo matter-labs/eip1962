@@ -9,6 +9,8 @@ use crate::extension_towers::fp3::{Fp3, Extension3};
 use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 use crate::pairings::PairingEngine;
 
+// TODO: reformat the code to follow MNT4/6 structure
+
 pub struct CPInstance6<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
     pub x: Vec<u64>,
     pub x_is_negative: bool,
@@ -291,8 +293,8 @@ mod tests {
             frobenius_coeffs_c1: f_c1
         };
 
-        let [c0, c1, c2, c3, c4, c5] = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
-        extension_6.frobenius_coeffs_c1 = [c0.c0, c1.c0, c2.c0, c3.c0, c4.c0, c5.c0];
+        let coeffs = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
+        extension_6.frobenius_coeffs_c1 = coeffs;
 
         let b_fp = BigUint::from_str_radix("17764315118651679038286329069295091506801468118146712649886336045535808055361274148466772191243305528312843236347777260247138934336850548243151534538734724191505953341403463040067571652261229308333392040104884438208594329793895206056414", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -436,8 +438,8 @@ mod tests {
             frobenius_coeffs_c1: f_c1
         };
 
-        let [c0, c1, c2, c3, c4, c5] = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
-        extension_6.frobenius_coeffs_c1 = [c0.c0, c1.c0, c2.c0, c3.c0, c4.c0, c5.c0];
+        let coeffs = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
+        extension_6.frobenius_coeffs_c1 = coeffs;
 
         let b_fp = BigUint::from_str_radix("17764315118651679038286329069295091506801468118146712649886336045535808055361274148466772191243305528312843236347777260247138934336850548243151534538734724191505953341403463040067571652261229308333392040104884438208594329793895206056414", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();

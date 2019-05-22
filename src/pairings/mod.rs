@@ -8,6 +8,7 @@ use crate::weierstrass::curve::CurvePoint;
 use crate::weierstrass::twist::TwistPoint;
 use crate::extension_towers::{fp2::Fp2, fp2::Extension2};
 use crate::extension_towers::{fp3::Fp3, fp3::Extension3};
+use crate::extension_towers::fp4_as_2_over_2;
 use crate::extension_towers::fp6_as_2_over_3;
 use crate::extension_towers::fp6_as_3_over_2;
 use crate::extension_towers::{fp12_as_2_over3_over_2::Fp12, fp12_as_2_over3_over_2::Extension2Over3Over2};
@@ -20,6 +21,7 @@ pub mod bls12;
 pub mod bn;
 pub mod cp;
 pub mod mnt6;
+pub mod mnt4;
 
 pub trait PairingEngine: Sized {
     type PairingResult: FieldElement;
@@ -101,18 +103,57 @@ pub fn frobenius_calculator_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = F
         Ok(([f_0, f_1, f_2], [f_0_c2, f_1_c2, f_2_c2]))
 }
 
+pub fn frobenius_calculator_fp4_as_2_over_2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+        modulus: BigUint,
+        extension: &fp4_as_2_over_2::Extension2Over2<'a, FE, F>
+    ) -> Result<[Fp<'a, FE, F>; 4], ()> {
+        use crate::field::biguint_to_u64_vec;
+
+        // TODO: change into bitshift
+
+        let one = BigUint::from_u64(1).unwrap();
+        let divisor = BigUint::from_u64(4).unwrap();
+    
+        // NON_REDISUE**(((q^0) - 1) / 4)
+        let non_residue = extension.field.non_residue.clone();
+        let f_0 = Fp::one(extension.field.field);
+
+        // NON_REDISUE**(((q^1) - 1) / 4)
+        let mut q_power = modulus.clone();
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // NON_REDISUE**(((q^2) - 1) / 4)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // NON_REDISUE**(((q^3) - 1) / 4)
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        Ok([f_0, f_1, f_2, f_3])
+}
+
 pub fn frobenius_calculator_fp6_as_2_over_3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &fp6_as_2_over_3::Extension2Over3<'a, FE, F>
-    ) -> Result<[Fp3<'a, FE, F>; 6], ()> {
+    ) -> Result<[Fp<'a, FE, F>; 6], ()> {
         use crate::field::biguint_to_u64_vec;
 
         let one = BigUint::from_u64(1).unwrap();
         let divisor = BigUint::from_u64(6).unwrap();
     
         // NON_REDISUE**(((q^0) - 1) / 6)
-        let non_residue = extension.non_residue.clone();
-        let f_0 = Fp3::one(extension.field);
+        let non_residue = extension.field.non_residue.clone();
+        let f_0 = Fp::one(extension.field.field);
 
         // Fq2(u + 1)**(((q^1) - 1) / 3)
         let mut q_power = modulus.clone();
@@ -466,21 +507,21 @@ mod tests {
 
         let coeffs = super::frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
 
-        println!("C_0_0 = {}", coeffs[0].c0.repr);
-        println!("C_0_1 = {}", coeffs[0].c1.repr);
-        println!("C_0_2 = {}", coeffs[0].c2.repr);
+        // println!("C_0_0 = {}", coeffs[0].c0.repr);
+        // println!("C_0_1 = {}", coeffs[0].c1.repr);
+        // println!("C_0_2 = {}", coeffs[0].c2.repr);
 
-        println!("C_1_0 = {}", coeffs[1].c0.repr);
-        println!("C_1_1 = {}", coeffs[1].c1.repr);
-        println!("C_1_2 = {}", coeffs[1].c2.repr);
+        // println!("C_1_0 = {}", coeffs[1].c0.repr);
+        // println!("C_1_1 = {}", coeffs[1].c1.repr);
+        // println!("C_1_2 = {}", coeffs[1].c2.repr);
 
-        println!("C_2_0 = {}", coeffs[2].c0.repr);
-        println!("C_2_1 = {}", coeffs[2].c1.repr);
-        println!("C_2_2 = {}", coeffs[2].c2.repr);
+        // println!("C_2_0 = {}", coeffs[2].c0.repr);
+        // println!("C_2_1 = {}", coeffs[2].c1.repr);
+        // println!("C_2_2 = {}", coeffs[2].c2.repr);
 
-        println!("C_3_0 = {}", coeffs[3].c0.repr);
-        println!("C_3_1 = {}", coeffs[3].c1.repr);
-        println!("C_3_2 = {}", coeffs[3].c2.repr);
+        // println!("C_3_0 = {}", coeffs[3].c0.repr);
+        // println!("C_3_1 = {}", coeffs[3].c1.repr);
+        // println!("C_3_2 = {}", coeffs[3].c2.repr);
 
     }
 

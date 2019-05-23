@@ -1,5 +1,5 @@
 [package]
-name = "eip1829"
+name = "eth_pairings"
 version = "0.1.0"
 authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 edition = "2018"
@@ -14,3 +14,10 @@ hex = "0.3.2"
 rand = "0.6.5"
 rand_xorshift = "*"
 csv = "1"
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "benchmark"
+harness = false

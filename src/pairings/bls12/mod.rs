@@ -34,9 +34,9 @@ pub struct Bls12Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE:
     pub base_field: &'a F,
     pub curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
     pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
-    fp2_extension: &'a Extension2<'a, FE, F>,
-    fp6_extension: &'a Extension3Over2<'a, FE, F>,
-    fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
+    pub fp2_extension: &'a Extension2<'a, FE, F>,
+    pub fp6_extension: &'a Extension3Over2<'a, FE, F>,
+    pub fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Bls12Instance<'a, FE, F, GE, G> {

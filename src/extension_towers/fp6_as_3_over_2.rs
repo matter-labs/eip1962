@@ -349,6 +349,14 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
+        match power {
+            0 | 1 | 2 | 3 | 6 => {
+
+            },
+            _ => {
+                unreachable!("can not reach power {}", power);
+            }
+        }
         self.c0.frobenius_map(power);
         self.c1.frobenius_map(power);
         self.c2.frobenius_map(power);

@@ -21,6 +21,8 @@ mod api;
 mod extension_towers;
 mod pairings;
 
+pub mod public_interface;
+
 #[cfg(test)]
 mod test;
 

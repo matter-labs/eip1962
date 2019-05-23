@@ -120,24 +120,27 @@ pub fn frobenius_calculator_fp4_as_2_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
 
         // NON_REDISUE**(((q^1) - 1) / 4)
         let mut q_power = modulus.clone();
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
+        let power = (q_power.clone() - &one) >> 2;
+        // let (power, rem) = power.div_rem(&divisor);
+        // debug_assert!(rem.is_zero());
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
         // NON_REDISUE**(((q^2) - 1) / 4)
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
+        let power = (q_power.clone() - &one) >> 2;
+        // let (power, rem) = power.div_rem(&divisor);
+        // debug_assert!(rem.is_zero());
         let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // NON_REDISUE**(((q^3) - 1) / 4)
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
-        let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
+        // this one is not needed
+        // // NON_REDISUE**(((q^3) - 1) / 4)
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&divisor);
+        // debug_assert!(rem.is_zero());
+        // let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        let f_3 = Fp::zero(extension.field.field);
 
         Ok([f_0, f_1, f_2, f_3])
 }
@@ -155,40 +158,40 @@ pub fn frobenius_calculator_fp6_as_2_over_3<'a, FE: ElementRepr, F: SizedPrimeFi
         let non_residue = extension.field.non_residue.clone();
         let f_0 = Fp::one(extension.field.field);
 
-        // Fq2(u + 1)**(((q^1) - 1) / 3)
         let mut q_power = modulus.clone();
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&divisor);
         debug_assert!(rem.is_zero());
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // Fq2(u + 1)**(((q^2) - 1) / 3)
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
-        let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_2 = Fp::zero(extension.field.field);
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&divisor);
+        // debug_assert!(rem.is_zero());
+        // let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // Fq2(u + 1)**(((q^3) - 1) / 3)
         q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&divisor);
         debug_assert!(rem.is_zero());
         let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // Fq2(u + 1)**(((q^4) - 1) / 3)
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
-        let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_4 = Fp::zero(extension.field.field);
+        let f_5 = Fp::zero(extension.field.field);
 
-        // Fq2(u + 1)**(((q^5) - 1) / 3)
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
-        let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
+        // not needed
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&divisor);
+        // debug_assert!(rem.is_zero());
+        // let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&divisor);
+        // debug_assert!(rem.is_zero());
+        // let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
 
         Ok([f_0, f_1, f_2, f_3, f_4, f_5])
 }
@@ -198,63 +201,47 @@ pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
         extension: &fp6_as_3_over_2::Extension3Over2<'a, FE, F>
     ) -> Result<([Fp2<'a, FE, F>; 6], [Fp2<'a, FE, F>; 6]), ()> {
         use crate::field::biguint_to_u64_vec;
-        // let mut two = Fp::one(field);
-        // two.double();
-        // let two_inv = two.inverse().ok_or(())?;
-
-        // let mut three = Fp::one(field);
-        // three.add_assign(&two);
-        // let three_inv = three.inverse().ok_or(())?;
-
-        // let mut two_le_bytes = vec![];
-        // two.into_repr().write_le(&mut two_le_bytes).map_err(|_| Err())?;
-
-        // let mut three_le_bytes = vec![];
-        // three.into_repr().write_le(&mut three_le_bytes).map_err(|_| Err())?;
 
         let one = BigUint::from_u64(1).unwrap();
         let three = BigUint::from_u64(3).unwrap();
-        // let two_inv = BigUint::from_bytes_le(&two_le_bytes);
-        // let three_inv = BigUint::from_bytes_le(&three_le_bytes);
-    
-        // Fq2(u + 1)**(((q^0) - 1) / 3)
+
+        // NON_RESIDUE**(((q^0) - 1) / 3)
         let non_residue = extension.non_residue.clone();
         let f_0 = Fp2::one(extension.field);
 
-        // Fq2(u + 1)**(((q^1) - 1) / 3)
         let mut q_power = modulus.clone();
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&three);
         debug_assert!(rem.is_zero());
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // Fq2(u + 1)**(((q^2) - 1) / 3)
         q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&three);
         debug_assert!(rem.is_zero());
         let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // Fq2(u + 1)**(((q^3) - 1) / 3)
         q_power *= &modulus;
         let power = q_power.clone() - &one;
         let (power, rem) = power.div_rem(&three);
         debug_assert!(rem.is_zero());
         let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        // Fq2(u + 1)**(((q^4) - 1) / 3)
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&three);
-        debug_assert!(rem.is_zero());
-        let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_4 = Fp2::zero(extension.field);
 
-        // Fq2(u + 1)**(((q^5) - 1) / 3)
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&three);
+        // debug_assert!(rem.is_zero());
+        // let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
+
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&three);
-        debug_assert!(rem.is_zero());
-        let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_5 = Fp2::zero(extension.field);
+
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&three);
+        // debug_assert!(rem.is_zero());
+        // let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
 
         let f_0_c2 = f_0.clone();
 
@@ -306,16 +293,19 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
         let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
 
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_4 = Fp2::zero(extension.field.field);
+
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
 
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_5 = Fp2::zero(extension.field.field);
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_5 = non_residue.pow(&biguint_to_u64_vec(power));
 
         q_power *= &modulus;
         let power = q_power.clone() - &one;
@@ -323,35 +313,41 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
         debug_assert!(rem.is_zero());
         let f_6 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_7 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_7 = Fp2::zero(extension.field.field);
+        let f_8 = Fp2::zero(extension.field.field);
+        let f_9 = Fp2::zero(extension.field.field);
+        let f_10 = Fp2::zero(extension.field.field);
+        let f_11 = Fp2::zero(extension.field.field);
 
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_8 = non_residue.pow(&biguint_to_u64_vec(power));
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_7 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_9 = non_residue.pow(&biguint_to_u64_vec(power));
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_8 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_10 = non_residue.pow(&biguint_to_u64_vec(power));
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_9 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&six);
-        debug_assert!(rem.is_zero());
-        let f_11 = non_residue.pow(&biguint_to_u64_vec(power));
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_10 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // q_power *= &modulus;
+        // let power = q_power.clone() - &one;
+        // let (power, rem) = power.div_rem(&six);
+        // debug_assert!(rem.is_zero());
+        // let f_11 = non_residue.pow(&biguint_to_u64_vec(power));
 
         Ok([f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11])
 }

@@ -28,7 +28,7 @@ pub(crate) fn decode_biguint_with_length<
         return Err(());
     }
     let (be_encoding, rest) = rest.split_at(length);
-    let x = BigUint::from_bytes_be(&rest);
+    let x = BigUint::from_bytes_be(&be_encoding);
 
     Ok((x, rest))
 }
@@ -100,4 +100,32 @@ pub(crate) fn parse_encodings<'a>(bytes: &'a [u8]) -> Result<(
             rest
         )
     )
+}
+
+/// return:
+/// - modulus
+pub(crate) fn parse_curve_type_and_modulus<'a>(bytes: &'a [u8]) -> Result<(u8, BigUint), ()> {
+    if bytes.len() < CURVE_TYPE_LENGTH {
+        return Err(());
+    }
+    let (curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
+    let curve_type = curve_type[0];
+    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
+        return Err(());
+    }
+    let (modulus_len, rest) = rest.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let modulus_len = modulus_len[0] as usize;
+    if rest.len() < modulus_len {
+        return Err(());
+    }
+    let (modulus_encoding, rest) = rest.split_at(modulus_len);
+    let modulus = BigUint::from_bytes_be(&modulus_encoding);
+    if modulus.is_zero() {
+        return Err(());
+    }
+    if rest.len() < modulus_len {
+        return Err(());
+    }
+
+    Ok((curve_type, modulus))
 }

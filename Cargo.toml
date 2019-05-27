@@ -18,6 +18,12 @@ csv = "1"
 [dev-dependencies]
 criterion = "0.2"
 
-[[bench]]
-name = "benchmark"
-harness = false
+[profile.release]
+debug = true
+
+[profile.bench]
+debug = true
+
+#[[bench]]
+#name = "benchmark"
+#harness = false

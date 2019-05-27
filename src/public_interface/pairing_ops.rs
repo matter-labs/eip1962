@@ -16,7 +16,7 @@
 use crate::weierstrass::Group;
 use crate::weierstrass::curve;
 use crate::weierstrass::twist;
-use crate::field::{SizedPrimeField, field_from_modulus};
+use crate::field::field_from_modulus;
 use crate::fp::Fp;
 use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance, TwistType};
@@ -29,6 +29,7 @@ use crate::traits::FieldElement;
 use crate::field::biguint_to_u64_vec;
 
 use num_bigint::BigUint;
+use num_traits::Num;
 
 #[macro_use]
 use super::decode_g1::*;
@@ -43,25 +44,18 @@ pub struct PublicPairingApi;
 impl PairingApi for PublicPairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ()> {
         use crate::field::{U256Repr, U320Repr, U384Repr};
-        let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
+        let (_, modulus) = parse_curve_type_and_modulus(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
-        let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
-            (4, 4) => {
+        let result: Result<Vec<u8>, ()> = match modulus_limbs {
+            4 => {
                 PairingApiImplementation::<U256Repr, U256Repr>::pair(&bytes)
             },
-            (5, 4) => {
+            5 => {
                 PairingApiImplementation::<U320Repr, U256Repr>::pair(&bytes)
             },
-            (6, 4) => {
+            6 => {
                 PairingApiImplementation::<U384Repr, U256Repr>::pair(&bytes)
-            },
-            (4, 5) => {
-                PairingApiImplementation::<U256Repr, U320Repr>::pair(&bytes)
-            },
-            (5, 5) => {
-                PairingApiImplementation::<U320Repr, U320Repr>::pair(&bytes)
             },
             _ => {
                 unimplemented!();
@@ -83,7 +77,7 @@ struct PairingApiImplementation<FE: ElementRepr, GE: ElementRepr> {
 
 impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<FE, GE> {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        if bytes.len() < 2 {
+        if bytes.len() < CURVE_TYPE_LENGTH {
             return Err(());
         }
         let (curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
@@ -107,7 +101,7 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         if !a_fp.is_zero() {
             return Err(());
         }
-        let scalar_field = field_from_modulus::<U256Repr>(BigUint::from(7u64))?;
+        let scalar_field = field_from_modulus::<U256Repr>(BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap())?;
         let g1_curve = curve::WeierstrassCurve::new(&scalar_field, a_fp, b_fp.clone());
 
         // Now we need to expect:
@@ -133,8 +127,10 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         if rest.len() < TWIST_TYPE_LENGTH {
+            println!("Too short to get twist type encoding");
             return Err(());
         }
+
         let (twist_type_encoding, rest) = rest.split_at(TWIST_TYPE_LENGTH);
 
         let twist_type = match twist_type_encoding[0] {
@@ -149,7 +145,7 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
 
         let mut extension_6 = Extension3Over2 {
-            non_residue: fp2_non_residue,
+            non_residue: fp2_non_residue.clone(),
             field: &extension_2,
             frobenius_coeffs_c1: f_c1.clone(),
             frobenius_coeffs_c2: f_c1,
@@ -160,9 +156,7 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;
 
-        let mut fp2_non_residue = Fp2::zero(&extension_2);
-
-         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
@@ -173,16 +167,10 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
             frobenius_coeffs_c1: f_c1,
         };
 
-
         let coeffs = frobenius_calculator_fp12(modulus, &extension_12)?;
         extension_12.frobenius_coeffs_c1 = coeffs;
 
-        let fp2_non_residue_inv = fp2_non_residue.inverse();
-        if fp2_non_residue_inv.is_none() {
-            return Err(());
-        }
-
-        let fp2_non_residue_inv = fp2_non_residue_inv.unwrap();
+        let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(())?;
 
         let b_fp2 = match twist_type {
             TwistType::D => {
@@ -256,11 +244,12 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         let pairing_result = engine.pair(&g1_points, &g2_points);
 
         if pairing_result.is_none() {
+            println!("Result is none");
             return Err(());
         }
 
         let one_fp12 = Fp12::one(&extension_12);
-        let pairing_result = pairing_result.unwrap();
+        let pairing_result = pairing_result.ok_or(())?;
         let result = if pairing_result == one_fp12 {
             vec![1u8]
         } else {

@@ -227,7 +227,7 @@ pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
         debug_assert!(rem.is_zero());
         let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        q_power *= &modulus;
+        // q_power *= &modulus;
         let f_4 = Fp2::zero(extension.field);
 
         // let power = q_power.clone() - &one;
@@ -235,7 +235,7 @@ pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
         // debug_assert!(rem.is_zero());
         // let f_4 = non_residue.pow(&biguint_to_u64_vec(power));
 
-        q_power *= &modulus;
+        // q_power *= &modulus;
         let f_5 = Fp2::zero(extension.field);
 
         // let power = q_power.clone() - &one;
@@ -246,16 +246,14 @@ pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
         let f_0_c2 = f_0.clone();
 
         let mut f_1_c2 = f_1.clone();
-        let mut f_2_c2 = f_2.clone();
-        let mut f_3_c2 = f_3.clone();
-        let mut f_4_c2 = f_4.clone();
-        let mut f_5_c2 = f_5.clone();
-
         f_1_c2.square();
+        let mut f_2_c2 = f_2.clone();
         f_2_c2.square();
+        let mut f_3_c2 = f_3.clone();
         f_3_c2.square();
-        f_4_c2.square();
-        f_5_c2.square();
+
+        let f_4_c2 = f_4.clone();
+        let f_5_c2 = f_5.clone();
 
         Ok(([f_0, f_1, f_2, f_3, f_4, f_5], [f_0_c2, f_1_c2, f_2_c2, f_3_c2, f_4_c2, f_5_c2]))
 }
@@ -663,7 +661,7 @@ mod tests {
 
         let mut fp2_non_residue = Fp2::zero(&extension_2);
 
-         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];

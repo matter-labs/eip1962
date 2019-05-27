@@ -1,2 +1,2 @@
 mod no_compression;
-// mod pairings;
+mod pairings;

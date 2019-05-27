@@ -10,7 +10,7 @@ use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::pairings::PairingEngine;
 
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum TwistType {
     D,
     M

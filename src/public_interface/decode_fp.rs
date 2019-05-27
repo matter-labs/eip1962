@@ -50,7 +50,7 @@ pub(crate) fn decode_fp2<
     if bytes.len() < field_byte_len {
         return Err(());
     }
-    let (c1_encoding, rest) = bytes.split_at(field_byte_len);
+    let (c1_encoding, rest) = rest.split_at(field_byte_len);
     let c1 = Fp::from_be_bytes(extension_field.field, c1_encoding, true).map_err(|_| ())?;
 
     let mut x = fp2::Fp2::zero(extension_field);
@@ -80,13 +80,13 @@ pub(crate) fn decode_fp3<
     if bytes.len() < field_byte_len {
         return Err(());
     }
-    let (c1_encoding, rest) = bytes.split_at(field_byte_len);
+    let (c1_encoding, rest) = rest.split_at(field_byte_len);
     let c1 = Fp::from_be_bytes(extension_field.field, c1_encoding, true).map_err(|_| ())?;
 
     if bytes.len() < field_byte_len {
         return Err(());
     }
-    let (c2_encoding, rest) = bytes.split_at(field_byte_len);
+    let (c2_encoding, rest) = rest.split_at(field_byte_len);
     let c2 = Fp::from_be_bytes(extension_field.field, c2_encoding, true).map_err(|_| ())?;
 
     let mut x = fp3::Fp3::zero(extension_field);

@@ -27,6 +27,7 @@ use crate::field::{U256Repr};
 use crate::representation::ElementRepr;
 use crate::traits::FieldElement;
 use crate::field::biguint_to_u64_vec;
+use crate::sliding_window_exp::WindowExpBase;
 
 use num_bigint::BigUint;
 use num_traits::Num;
@@ -151,7 +152,9 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
             frobenius_coeffs_c2: f_c1,
         };
 
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6)?;
+        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
+
+        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2_using_sliding_window(modulus.clone(), &exp_base, &extension_6)?;
 
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;
@@ -167,7 +170,7 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
             frobenius_coeffs_c1: f_c1,
         };
 
-        let coeffs = frobenius_calculator_fp12(modulus, &extension_12)?;
+        let coeffs = frobenius_calculator_fp12_using_sliding_window(modulus, &exp_base, &extension_12)?;
         extension_12.frobenius_coeffs_c1 = coeffs;
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(())?;
@@ -239,7 +242,6 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
         };
-
 
         let pairing_result = engine.pair(&g1_points, &g2_points);
 

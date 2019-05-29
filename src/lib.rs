@@ -20,6 +20,7 @@ mod multiexp;
 mod api;
 mod extension_towers;
 mod pairings;
+mod sliding_window_exp;
 
 pub mod public_interface;
 

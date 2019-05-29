@@ -135,6 +135,38 @@ impl<E: AsRef<[u64]>> Iterator for MsbBitIterator<E> {
     }
 }
 
+// this is LSB bit iterator
+#[derive(Debug)]
+pub struct LsbBitIterator<E> {
+    t: E,
+    n: usize,
+    max: usize
+}
+
+impl<E: AsRef<[u64]>> LsbBitIterator<E> {
+    pub fn new(t: E) -> Self {
+        let max = t.as_ref().len() * 64;
+        let n = 0;
+        LsbBitIterator { t, n, max}
+    }
+}
+
+impl<E: AsRef<[u64]>> Iterator for LsbBitIterator<E> {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<bool> {
+        if self.n == self.max {
+            None
+        } else {
+            let part = self.n / 64;
+            let bit = self.n - (64 * part);
+            self.n += 1;
+
+            Some(self.t.as_ref()[part] & (1 << bit) > 0)
+        }
+    }
+}
+
 /// This trait represents an element of a field that has a square root operation described for it.
 pub trait SqrtFieldElement: FieldElement {
     /// Returns the Legendre symbol of the field element.

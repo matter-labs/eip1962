@@ -258,6 +258,131 @@ pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
         Ok(([f_0, f_1, f_2, f_3, f_4, f_5], [f_0_c2, f_1_c2, f_2_c2, f_3_c2, f_4_c2, f_5_c2]))
 }
 
+
+use crate::sliding_window_exp::{WindowExpBase};
+pub(crate) fn frobenius_calculator_fp6_as_3_over_2_using_sliding_window<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+        modulus: BigUint,
+        base: &WindowExpBase<Fp2<'a, FE, F>>,
+        extension: &fp6_as_3_over_2::Extension3Over2<'a, FE, F>
+    ) -> Result<([Fp2<'a, FE, F>; 6], [Fp2<'a, FE, F>; 6]), ()> {
+        use crate::field::biguint_to_u64_vec;
+
+        let one = BigUint::from_u64(1).unwrap();
+        let three = BigUint::from_u64(3).unwrap();
+
+        // NON_RESIDUE**(((q^0) - 1) / 3)
+        let non_residue = extension.non_residue.clone();
+        let f_0 = Fp2::one(extension.field);
+
+        let mut powers = vec![];
+
+        let mut q_power = modulus.clone();
+
+        {
+            let power = q_power.clone() - &one;
+            let (power, rem) = power.div_rem(&three);
+            debug_assert!(rem.is_zero());
+            powers.push(biguint_to_u64_vec(power));
+        }
+        for _ in 1..3 {
+            q_power *= &modulus;
+            let power = q_power.clone() - &one;
+            let (power, rem) = power.div_rem(&three);
+            debug_assert!(rem.is_zero());
+            powers.push(biguint_to_u64_vec(power));
+        }
+
+        let mut result = base.exponentiate(&powers);
+        debug_assert!(result.len() == 3);
+
+        let f_3 = result.pop().unwrap();
+        let f_2 = result.pop().unwrap();
+        let f_1 = result.pop().unwrap();
+
+        let f_4 = Fp2::zero(extension.field);
+        let f_5 = Fp2::zero(extension.field);
+
+        let f_0_c2 = f_0.clone();
+
+        let mut f_1_c2 = f_1.clone();
+        f_1_c2.square();
+        let mut f_2_c2 = f_2.clone();
+        f_2_c2.square();
+        let mut f_3_c2 = f_3.clone();
+        f_3_c2.square();
+
+        let f_4_c2 = f_4.clone();
+        let f_5_c2 = f_5.clone();
+
+        Ok(([f_0, f_1, f_2, f_3, f_4, f_5], [f_0_c2, f_1_c2, f_2_c2, f_3_c2, f_4_c2, f_5_c2]))
+}
+
+pub(crate) fn frobenius_calculator_fp12_using_sliding_window<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+        modulus: BigUint,
+        base: &WindowExpBase<Fp2<'a, FE, F>>,
+        extension: &Extension2Over3Over2<'a, FE, F>
+    ) -> Result<[Fp2<'a, FE, F>; 12], ()> {
+        use crate::field::biguint_to_u64_vec;
+
+        let one = BigUint::from_u64(1).unwrap();
+        let six = BigUint::from_u64(6).unwrap();
+    
+        // Fq2(u + 1)**(((q^0) - 1) / 6)
+        let non_residue = extension.field.non_residue.clone();
+        let f_0 = Fp2::one(extension.field.field);
+
+        // Fq2(u + 1)**(((q^1) - 1) / 6)
+        let mut powers = vec![];
+
+        let mut q_power = modulus.clone();
+
+        // 1
+        {
+            let power = q_power.clone() - &one;
+            let (power, rem) = power.div_rem(&six);
+            debug_assert!(rem.is_zero());
+            powers.push(biguint_to_u64_vec(power));
+        }
+        // 2 & 3
+        for _ in 1..3 {
+            q_power *= &modulus;
+            let power = q_power.clone() - &one;
+            let (power, rem) = power.div_rem(&six);
+            debug_assert!(rem.is_zero());
+            powers.push(biguint_to_u64_vec(power));
+        }
+        // 6
+        {
+            q_power *= q_power.clone();
+            // q_power *= &modulus;
+            // q_power *= &modulus;
+            // q_power *= &modulus;
+            let power = q_power.clone() - &one;
+            let (power, rem) = power.div_rem(&six);
+            debug_assert!(rem.is_zero());
+            powers.push(biguint_to_u64_vec(power));
+        }
+
+        let mut result = base.exponentiate(&powers);
+        debug_assert!(result.len() == 4);
+
+        let f_6 = result.pop().unwrap();
+        let f_3 = result.pop().unwrap();
+        let f_2 = result.pop().unwrap();
+        let f_1 = result.pop().unwrap();
+
+        let f_4 = Fp2::zero(extension.field.field);
+        let f_5 = Fp2::zero(extension.field.field);
+
+        let f_7 = Fp2::zero(extension.field.field);
+        let f_8 = Fp2::zero(extension.field.field);
+        let f_9 = Fp2::zero(extension.field.field);
+        let f_10 = Fp2::zero(extension.field.field);
+        let f_11 = Fp2::zero(extension.field.field);
+
+        Ok([f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11])
+}
+
 pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &Extension2Over3Over2<'a, FE, F>
@@ -673,6 +798,62 @@ mod tests {
         };
 
         b.iter(|| super::frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap());
+    }
+
+    #[bench]
+    fn bench_bls12_381_frob_fp12_using_sliding(b: &mut Bencher) {
+        use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
+        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let mut fp_non_residue = Fp::one(&base_field);
+        fp_non_residue.negate(); // non-residue is -1
+
+        let mut extension_2 = Extension2 {
+            field: &base_field,
+            non_residue: fp_non_residue,
+            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
+        };
+
+        let coeffs = super::frobenius_calculator_fp2(&extension_2).unwrap();
+        extension_2.frobenius_coeffs_c1 = coeffs;
+
+        let one = Fp::one(&base_field);
+
+        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        fp2_non_residue.c0 = one.clone();
+        fp2_non_residue.c1 = one.clone();
+
+        let base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 15, 7);
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_6 = fp6_as_3_over_2::Extension3Over2 {
+            non_residue: fp2_non_residue,
+            field: &extension_2,
+            frobenius_coeffs_c1: f_c1.clone(),
+            frobenius_coeffs_c2: f_c1,
+        };
+
+        let (coeffs_c1, coeffs_c2) = super::frobenius_calculator_fp6_as_3_over_2_using_sliding_window(modulus.clone(), &base, &extension_6).unwrap();
+
+        extension_6.frobenius_coeffs_c1 = coeffs_c1;
+        extension_6.frobenius_coeffs_c2 = coeffs_c2;
+
+        let mut fp2_non_residue = Fp2::zero(&extension_2);
+
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+
+        let mut extension_12 = Extension2Over3Over2 {
+            non_residue: fp6_as_3_over_2::Fp6::zero(&extension_6),
+            field: &extension_6,
+            frobenius_coeffs_c1: f_c1,
+        };
+
+        b.iter(|| super::frobenius_calculator_fp12_using_sliding_window(modulus.clone(), &base, &extension_12).unwrap());
     }
 
     #[bench]

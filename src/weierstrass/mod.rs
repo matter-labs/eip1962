@@ -6,7 +6,7 @@ pub enum CurveType {
     BIsZero,
 }
 
-pub trait Group: Sized {
+pub trait Group: Sized + Clone {
     fn add_assign(&mut self, other: &Self);
     fn add_assign_mixed(&mut self, other: &Self);
     fn sub_assign(&mut self, other: &Self);

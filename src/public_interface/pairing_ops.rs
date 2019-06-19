@@ -44,7 +44,7 @@ pub struct PublicPairingApi;
 
 impl PairingApi for PublicPairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        use crate::field::{U256Repr, U320Repr, U384Repr};
+        use crate::field::{U256Repr, U320Repr, U384Repr, U640Repr};
         let (_, modulus) = parse_curve_type_and_modulus(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
 
@@ -58,8 +58,11 @@ impl PairingApi for PublicPairingApi {
             6 => {
                 PairingApiImplementation::<U384Repr, U256Repr>::pair(&bytes)
             },
-            _ => {
-                unimplemented!();
+            10 => {
+                PairingApiImplementation::<U640Repr, U256Repr>::pair(&bytes)
+            },
+            field_limbs => {
+                unimplemented!("unimplemented for {} modulus limbs", field_limbs);
             }
         };
 
@@ -87,7 +90,7 @@ impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<F
                 Self::pair_bls12(&rest)
             },
             _ => {
-                unimplemented!();
+                unimplemented!("Not implemented for not BLS12 curves");
             }
         }
     }

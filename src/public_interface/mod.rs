@@ -11,3 +11,4 @@ mod pairing_ops;
 pub mod constants;
 
 pub use pairing_ops::{PairingApi, PublicPairingApi};
+pub use g1_ops::{G1Api, PublicG1Api};

@@ -19,12 +19,28 @@ use crate::weierstrass::Group;
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::field::{SizedPrimeField, field_from_modulus};
 use crate::fp::Fp;
-use crate::field::{U256Repr, U320Repr};
+use crate::field::{
+    U256Repr, 
+    U320Repr,
+    U384Repr,
+    U448Repr,
+    U512Repr,
+    U576Repr,
+    U640Repr,
+    U704Repr,
+    U768Repr,
+    U832Repr,
+    U896Repr,
+    // U960Repr,
+    // U1024Repr
+};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 
 use num_bigint::BigUint;
 use num_traits::{Zero};
+
+use super::decode_utils::parse_encodings;
 
 #[macro_use]
 use super::decode_g1::*;
@@ -104,5 +120,99 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
         let result = peppinger(pairs);
 
         serialize_g1_point(modulus_len, &result)   
+    }
+}
+
+pub struct PublicG1Api;
+
+impl G1Api for PublicG1Api {
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+        let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
+        let modulus_limbs = (modulus.bits() / 64) + 1;
+        let order_limbs = (order.bits() / 64) + 1;
+
+        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+            (4, 4) => {
+                G1ApiImplementation::<U256Repr, U256Repr>::add_points(&bytes)
+            },
+            (5, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::add_points(&bytes)
+            },
+            (5, 5) => {
+                G1ApiImplementation::<U320Repr, U320Repr>::add_points(&bytes)
+            },
+            _ => {
+                unimplemented!();
+            }
+        };
+
+        result
+    }
+
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+        let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
+        let modulus_limbs = (modulus.bits() / 64) + 1;
+        let order_limbs = (order.bits() / 64) + 1;
+        
+        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+            (4, 4) => {
+                G1ApiImplementation::<U256Repr, U256Repr>::mul_point(&bytes)
+            },
+            (5, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::mul_point(&bytes)
+            },
+            (5, 5) => {
+                G1ApiImplementation::<U320Repr, U320Repr>::mul_point(&bytes)
+            },
+            (10, 7) => {
+                G1ApiImplementation::<U640Repr, U448Repr>::mul_point(&bytes)
+            },
+            (field_limbs, group_limbs) => {
+                unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
+            }
+            // _ => {
+            //     unimplemented!();
+            // }
+        };
+
+        result
+    }
+
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+        let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
+        let modulus_limbs = (modulus.bits() / 64) + 1;
+        let order_limbs = (order.bits() / 64) + 1;
+
+        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+            (4, 4) => {
+                G1ApiImplementation::<U256Repr, U256Repr>::multiexp(&bytes)
+            },
+            (5, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
+            },
+            (6, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
+            },
+            (7, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
+            },
+            (8, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
+            },
+            (9, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
+            },
+            (10, 4) => {
+                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
+            },
+            (5, 5) => {
+                G1ApiImplementation::<U320Repr, U320Repr>::multiexp(&bytes)
+            },
+            (field_limbs, group_limbs) => {
+                unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
+            }
+        };
+
+        result
     }
 }

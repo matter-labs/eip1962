@@ -8,6 +8,6 @@ mod decode_utils;
 mod g1_ops;
 mod pairing_ops;
 
-mod constants;
+pub mod constants;
 
 pub use pairing_ops::{PairingApi, PublicPairingApi};

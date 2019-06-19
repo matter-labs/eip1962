@@ -27,9 +27,13 @@ Features (WIP):
 # Performance testing
 
 - [ ] Find a way to save on precomputations
+  - [x] Implement windowed exponentiation and don't create elements that are neven used 
 - [ ] Find more test vectors to fit quadratic gas schedules
 - [ ] Benchmark Peppinger
 
+# Contributors
+
+- Kobi Gurkan, [kobigurk@gmail.com](mailto://kobigurk@gmail.com)
 
 # Resources to consult and use 
 

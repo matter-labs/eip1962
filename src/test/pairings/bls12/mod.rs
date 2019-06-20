@@ -4,6 +4,9 @@ use crate::public_interface::constants::*;
 use crate::public_interface::{PairingApi, PublicG1Api, PublicPairingApi, G1Api};
 use hex::{decode};
 
+use num_bigint::BigUint;
+use num_traits::Num;
+
 extern crate serde;
 extern crate serde_json;
 
@@ -11,25 +14,48 @@ use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug)]
 struct JsonCurveParameters {
-    non_residue: String,
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    non_residue: (BigUint, bool),
+
     #[serde(rename = "is_D_type")]
     #[serde(deserialize_with = "bool_from_string")]
     is_d_type: bool,
-    quadratic_non_residue_0: String,
-    quadratic_non_residue_1: String,
-    x: String,
-    q: String,
-    r: String,
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    quadratic_non_residue_0: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    quadratic_non_residue_1: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    x: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    q: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    r: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "A")]
-    a: String,
+    a: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "B")]
-    b: String,
-    g1_x: String,
-    g1_y: String,
-    g2_x_0: String,
-    g2_x_1: String,
-    g2_y_0: String,
-    g2_y_1: String
+    b: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    g1_x: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    g1_y: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    g2_x_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    g2_x_1: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    g2_y_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    g2_y_1: BigUint
 }
 
 fn bool_from_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
@@ -44,6 +70,36 @@ where
             &"True or False",
         )),
     }
+}
+
+fn biguint_from_hex_string<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let string_value = strip_0x(&String::deserialize(deserializer)?);
+    let value = BigUint::from_str_radix(&string_value, 16).map_err(|_| {
+        serde::de::Error::invalid_value(
+            serde::de::Unexpected::Str(&string_value),
+            &"Not valid hex number",
+        )
+    })?;
+
+    Ok(value)
+}
+
+fn biguint_with_sign_from_hex_string<'de, D>(deserializer: D) -> Result<(BigUint, bool), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let (string_value, is_positive) = strip_0x_and_get_sign(&String::deserialize(deserializer)?);
+    let value = BigUint::from_str_radix(&string_value, 16).map_err(|_| {
+        serde::de::Error::invalid_value(
+            serde::de::Unexpected::Str(&string_value),
+            &"Not valid hex number",
+        )
+    })?;
+
+    Ok((value, is_positive))
 }
 
 fn read_dir_and_grab_curves() -> Vec<JsonCurveParameters> {
@@ -82,11 +138,11 @@ fn read_dir_and_grab_curves() -> Vec<JsonCurveParameters> {
 }
 
 fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
-    /// - Curve type
-    /// - Lengths of modulus (in bytes)
-    /// - Field modulus
-    /// - Curve A
-    /// - Curve B
+    // - Curve type
+    // - Lengths of modulus (in bytes)
+    // - Field modulus
+    // - Curve A
+    // - Curve B
     // - non-residue for Fp2
     // - non-residue for Fp6
     // - twist type M/D
@@ -95,39 +151,27 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
     // - number of pairs
     // - list of encoded pairs
 
-    use num_bigint::BigUint;
-    use num_traits::FromPrimitive;
-    use num_integer::Integer;
-    use num_traits::Zero;
-    use num_traits::Num;
-
     // first determine the length of the modulus
-    let modulus_string = strip_0x(&curve.q);
-    let modulus = BigUint::from_str_radix(&modulus_string, 16).expect("test modulus should be valid");
+    let modulus = curve.q;
     let modulus_length = modulus.clone().to_bytes_be().len();
 
     let curve_type = vec![BLS12];
     let modulus_len_encoded = vec![modulus_length as u8];
     let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
 
-    let a_string = strip_0x(&curve.a);
-    let a_encoded = pad_for_len_be(BigUint::from_str_radix(&a_string, 16).unwrap().to_bytes_be(), modulus_length);
-
-    let b_string = strip_0x(&curve.b);
-    let b_encoded = pad_for_len_be(BigUint::from_str_radix(&b_string, 16).unwrap().to_bytes_be(), modulus_length);
+    let a_encoded = pad_for_len_be(curve.a.to_bytes_be(), modulus_length);
+    let b_encoded = pad_for_len_be(curve.b.to_bytes_be(), modulus_length);
 
     let fp2_nonres_encoded = {
-        let (fp2_nonres_string, is_positive) = strip_0x_and_get_sign(&curve.non_residue);
-        let mut fp2_nonres = BigUint::from_str_radix(&fp2_nonres_string, 16).expect("test modulus should be valid");
+        let (mut nonres, is_positive) = curve.non_residue;
         if !is_positive {
-            fp2_nonres = modulus.clone() - fp2_nonres;
+            nonres = modulus.clone() - nonres;
         }
-        pad_for_len_be(fp2_nonres.to_bytes_be(), modulus_length)
+        pad_for_len_be(nonres.to_bytes_be(), modulus_length)
     };
 
     let fp6_nonres_encoded_c0 = {
-        let (nonres_string, is_positive) = strip_0x_and_get_sign(&curve.quadratic_non_residue_0);
-        let mut nonres = BigUint::from_str_radix(&nonres_string, 16).expect("test modulus should be valid");
+        let (mut nonres, is_positive) = curve.quadratic_non_residue_0;
         if !is_positive {
             nonres = modulus.clone() - nonres;
         }
@@ -135,8 +179,7 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
     };
 
     let fp6_nonres_encoded_c1 = {
-        let (nonres_string, is_positive) = strip_0x_and_get_sign(&curve.quadratic_non_residue_1);
-        let mut nonres = BigUint::from_str_radix(&nonres_string, 16).expect("test modulus should be valid");
+        let (mut nonres, is_positive) = curve.quadratic_non_residue_1;
         if !is_positive {
             nonres = modulus.clone() - nonres;
         }
@@ -145,40 +188,32 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
 
     let twist_type = if curve.is_d_type { vec![TWIST_TYPE_D] } else { vec![TWIST_TYPE_M] };
 
-    let (x_string, x_is_positive) = strip_0x_and_get_sign(&curve.x);
+    let (x_decoded, x_is_positive) = curve.x;
     let x_sign = if x_is_positive { vec![0u8] } else { vec![1u8] };
-    let x_decoded = BigUint::from_str_radix(&x_string, 16).expect("test modulus should be valid");
     let x_encoded = x_decoded.to_bytes_be();
     let x_length = vec![x_encoded.len() as u8];
 
     // now we make two random scalars and do scalar multiplications in G1 and G2 to get pairs that should
     // at the end of the day pair to identity element
 
-    let group_size_string = strip_0x(&curve.r);
-    let group_size = BigUint::from_str_radix(&group_size_string, 16).expect("test modulus should be valid");
+    let group_size = curve.r;
     let group_size_encoded = group_size.clone().to_bytes_be();
     let group_size_length = group_size_encoded.len();
     let group_len_encoded = vec![group_size_length as u8];
 
     // first parse generators
     // g1 generator
-    let g1_x_string = strip_0x(&curve.g1_x);
-    let g1_x = BigUint::from_str_radix(&g1_x_string, 16).expect("g1_x should be valid");
+    let g1_x = curve.g1_x;
     let g1_x = pad_for_len_be(g1_x.to_bytes_be(), modulus_length);
-    let g1_y_string = strip_0x(&curve.g1_y);
-    let g1_y = BigUint::from_str_radix(&g1_y_string, 16).expect("g1_y should be valid");
+    let g1_y = curve.g1_y;
     let g1_y = pad_for_len_be(g1_y.to_bytes_be(), modulus_length);
 
     // g2 generator
-    let g2_x_0_string = strip_0x(&curve.g2_x_0);
-    let g2_x_0 = BigUint::from_str_radix(&g2_x_0_string, 16).expect("g2_x_0 should be valid");
-    let g2_x_1_string = strip_0x(&curve.g2_x_1);
-    let g2_x_1 = BigUint::from_str_radix(&g2_x_1_string, 16).expect("g2_x_1 should be valid");
+    let g2_x_0 = curve.g2_x_0;
+    let g2_x_1 = curve.g2_x_1;
 
-    let g2_y_0_string = strip_0x(&curve.g2_y_0);
-    let g2_y_0 = BigUint::from_str_radix(&g2_y_0_string, 16).expect("g2_y_0 should be valid");
-    let g2_y_1_string = strip_0x(&curve.g2_y_1);
-    let g2_y_1 = BigUint::from_str_radix(&g2_y_1_string, 16).expect("g2_y_1 should be valid");
+    let g2_y_0 = curve.g2_y_0;
+    let g2_y_1 = curve.g2_y_1;
 
     let num_pairs = vec![2u8];
 
@@ -199,7 +234,7 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
     // for multiplications we use the public API itself - just construct the corresponding G1
     // multiplication API. Leave G2 as generators for now
 
-    use rand::{Rng, RngCore, SeedableRng};
+    use rand::{Rng, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);

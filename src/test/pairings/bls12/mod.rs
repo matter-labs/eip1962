@@ -10,97 +10,7 @@ use num_traits::Num;
 extern crate serde;
 extern crate serde_json;
 
-use serde::{Deserialize, Deserializer};
-
-#[derive(Deserialize, Debug)]
-struct JsonCurveParameters {
-    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
-    non_residue: (BigUint, bool),
-
-    #[serde(rename = "is_D_type")]
-    #[serde(deserialize_with = "bool_from_string")]
-    is_d_type: bool,
-
-    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
-    quadratic_non_residue_0: (BigUint, bool),
-
-    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
-    quadratic_non_residue_1: (BigUint, bool),
-
-    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
-    x: (BigUint, bool),
-
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    q: BigUint,
-
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    r: BigUint,
-
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    #[serde(rename = "A")]
-    a: BigUint,
-
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    #[serde(rename = "B")]
-    b: BigUint,
-
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    g1_x: BigUint,
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    g1_y: BigUint,
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    g2_x_0: BigUint,
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    g2_x_1: BigUint,
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    g2_y_0: BigUint,
-    #[serde(deserialize_with = "biguint_from_hex_string")]
-    g2_y_1: BigUint
-}
-
-fn bool_from_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    match String::deserialize(deserializer)?.as_ref() {
-        "True" => Ok(true),
-        "False" => Ok(false),
-        other => Err(serde::de::Error::invalid_value(
-            serde::de::Unexpected::Str(other),
-            &"True or False",
-        )),
-    }
-}
-
-fn biguint_from_hex_string<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let string_value = strip_0x(&String::deserialize(deserializer)?);
-    let value = BigUint::from_str_radix(&string_value, 16).map_err(|_| {
-        serde::de::Error::invalid_value(
-            serde::de::Unexpected::Str(&string_value),
-            &"Not valid hex number",
-        )
-    })?;
-
-    Ok(value)
-}
-
-fn biguint_with_sign_from_hex_string<'de, D>(deserializer: D) -> Result<(BigUint, bool), D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let (string_value, is_positive) = strip_0x_and_get_sign(&String::deserialize(deserializer)?);
-    let value = BigUint::from_str_radix(&string_value, 16).map_err(|_| {
-        serde::de::Error::invalid_value(
-            serde::de::Unexpected::Str(&string_value),
-            &"Not valid hex number",
-        )
-    })?;
-
-    Ok((value, is_positive))
-}
+use crate::test::parsers::*;
 
 fn read_dir_and_grab_curves() -> Vec<JsonCurveParameters> {
     use std::io::Read;
@@ -114,7 +24,6 @@ fn read_dir_and_grab_curves() -> Vec<JsonCurveParameters> {
     for entry in fs::read_dir(dir).expect("must read the directory") {
         let entry = entry.expect("directory should contain files");
         let path = entry.path();
-        println!("Reading from {:?}", path.to_str().unwrap());
         if path.is_dir() {
             continue
         } else {
@@ -320,7 +229,6 @@ fn test_single() {
 fn test_from_vectors() {
     let curves = read_dir_and_grab_curves();
     for curve in curves.into_iter() {
-        println!("Curve {:?}", curve);
         let calldata = assemble_single_curve_params(curve);
         let result = call_bls12_engine(&calldata[..]);
         assert!(result.is_ok());

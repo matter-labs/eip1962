@@ -47,7 +47,7 @@ pub(crate) fn decode_fp2<
     let (c0_encoding, rest) = bytes.split_at(field_byte_len);
     let c0 = Fp::from_be_bytes(extension_field.field, c0_encoding, true).map_err(|_| ())?;
 
-    if bytes.len() < field_byte_len {
+    if rest.len() < field_byte_len {
         return Err(());
     }
     let (c1_encoding, rest) = rest.split_at(field_byte_len);
@@ -77,13 +77,13 @@ pub(crate) fn decode_fp3<
     let (c0_encoding, rest) = bytes.split_at(field_byte_len);
     let c0 = Fp::from_be_bytes(extension_field.field, c0_encoding, true).map_err(|_| ())?;
 
-    if bytes.len() < field_byte_len {
+    if rest.len() < field_byte_len {
         return Err(());
     }
     let (c1_encoding, rest) = rest.split_at(field_byte_len);
     let c1 = Fp::from_be_bytes(extension_field.field, c1_encoding, true).map_err(|_| ())?;
 
-    if bytes.len() < field_byte_len {
+    if rest.len() < field_byte_len {
         return Err(());
     }
     let (c2_encoding, rest) = rest.split_at(field_byte_len);
@@ -95,4 +95,63 @@ pub(crate) fn decode_fp3<
     x.c2 = c2;
 
     Ok((x, rest))
+}
+
+pub(crate) fn serialize_fp_fixed_len<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >
+    (
+        field_byte_len: usize,
+        element: &'a Fp<'a, FE, F>
+    ) -> Result<Vec<u8>, ()>
+{
+    let mut bytes: Vec<u8> = vec![];
+    let element = element.into_repr();
+    element.write_be(&mut bytes).map_err(|_| ())?;
+    if bytes.len() > field_byte_len {
+        bytes.reverse();
+        bytes.truncate(field_byte_len);
+        bytes.reverse();
+    } else if bytes.len() < field_byte_len {
+        bytes.reverse();
+        bytes.resize(field_byte_len, 0u8);
+        bytes.reverse();
+    }
+
+    Ok(bytes)
+}
+
+pub(crate) fn serialize_fp2_fixed_len<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >
+    (
+        field_byte_len: usize,
+        element: &'a fp2::Fp2<'a, FE, F>
+    ) -> Result<Vec<u8>, ()>
+{
+    let mut bytes = serialize_fp_fixed_len(field_byte_len, &element.c0)?;
+    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c1)?);
+
+    Ok(bytes)
+}
+
+pub(crate) fn serialize_fp3_fixed_len<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >
+    (
+        field_byte_len: usize,
+        element: &'a fp3::Fp3<'a, FE, F>
+    ) -> Result<Vec<u8>, ()>
+{
+    let mut bytes = serialize_fp_fixed_len(field_byte_len, &element.c0)?;
+    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c1)?);
+    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c2)?);
+
+    Ok(bytes)
 }

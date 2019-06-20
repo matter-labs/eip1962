@@ -16,8 +16,8 @@
 /// - one byte for length encoding
 
 use crate::weierstrass::Group;
-use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
-use crate::field::{SizedPrimeField, field_from_modulus};
+use crate::weierstrass::curve::{WeierstrassCurve};
+use crate::field::{field_from_modulus};
 use crate::fp::Fp;
 use crate::field::{
     U256Repr, 
@@ -38,7 +38,6 @@ use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 
 use num_bigint::BigUint;
-use num_traits::{Zero};
 
 use super::decode_utils::parse_encodings;
 

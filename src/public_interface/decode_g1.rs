@@ -5,6 +5,7 @@ use crate::fp::Fp;
 use crate::representation::ElementRepr;
 
 use super::constants::*;
+use super::decode_fp::*;
 
 use num_bigint::BigUint;
 use num_traits::{Zero};
@@ -81,36 +82,8 @@ pub(crate) fn serialize_g1_point<
     ) -> Result<Vec<u8>, ()>
 {
     let (x, y) = point.into_xy();
-    let x = x.into_repr();
-    let y = y.into_repr();
-
-    let mut x_bytes: Vec<u8> = vec![];
-    x.write_be(&mut x_bytes).map_err(|_| ())?;
-    if x_bytes.len() > modulus_len {
-        x_bytes.reverse();
-        x_bytes.truncate(modulus_len);
-        x_bytes.reverse();
-    } else if x_bytes.len() < modulus_len {
-        x_bytes.reverse();
-        x_bytes.resize(modulus_len, 0u8);
-        x_bytes.reverse();
-    }
-
-    let mut y_bytes: Vec<u8> = vec![];
-    y.write_be(&mut y_bytes).map_err(|_| ())?;
-    if y_bytes.len() > modulus_len {
-        y_bytes.reverse();
-        y_bytes.truncate(modulus_len);
-        y_bytes.reverse();
-    } else if y_bytes.len() < modulus_len {
-        y_bytes.reverse();
-        y_bytes.resize(modulus_len, 0u8);
-        y_bytes.reverse();
-    }
-
-    let mut result = vec![];
-    result.append(&mut x_bytes);
-    result.append(&mut y_bytes);
+    let mut result = serialize_fp_fixed_len(modulus_len, &x)?;
+    result.extend(serialize_fp_fixed_len(modulus_len, &y)?);
 
     Ok(result)
 }

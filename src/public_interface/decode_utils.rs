@@ -103,6 +103,89 @@ pub(crate) fn parse_encodings<'a>(bytes: &'a [u8]) -> Result<(
 }
 
 /// return:
+/// - modulus, 
+/// - modulus_len, 
+/// - extension degree
+/// - a_bytes, 
+/// - b_bytes, 
+/// - scalar field modulus 
+/// - scalar field length
+/// - rest
+pub(crate) fn parse_encodings_in_extension<'a>(bytes: &'a [u8]) -> Result<(
+        BigUint, 
+        usize,
+        u8,
+        &'a [u8],
+        &'a [u8],
+        BigUint,
+        usize,
+        &'a [u8]), ()> {
+    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
+        return Err(());
+    }
+    let (modulus_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let modulus_len = modulus_len[0] as usize;
+    if rest.len() < modulus_len {
+        return Err(());
+    }
+    let (modulus_encoding, rest) = rest.split_at(modulus_len);
+    let modulus = BigUint::from_bytes_be(&modulus_encoding);
+    if modulus.is_zero() {
+        return Err(());
+    }
+    if rest.len() < EXTENSION_DEGREE_ENCODING_LENGTH {
+        return Err(());
+    }
+    let (extension_degree, rest) = rest.split_at(EXTENSION_DEGREE_ENCODING_LENGTH);
+    let extension_degree = extension_degree[0];
+    if !(extension_degree == EXTENSION_DEGREE_2 || extension_degree == EXTENSION_DEGREE_3) {
+        return Err(());
+    }
+
+    let extension_element_len = (extension_degree as usize) * modulus_len;
+
+    if rest.len() < extension_element_len {
+        return Err(());
+    }
+    let (a_encoding, rest) = rest.split_at(extension_element_len);
+
+    if rest.len() < extension_element_len {
+        return Err(());
+    }
+    let (b_encoding, rest) = rest.split_at(extension_element_len);
+
+    if rest.len() < BYTES_FOR_LENGTH_ENCODING {
+        return Err(());
+    }
+    let (order_len, rest) = rest.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let order_len = order_len[0] as usize;
+    if rest.len() < order_len {
+        return Err(());
+    }
+    let (order_encoding, rest) = rest.split_at(order_len);
+    let order = BigUint::from_bytes_be(&order_encoding);
+    if order.is_zero() {
+        return Err(());
+    }
+    if rest.len() == 0 {
+        return Err(());
+    }
+
+    Ok(
+        (
+            modulus,
+            modulus_len,
+            extension_degree,
+            a_encoding,
+            b_encoding,
+            order,
+            order_len,
+            rest
+        )
+    )
+}
+
+/// return:
 /// - modulus
 pub(crate) fn parse_curve_type_and_modulus<'a>(bytes: &'a [u8]) -> Result<(u8, BigUint), ()> {
     if bytes.len() < CURVE_TYPE_LENGTH {

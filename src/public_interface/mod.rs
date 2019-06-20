@@ -6,6 +6,7 @@ mod decode_fp;
 mod decode_utils;
 
 mod g1_ops;
+mod g2_ops;
 mod pairing_ops;
 
 pub mod constants;

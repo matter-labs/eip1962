@@ -1,13 +1,8 @@
-extern crate hex;
-
 use crate::public_interface::constants::*;
 
-use num_bigint::BigUint;
 use crate::test::parsers::*;
 
 use super::*;
-
-const EXTENSION_DEGREE: usize = 2;
 
 fn assemble_single_curve_params(curve: JsonCurveParameters) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
@@ -98,6 +93,36 @@ fn test_g1_mul_from_vectors() {
             assert!(result == expected_result);
         }
     }
+}
+
+extern crate hex;
+extern crate csv;
+
+use hex::{encode};
+use csv::{Writer};
+
+
+#[test]
+fn dump_g1_mul_vectors() {
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    assert!(curves.len() != 0);
+    let mut writer = Writer::from_path("src/test/test_vectors/bls12/g1_mul.csv").expect("must open a test file");
+    writer.write_record(&["input", "result"]).expect("must write header");
+    for curve in curves.into_iter() {
+        let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
+        for pair in curve.g1_mul_vectors.into_iter() {
+            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
+            let mut input_data = vec![OPERATION_G1_MUL];
+            input_data.extend(calldata.clone());
+            input_data.extend(points_data);
+
+            writer.write_record(&[
+                prepend_0x(&encode(&input_data[..])), 
+                prepend_0x(&encode(&expected_result[..]))],
+            ).expect("must write a record");
+        }
+    }
+    writer.flush().expect("mush finalize writing");
 }
 
 // use rust_test::Bencher;

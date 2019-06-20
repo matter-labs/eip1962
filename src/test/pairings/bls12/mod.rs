@@ -1,5 +1,3 @@
-extern crate hex;
-
 use crate::public_interface::constants::*;
 use crate::public_interface::{PublicG1Api, G1Api};
 

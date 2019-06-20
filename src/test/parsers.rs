@@ -268,3 +268,7 @@ pub(crate) fn pad_for_len_be(input: Vec<u8>, len: usize) -> Vec<u8> {
 
     input
 }
+
+pub(crate) fn prepend_0x(input: &str) -> String {
+    format!("0x{}", input)
+}

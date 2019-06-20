@@ -1,50 +1,12 @@
 extern crate hex;
 
 use crate::public_interface::constants::*;
-use crate::public_interface::{PairingApi, PublicG1Api, PublicPairingApi, G1Api};
-use hex::{decode};
+use crate::public_interface::{PublicG1Api, G1Api};
 
 use num_bigint::BigUint;
-use num_traits::Num;
-
-extern crate serde;
-extern crate serde_json;
 
 use crate::test::parsers::*;
-
-fn read_dir_and_grab_curves() -> Vec<JsonCurveParameters> {
-    use std::io::Read;
-    use std::fs::{self};
-    use std::path::Path;
-    use std::fs::File;
-
-    let dir = Path::new("src/test/pairings/bls12/bls12curves/");
-    assert!(dir.is_dir());
-    let mut results = vec![];
-    for entry in fs::read_dir(dir).expect("must read the directory") {
-        let entry = entry.expect("directory should contain files");
-        let path = entry.path();
-        if path.is_dir() {
-            continue
-        } else {
-            let extension = path.extension();
-            if extension.is_none() {
-                continue
-            }
-            let extension = extension.unwrap();
-            if extension != "curve" {
-                continue
-            }
-        }
-        let mut buffer = Vec::new();
-        let mut f = File::open(path).expect("must open file");
-        f.read_to_end(&mut buffer).expect("must read bytes from file");
-        let c: JsonCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
-        results.push(c);
-    }
-    
-    results
-}
+use super::call_pairing_engine;
 
 fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
     // - Curve type
@@ -218,7 +180,7 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
 #[test]
 fn test_single() {
     let calldata = assemble_single();
-    let result = call_bls12_engine(&calldata[..]);
+    let result = call_pairing_engine(&calldata[..]);
     assert!(result.is_ok());
 
     let result = result.unwrap()[0];
@@ -227,10 +189,11 @@ fn test_single() {
 
 #[test]
 fn test_from_vectors() {
-    let curves = read_dir_and_grab_curves();
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    assert!(curves.len() != 0);
     for curve in curves.into_iter() {
         let calldata = assemble_single_curve_params(curve);
-        let result = call_bls12_engine(&calldata[..]);
+        let result = call_pairing_engine(&calldata[..]);
         assert!(result.is_ok());
 
         let result = result.unwrap()[0];
@@ -244,7 +207,7 @@ use rust_test::Bencher;
 fn bench_single(b: &mut Bencher) {
     let calldata = assemble_single();
     b.iter(|| {
-        call_bls12_engine(&calldata[..]).expect("must use");
+        call_pairing_engine(&calldata[..]).expect("must use");
     });
 }
 
@@ -330,9 +293,7 @@ fn assemble_single() -> Vec<u8> {
     calldata
 }
 
-fn call_bls12_engine(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-    PublicPairingApi::pair(&bytes)
-}
+
 
 fn strip_0x(string: &str) -> String {
     let string = string.trim();
@@ -387,16 +348,4 @@ fn strip_0x_and_pad(string: &str) -> String {
     }
 
     std::string::String::from_utf8(string).unwrap()
-}
-
-fn pad_for_len_be(input: Vec<u8>, len: usize) -> Vec<u8> {
-    if input.len() < len {
-        let mut res = input;
-        res.reverse();
-        res.resize(len, 0u8);
-        res.reverse();
-        return res;
-    }
-
-    input
 }

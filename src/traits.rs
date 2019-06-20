@@ -167,22 +167,22 @@ impl<E: AsRef<[u64]>> Iterator for LsbBitIterator<E> {
     }
 }
 
-/// This trait represents an element of a field that has a square root operation described for it.
-pub trait SqrtFieldElement: FieldElement {
-    /// Returns the Legendre symbol of the field element.
-    fn legendre(&self) -> LegendreSymbol;
+// /// This trait represents an element of a field that has a square root operation described for it.
+// pub trait SqrtFieldElement: FieldElement {
+//     /// Returns the Legendre symbol of the field element.
+//     fn legendre(&self) -> LegendreSymbol;
 
-    /// Returns the square root of the field element, if it is
-    /// quadratic residue.
-    fn sqrt(&self) -> Option<Self>;
-}
+//     /// Returns the square root of the field element, if it is
+//     /// quadratic residue.
+//     fn sqrt(&self) -> Option<Self>;
+// }
 
-#[derive(Debug, PartialEq)]
-pub enum LegendreSymbol {
-    Zero = 0,
-    QuadraticResidue = 1,
-    QuadraticNonResidue = -1,
-}
+// #[derive(Debug, PartialEq)]
+// pub enum LegendreSymbol {
+//     Zero = 0,
+//     QuadraticResidue = 1,
+//     QuadraticNonResidue = -1,
+// }
 
 
 #[cfg(test)]

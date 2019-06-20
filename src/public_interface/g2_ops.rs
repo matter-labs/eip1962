@@ -26,7 +26,6 @@ use num_bigint::BigUint;
 
 use super::decode_utils::parse_encodings_in_extension;
 
-#[macro_use]
 use super::decode_g2::*;
 
 use super::decode_g1::decode_scalar_representation;
@@ -34,6 +33,8 @@ use super::decode_g1::get_base_field_params;
 use super::decode_g1::get_g1_curve_params;
 use super::decode_fp::{decode_fp2, decode_fp3};
 use super::constants::*;
+
+use crate::errors::ApiError;
 
 /// Every call has common parameters (may be redundant):
 /// - Lengths of modulus (in bytes)
@@ -46,9 +47,9 @@ use super::constants::*;
 /// - Curve order
 
 pub trait G2Api {
-    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()>;
-    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()>;
-    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()>;
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
 }
 
 pub struct G2ApiImplementationFp2<FE: ElementRepr, GE: ElementRepr> {
@@ -59,8 +60,8 @@ pub struct G2ApiImplementationFp2<FE: ElementRepr, GE: ElementRepr> {
 macro_rules! get_ab_in_fp2_extension_field {
     ($rest: expr, $field: expr, $modulus_len: expr) => {
         {
-            if $rest.len() < $modulus_len {
-                return Err(());
+            if $rest.len() < 4*$modulus_len {
+                return Err(ApiError::InputError("Input length is not enough to get A and B in Fp2".to_owned()));
             }
             let (a, rest) = decode_fp2(& $rest, $modulus_len, & $field)?;
             let (b, rest) = decode_fp2(& rest, $modulus_len, & $field)?;
@@ -85,7 +86,7 @@ macro_rules! get_ab_in_fp3_extension_field {
 }
 
 impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> {
-    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, _, rest) = create_base_field_with_modulus!(bytes, FE);
         let (extension_2, rest) = create_fp2_extension(rest, modulus_len, &field)?;
         let (a, b, rest) = get_ab_in_fp2_extension_field!(rest, extension_2, modulus_len);
@@ -101,7 +102,7 @@ impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> 
         serialize_g2_point_in_fp2(modulus_len, &p_0)   
     }
 
-    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, _, rest) = create_base_field_with_modulus!(bytes, FE);
         let (extension_2, rest) = create_fp2_extension(rest, modulus_len, &field)?;
         let (a, b, rest) = get_ab_in_fp2_extension_field!(rest, extension_2, modulus_len);
@@ -117,8 +118,8 @@ impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> 
         serialize_g2_point_in_fp2(modulus_len, &p)   
     }
 
-    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        return Err(());
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+        unimplemented!();
         // let (field, modulus_len, _, rest) = create_base_field_with_modulus!(bytes, FE);
         // let (extension_2, rest) = create_fp2_extension(&rest, modulus_len, &field)?;
         // let (a, b, rest) = get_ab_in_fp2_extension_field!(rest, extension_2, modulus_len);
@@ -155,14 +156,14 @@ impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> 
 pub struct PublicG2Api;
 
 impl G2Api for PublicG2Api {
-    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _, order, _, _) = parse_encodings_in_extension(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ()> = match extension_degree {
+        let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
-                let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+                let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
                     (4, 4) => {
                         G2ApiImplementationFp2::<U256Repr, U256Repr>::add_points(&bytes)
                     },
@@ -172,8 +173,8 @@ impl G2Api for PublicG2Api {
                     (5, 5) => {
                         G2ApiImplementationFp2::<U320Repr, U320Repr>::add_points(&bytes)
                     },
-                    _ => {
-                        unimplemented!();
+                    (field_limbs, group_limbs) => {
+                        unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
                     }
                 };
 
@@ -187,14 +188,14 @@ impl G2Api for PublicG2Api {
         result
     }
 
-    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _, order, _, _) = parse_encodings_in_extension(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ()> = match extension_degree {
+        let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
-                let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+                let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
                     (4, 4) => {
                         G2ApiImplementationFp2::<U256Repr, U256Repr>::mul_point(&bytes)
                     },
@@ -204,8 +205,8 @@ impl G2Api for PublicG2Api {
                     (5, 5) => {
                         G2ApiImplementationFp2::<U320Repr, U320Repr>::mul_point(&bytes)
                     },
-                    _ => {
-                        unimplemented!();
+                    (field_limbs, group_limbs) => {
+                        unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
                     }
                 };
 
@@ -219,14 +220,14 @@ impl G2Api for PublicG2Api {
         result
     }
 
-    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _, order, _, _) = parse_encodings_in_extension(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ()> = match extension_degree {
+        let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
-                let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+                let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
                     (4, 4) => {
                         G2ApiImplementationFp2::<U256Repr, U256Repr>::add_points(&bytes)
                     },
@@ -236,8 +237,8 @@ impl G2Api for PublicG2Api {
                     (5, 5) => {
                         G2ApiImplementationFp2::<U320Repr, U320Repr>::add_points(&bytes)
                     },
-                    _ => {
-                        unimplemented!();
+                    (field_limbs, group_limbs) => {
+                        unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
                     }
                 };
 

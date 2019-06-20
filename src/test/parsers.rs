@@ -6,7 +6,7 @@ extern crate serde_json;
 
 use serde::{Deserialize, Deserializer};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct JsonCurveParameters {
     #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
     pub non_residue: (BigUint, bool),
@@ -58,7 +58,7 @@ pub struct JsonCurveParameters {
     pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct JsonG1PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "a")]
@@ -81,7 +81,7 @@ pub struct JsonG1PointScalarMultiplicationPair {
     pub result_y: BigUint,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct JsonG2PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "a")]
@@ -221,4 +221,50 @@ fn strip_0x_and_pad(string: &str) -> String {
     }
 
     std::string::String::from_utf8(string).unwrap()
+}
+
+pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<JsonCurveParameters> {
+    use std::io::Read;
+    use std::fs::{self};
+    use std::path::Path;
+    use std::fs::File;
+
+    let dir = Path::new(dir_path);
+    assert!(dir.is_dir());
+    let mut results = vec![];
+    for entry in fs::read_dir(dir).expect("must read the directory") {
+        let entry = entry.expect("directory should contain files");
+        let path = entry.path();
+        if path.is_dir() {
+            continue
+        } else {
+            let extension = path.extension();
+            if extension.is_none() {
+                continue
+            }
+            let extension = extension.unwrap();
+            if extension != "curve" {
+                continue
+            }
+        }
+        let mut buffer = Vec::new();
+        let mut f = File::open(path).expect("must open file");
+        f.read_to_end(&mut buffer).expect("must read bytes from file");
+        let c: JsonCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
+        results.push(c);
+    }
+    
+    results
+}
+
+pub(crate) fn pad_for_len_be(input: Vec<u8>, len: usize) -> Vec<u8> {
+    if input.len() < len {
+        let mut res = input;
+        res.reverse();
+        res.resize(len, 0u8);
+        res.reverse();
+        return res;
+    }
+
+    input
 }

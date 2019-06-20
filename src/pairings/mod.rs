@@ -17,13 +17,13 @@ use num_traits::FromPrimitive;
 use num_integer::Integer;
 use num_traits::Zero;
 
-pub mod bls12;
-pub mod bn;
-pub mod cp;
-pub mod mnt6;
-pub mod mnt4;
+pub(crate) mod bls12;
+pub(crate) mod bn;
+pub(crate) mod cp;
+pub(crate) mod mnt6;
+pub(crate) mod mnt4;
 
-pub trait PairingEngine: Sized {
+pub(crate) trait PairingEngine: Sized {
     type PairingResult: FieldElement;
     type G1: Group;
     type G2: Group;
@@ -31,7 +31,7 @@ pub trait PairingEngine: Sized {
     fn pair<'b> (&self, points: &'b [Self::G1], twists: &'b [Self::G2]) -> Option<Self::PairingResult>;
 }
 
-pub fn frobenius_calculator_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub(crate) fn frobenius_calculator_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         // modulus: BigUint,
         // base_field: &'a F,
         extension: &Extension2<'a, FE, F>,
@@ -65,7 +65,7 @@ pub fn frobenius_calculator_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = F
         Ok([f_0, f_1])
 }
 
-pub fn frobenius_calculator_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub(crate) fn frobenius_calculator_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &Extension3<'a, FE, F>
     ) -> Result<([Fp<'a, FE, F>; 3], [Fp<'a, FE, F>; 3]), ()> {
@@ -103,7 +103,7 @@ pub fn frobenius_calculator_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = F
         Ok(([f_0, f_1, f_2], [f_0_c2, f_1_c2, f_2_c2]))
 }
 
-pub fn frobenius_calculator_fp4_as_2_over_2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub(crate) fn frobenius_calculator_fp4_as_2_over_2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &fp4_as_2_over_2::Extension2Over2<'a, FE, F>
     ) -> Result<[Fp<'a, FE, F>; 4], ()> {
@@ -145,7 +145,7 @@ pub fn frobenius_calculator_fp4_as_2_over_2<'a, FE: ElementRepr, F: SizedPrimeFi
         Ok([f_0, f_1, f_2, f_3])
 }
 
-pub fn frobenius_calculator_fp6_as_2_over_3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub(crate) fn frobenius_calculator_fp6_as_2_over_3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &fp6_as_2_over_3::Extension2Over3<'a, FE, F>
     ) -> Result<[Fp<'a, FE, F>; 6], ()> {
@@ -196,7 +196,7 @@ pub fn frobenius_calculator_fp6_as_2_over_3<'a, FE: ElementRepr, F: SizedPrimeFi
         Ok([f_0, f_1, f_2, f_3, f_4, f_5])
 }
 
-pub fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub(crate) fn frobenius_calculator_fp6_as_3_over_2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &fp6_as_3_over_2::Extension3Over2<'a, FE, F>
     ) -> Result<([Fp2<'a, FE, F>; 6], [Fp2<'a, FE, F>; 6]), ()> {
@@ -383,7 +383,7 @@ pub(crate) fn frobenius_calculator_fp12_using_sliding_window<'a, FE: ElementRepr
         Ok([f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11])
 }
 
-pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
+pub(crate) fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>(
         modulus: BigUint,
         extension: &Extension2Over3Over2<'a, FE, F>
     ) -> Result<[Fp2<'a, FE, F>; 12], ()> {
@@ -475,7 +475,7 @@ pub fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
         Ok([f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11])
 }
 
-pub fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
+pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
     fn is_zero(repr: &[u64]) -> bool {
 
         for el in repr.iter() {

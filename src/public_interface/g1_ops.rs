@@ -44,10 +44,12 @@ use super::decode_utils::parse_encodings;
 #[macro_use]
 use super::decode_g1::*;
 
+use crate::errors::ApiError;
+
 pub trait G1Api {
-    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()>;
-    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()>;
-    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()>;
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
 }
 
 pub struct G1ApiImplementation<FE: ElementRepr, GE: ElementRepr> {
@@ -56,7 +58,7 @@ pub struct G1ApiImplementation<FE: ElementRepr, GE: ElementRepr> {
 }
 
 impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
-    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, rest) = create_base_field!(bytes, FE);
         let (a, b, rest) = get_ab_in_base_field!(rest, field, modulus_len);
         let (group, order_len, rest) = create_group!(rest, GE);
@@ -71,7 +73,7 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
         serialize_g1_point(modulus_len, &p_0)   
     }
 
-    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, rest) = create_base_field!(bytes, FE);
         let (a, b, rest) = get_ab_in_base_field!(rest, field, modulus_len);
         let (group, order_len, rest) = create_group!(rest, GE);
@@ -86,7 +88,7 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
         serialize_g1_point(modulus_len, &p)   
     }
 
-    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, rest) = create_base_field!(bytes, FE);
         let (a, b, rest) = get_ab_in_base_field!(rest, field, modulus_len);
         let (group, order_len, rest) = create_group!(rest, GE);
@@ -95,12 +97,12 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
 
         let expected_pair_len = 2*modulus_len + order_len;
         if rest.len() % expected_pair_len != 0 {
-            return Err(());
+            return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
         }
 
         let expected_pairs = rest.len() / expected_pair_len;
         if expected_pairs == 0 {
-            return Err(());
+            return Err(ApiError::InputError("Number of pairs must be > 0".to_owned()));
         }
 
         // let mut acc = CurvePoint::zero(&curve);
@@ -125,12 +127,12 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
 pub struct PublicG1Api;
 
 impl G1Api for PublicG1Api {
-    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+        let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
             (4, 4) => {
                 G1ApiImplementation::<U256Repr, U256Repr>::add_points(&bytes)
             },
@@ -148,12 +150,12 @@ impl G1Api for PublicG1Api {
         result
     }
 
-    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
         
-        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+        let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
             (4, 4) => {
                 G1ApiImplementation::<U256Repr, U256Repr>::mul_point(&bytes)
             },
@@ -177,12 +179,12 @@ impl G1Api for PublicG1Api {
         result
     }
 
-    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
+    fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, _, _, order, _, _) = parse_encodings(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ()> = match (modulus_limbs, order_limbs) {
+        let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
             (4, 4) => {
                 G1ApiImplementation::<U256Repr, U256Repr>::multiexp(&bytes)
             },

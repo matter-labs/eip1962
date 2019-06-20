@@ -21,6 +21,7 @@ mod api;
 mod extension_towers;
 mod pairings;
 mod sliding_window_exp;
+mod errors;
 
 pub mod public_interface;
 

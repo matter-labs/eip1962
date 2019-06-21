@@ -1,14 +1,14 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, MsbBitIterator};
+use crate::traits::{FieldElement, MsbBitIterator};
 use crate::weierstrass::Group;
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::weierstrass::twist::{WeierstrassCurveTwist, TwistPoint};
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
-use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
-use crate::pairings::{PairingEngine, into_ternary_wnaf};
+use crate::extension_towers::fp6_as_3_over_2::{Extension3Over2};
+use crate::pairings::{PairingEngine};
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum TwistType {
@@ -366,7 +366,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             self.ell(&mut f, &coeffs.next().unwrap(), p);
         }
 
-        for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
+        for (_p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
             debug_assert!(coeffs.next().is_none());
         }
 

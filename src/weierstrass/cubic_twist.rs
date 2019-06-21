@@ -1,5 +1,4 @@
 use crate::field::SizedPrimeField;
-use crate::fp::Fp;
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator};
 use super::{CurveType, Group};
@@ -594,7 +593,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             _ => {
                 self.add_assign_generic_impl(&other);
             },
-            _ => {unimplemented!()}
         }
     }
 
@@ -603,7 +601,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             _ => {
                 self.add_assign_mixed_generic_impl(&other);
             },
-            _ => {unimplemented!()}
         }
     }
 
@@ -618,7 +615,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             _ => {
                 self.negate_impl();
             },
-            _ => {unimplemented!()}
         }
     }
 
@@ -627,7 +623,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             _ => {
                 return self.mul_impl(exp);
             },
-            _ => {unimplemented!()}
         }
     }
 
@@ -636,7 +631,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             _ => {
                 return self.is_zero_generic_impl();
             },
-            _ => {unimplemented!()}
         }
     }
 
@@ -657,7 +651,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
             _ => {
                 return self.wnaf_mul_impl(exp);
             },
-            _ => {unimplemented!()}
         }
     }
 }

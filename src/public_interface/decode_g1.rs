@@ -1,6 +1,5 @@
-use crate::weierstrass::Group;
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
-use crate::field::{SizedPrimeField, field_from_modulus};
+use crate::field::{SizedPrimeField, field_from_modulus, PrimeField};
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
 
@@ -12,73 +11,50 @@ use num_traits::{Zero};
 
 use crate::errors::ApiError;
 
-macro_rules! create_base_field {
-    ($bytes:expr, $repr:tt) => {
-        {
-            let ((modulus, modulus_len), rest) = get_base_field_params($bytes)?;
-            let field = field_from_modulus::<$repr>(modulus).map_err(|_| {
-                ApiError::InputError("Failed to create prime field from modulus".to_owned())
-            })?;
-            if rest.len() < modulus_len {
-                return Err(ApiError::InputError("Input is not long enough".to_owned()));
-            }
-
-            (field, modulus_len, rest)
-        }
+pub(crate) fn parse_base_field_from_encoding<
+    'a,
+    FE: ElementRepr,
+    >(encoding: &'a [u8]) -> Result<(PrimeField<FE>, usize, BigUint, &'a [u8]), ApiError>
+{
+    let ((modulus, modulus_len), rest) = get_base_field_params(&encoding)?;
+    let field = field_from_modulus::<FE>(modulus.clone()).map_err(|_| {
+        ApiError::InputError("Failed to create prime field from modulus".to_owned())
+    })?;
+    if rest.len() < modulus_len {
+        return Err(ApiError::InputError("Input is not long enough".to_owned()));
     }
+
+    Ok((field, modulus_len, modulus, rest))
 }
 
-macro_rules! create_base_field_with_modulus {
-    ($bytes:expr, $repr:tt) => {
-        {
-            let ((modulus, modulus_len), rest) = get_base_field_params($bytes)?;
-            let field = field_from_modulus::<$repr>(modulus.clone()).map_err(|_| {
-                ApiError::InputError("Failed to create prime field from modulus".to_owned())
-            })?;
-            if rest.len() < modulus_len {
-                return Err(ApiError::InputError("Input is not long enough".to_owned()));
-            }
+pub(crate) fn parse_group_order_from_encoding<
+    'a,
+    GE: ElementRepr,
+    >(encoding: &'a [u8]) -> Result<(PrimeField<GE>, usize, BigUint, &'a [u8]), ApiError>
+{
+    let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
+    let order = BigUint::from_bytes_be(&order);
+    let group = field_from_modulus::<GE>(order.clone()).map_err(|_| {
+        ApiError::InputError("Failed to create scalar field from group order".to_owned())
+    })?;
 
-            (field, modulus_len, modulus, rest)
-        }
-    }
+    Ok((group, order_len, order, rest))
 }
 
-macro_rules! get_ab_in_base_field {
-    ($rest:expr, $field:expr, $modulus_len: expr) => {
-        {
-            if $rest.len() < $modulus_len {
-                return Err(ApiError::InputError("Input is not long enough to A parameter".to_owned()));
-            }
-            let (a_encoding, rest) = $rest.split_at($modulus_len);
-            let a = Fp::from_be_bytes(&$field, a_encoding, true).map_err(|_| {
-                ApiError::InputError("Failed to parse A in Fp".to_owned())
-            })?;
-            if rest.len() < $modulus_len {
-                return Err(ApiError::InputError("Input is not long enough to B paramter".to_owned()));
-            }
-            let (b_encoding, rest) = rest.split_at($modulus_len);
-            let b = Fp::from_be_bytes(&$field, b_encoding, true).map_err(|_| {
-                ApiError::InputError("Failed to parse B in Fp".to_owned())
-            })?;
-            
-            (a, b, rest)
-        }
-    }
-}
+pub(crate) fn parse_ab_in_base_field_from_encoding<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >(
+        encoding: &'a [u8], 
+        modulus_len: usize,
+        base_field: &'a F
+    ) -> Result<(Fp<'a, FE, F>, Fp<'a, FE, F>, &'a [u8]), ApiError>
+{
+    let (a, rest) = decode_fp(&encoding, modulus_len, base_field)?;
+    let (b, rest) = decode_fp(&rest, modulus_len, base_field)?;
 
-macro_rules! create_group {
-    ($bytes:expr, $repr:tt) => {
-        {
-            let ((order, order_len), rest) = get_g1_curve_params($bytes)?;
-            let order = BigUint::from_bytes_be(&order);
-            let group = field_from_modulus::<$repr>(order).map_err(|_| {
-                ApiError::InputError("Failed to create scalar field from group order".to_owned())
-            })?;
-
-            (group, order_len, rest)
-        }
-    }
+    Ok((a, b, rest))
 }
 
 pub(crate) fn serialize_g1_point<

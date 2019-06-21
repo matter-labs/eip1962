@@ -44,6 +44,14 @@ struct U832(U832Repr);
 #[NumberOfLimbs = "14"]
 struct U896(U896Repr);
 
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "15"]
+struct U960(U960Repr);
+
+#[derive(ElementRepresentation)]
+#[NumberOfLimbs = "16"]
+struct U1024(U1024Repr);
+
 /// PrimeField is a structure that it instantiated at the runtime 
 /// and holds all the necessary information for further arithmetic
 /// operations (mainly precompiled Montgommery constants)
@@ -51,9 +59,7 @@ struct U896(U896Repr);
 use num_bigint::BigUint;
 use num_traits::{One, ToPrimitive, Zero};
 
-use crate::representation::{ElementRepr, RepresentationDecodingError};
-use crate::traits::FieldElement;
-use crate::traits::BitIterator;
+use crate::representation::{ElementRepr};
 
 /// Convert BigUint into a vector of 64-bit limbs.
 fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {

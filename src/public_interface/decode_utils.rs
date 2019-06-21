@@ -1,12 +1,3 @@
-use crate::weierstrass::Group;
-use crate::weierstrass::twist;
-use crate::weierstrass::cubic_twist;
-use crate::field::{SizedPrimeField, field_from_modulus};
-use crate::fp::Fp;
-use crate::extension_towers::fp2;
-use crate::extension_towers::fp3;
-use crate::representation::ElementRepr;
-
 use num_bigint::BigUint;
 use num_traits::{Zero};
 
@@ -108,6 +99,7 @@ pub(crate) fn parse_encodings<'a>(bytes: &'a [u8]) -> Result<(
 /// - modulus, 
 /// - modulus_len, 
 /// - extension degree
+/// - non-residue
 /// - a_bytes, 
 /// - b_bytes, 
 /// - scalar field modulus 
@@ -117,6 +109,7 @@ pub(crate) fn parse_encodings_in_extension<'a>(bytes: &'a [u8]) -> Result<(
         BigUint, 
         usize,
         u8,
+        &'a [u8],
         &'a [u8],
         &'a [u8],
         BigUint,
@@ -144,8 +137,12 @@ pub(crate) fn parse_encodings_in_extension<'a>(bytes: &'a [u8]) -> Result<(
         return Err(ApiError::InputError("Extension degree must be 2 or 3".to_owned()));
     }
 
-    let extension_element_len = (extension_degree as usize) * modulus_len;
+    if rest.len() < modulus_len {
+        return Err(ApiError::InputError("Input is not long enough to Fp non-residue".to_owned()));
+    }
+    let (nonresidue_encoding, rest) = rest.split_at(modulus_len);
 
+    let extension_element_len = (extension_degree as usize) * modulus_len;
     if rest.len() < extension_element_len {
         return Err(ApiError::InputError("Input is not long enough to get A in extension".to_owned()));
     }
@@ -167,7 +164,7 @@ pub(crate) fn parse_encodings_in_extension<'a>(bytes: &'a [u8]) -> Result<(
     let (order_encoding, rest) = rest.split_at(order_len);
     let order = BigUint::from_bytes_be(&order_encoding);
     if order.is_zero() {
-        return Err(ApiError::InputError("Main group size can not be zero".to_owned()));
+        return Err(ApiError::InputError(format!("Main group size can not be zero, file {}, line {}", file!(), line!())));
     }
     if rest.len() == 0 {
         return Err(ApiError::InputError("Input is not long enough".to_owned()));
@@ -178,6 +175,7 @@ pub(crate) fn parse_encodings_in_extension<'a>(bytes: &'a [u8]) -> Result<(
             modulus,
             modulus_len,
             extension_degree,
+            nonresidue_encoding,
             a_encoding,
             b_encoding,
             order,

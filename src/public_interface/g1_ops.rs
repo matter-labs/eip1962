@@ -17,31 +17,14 @@
 
 use crate::weierstrass::Group;
 use crate::weierstrass::curve::{WeierstrassCurve};
-use crate::field::{field_from_modulus};
-use crate::fp::Fp;
-use crate::field::{
-    U256Repr, 
-    U320Repr,
-    U384Repr,
-    U448Repr,
-    U512Repr,
-    U576Repr,
-    U640Repr,
-    U704Repr,
-    U768Repr,
-    U832Repr,
-    U896Repr,
-    // U960Repr,
-    // U1024Repr
-};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
-
-use num_bigint::BigUint;
-
 use super::decode_utils::parse_encodings;
+use crate::field::*;
 
 #[macro_use]
+use super::api_specialization_macro::*;
+
 use super::decode_g1::*;
 
 use crate::errors::ApiError;
@@ -59,9 +42,9 @@ pub struct G1ApiImplementation<FE: ElementRepr, GE: ElementRepr> {
 
 impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (field, modulus_len, rest) = create_base_field!(bytes, FE);
-        let (a, b, rest) = get_ab_in_base_field!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest, GE);
+        let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
+        let (group, order_len, _, rest) = parse_group_order_from_encoding::<GE>(rest)?;
 
         let curve = WeierstrassCurve::new(&group, a, b);
 
@@ -74,9 +57,9 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
     }
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (field, modulus_len, rest) = create_base_field!(bytes, FE);
-        let (a, b, rest) = get_ab_in_base_field!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest, GE);
+        let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
+        let (group, order_len, _, rest) = parse_group_order_from_encoding::<GE>(rest)?;
 
         let curve = WeierstrassCurve::new(&group, a, b);
 
@@ -89,9 +72,9 @@ impl<FE: ElementRepr, GE: ElementRepr> G1Api for G1ApiImplementation<FE, GE> {
     }
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (field, modulus_len, rest) = create_base_field!(bytes, FE);
-        let (a, b, rest) = get_ab_in_base_field!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest, GE);
+        let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
+        let (group, order_len, _, rest) = parse_group_order_from_encoding::<GE>(rest)?;
 
         let curve = WeierstrassCurve::new(&group, a, b);
 
@@ -132,20 +115,7 @@ impl G1Api for PublicG1Api {
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
-            (4, 4) => {
-                G1ApiImplementation::<U256Repr, U256Repr>::add_points(&bytes)
-            },
-            (5, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::add_points(&bytes)
-            },
-            (5, 5) => {
-                G1ApiImplementation::<U320Repr, U320Repr>::add_points(&bytes)
-            },
-            _ => {
-                unimplemented!();
-            }
-        };
+        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_and_group_limbs!(modulus_limbs, order_limbs, G1ApiImplementation, bytes, add_points); 
 
         result
     }
@@ -155,26 +125,7 @@ impl G1Api for PublicG1Api {
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
         
-        let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
-            (4, 4) => {
-                G1ApiImplementation::<U256Repr, U256Repr>::mul_point(&bytes)
-            },
-            (5, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::mul_point(&bytes)
-            },
-            (5, 5) => {
-                G1ApiImplementation::<U320Repr, U320Repr>::mul_point(&bytes)
-            },
-            (10, 7) => {
-                G1ApiImplementation::<U640Repr, U448Repr>::mul_point(&bytes)
-            },
-            (field_limbs, group_limbs) => {
-                unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
-            }
-            // _ => {
-            //     unimplemented!();
-            // }
-        };
+        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_and_group_limbs!(modulus_limbs, order_limbs, G1ApiImplementation, bytes, mul_point); 
 
         result
     }
@@ -184,35 +135,7 @@ impl G1Api for PublicG1Api {
         let modulus_limbs = (modulus.bits() / 64) + 1;
         let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ApiError> = match (modulus_limbs, order_limbs) {
-            (4, 4) => {
-                G1ApiImplementation::<U256Repr, U256Repr>::multiexp(&bytes)
-            },
-            (5, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
-            },
-            (6, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
-            },
-            (7, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
-            },
-            (8, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
-            },
-            (9, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
-            },
-            (10, 4) => {
-                G1ApiImplementation::<U320Repr, U256Repr>::multiexp(&bytes)
-            },
-            (5, 5) => {
-                G1ApiImplementation::<U320Repr, U320Repr>::multiexp(&bytes)
-            },
-            (field_limbs, group_limbs) => {
-                unimplemented!("unimplemented for {} modulus and {} group limbs", field_limbs, group_limbs);
-            }
-        };
+        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_and_group_limbs!(modulus_limbs, order_limbs, G1ApiImplementation, bytes, multiexp); 
 
         result
     }

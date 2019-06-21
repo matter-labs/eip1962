@@ -1,15 +1,11 @@
-extern crate hex;
-
-use crate::public_interface::constants::*;
-
-use num_bigint::BigUint;
 use crate::test::parsers::*;
+use crate::public_interface::constants::*;
 
 use super::*;
 
 const EXTENSION_DEGREE: usize = 2;
 
-fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
+fn assemble_single_curve_params(curve: JsonPairingCurveParameters) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -34,13 +30,10 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
         pad_for_len_be(nonres.to_bytes_be(), modulus_length)
     };
 
-    let mut a_encoded = pad_for_len_be(curve.a_0.to_bytes_be(), modulus_length);
-    a_encoded.extend(pad_for_len_be(curve.a_1.to_bytes_be(), modulus_length));
-    let mut b_encoded = pad_for_len_be(curve.b_0.to_bytes_be(), modulus_length);
-    b_encoded.extend(pad_for_len_be(curve.b_1.to_bytes_be(), modulus_length));
-
-    let twist_type = if curve.is_d_type { vec![TWIST_TYPE_D] } else { vec![TWIST_TYPE_M] };
-
+    let mut a_encoded = pad_for_len_be(curve.a_twist_0.to_bytes_be(), modulus_length);
+    a_encoded.extend(pad_for_len_be(curve.a_twist_1.to_bytes_be(), modulus_length));
+    let mut b_encoded = pad_for_len_be(curve.a_twist_0.to_bytes_be(), modulus_length);
+    b_encoded.extend(pad_for_len_be(curve.a_twist_1.to_bytes_be(), modulus_length));
 
     // now we make two random scalars and do scalar multiplications in G1 and G2 to get pairs that should
     // at the end of the day pair to identity element
@@ -60,30 +53,107 @@ fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
     calldata.extend(group_len_encoded.into_iter());
     calldata.extend(group_size_encoded.into_iter());
 
-    calldata
+    (calldata, modulus_length, group_size_length)
+}
+
+fn assemble_single_point_scalar_pair(
+    pair: JsonG2PointScalarMultiplicationPair,
+    modulus_len: usize,
+    group_len: usize,
+) -> (Vec<u8>, Vec<u8>) {
+    // - X,
+    // - Y,
+    // - Scalar
+
+    // - Result X
+    // - Result Y
+
+    // first determine the length of the modulus
+    let mut x_encoded = pad_for_len_be(pair.base_x_0.to_bytes_be(), modulus_len);
+    x_encoded.extend(pad_for_len_be(pair.base_x_1.to_bytes_be(), modulus_len));
+    let mut y_encoded = pad_for_len_be(pair.base_y_0.to_bytes_be(), modulus_len);
+    y_encoded.extend(pad_for_len_be(pair.base_y_1.to_bytes_be(), modulus_len));
+
+    let scalar_encoded = pad_for_len_be(pair.scalar.to_bytes_be(), group_len);
+
+    let mut calldata = vec![];
+    calldata.extend(x_encoded.into_iter());
+    calldata.extend(y_encoded.into_iter());
+    calldata.extend(scalar_encoded.into_iter());
+
+    let mut result_x_encoded = pad_for_len_be(pair.result_x_0.to_bytes_be(), modulus_len);
+    result_x_encoded.extend(pad_for_len_be(pair.result_x_1.to_bytes_be(), modulus_len));
+    let mut result_y_encoded = pad_for_len_be(pair.result_y_0.to_bytes_be(), modulus_len);
+    result_y_encoded.extend(pad_for_len_be(pair.result_y_1.to_bytes_be(), modulus_len));
+
+    let mut result = vec![];
+    result.extend(result_x_encoded.into_iter());
+    result.extend(result_y_encoded.into_iter());
+
+    (calldata, result)
 }
 
 #[test]
-fn test_from_vectors() {
+fn test_g2_mul_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     for curve in curves.into_iter() {
-        let calldata = assemble_single_curve_params(curve);
-        let result = call_bls12_engine(&calldata[..]);
-        assert!(result.is_ok());
+        let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
+        for pair in curve.g2_mul_vectors.into_iter() {
+            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
 
-        let result = result.unwrap()[0];
-        assert!(result == 1u8);
+            let mut calldata = calldata.clone();
+            calldata.extend(points_data);
+
+            let result = call_g2_engine_mul(&calldata[..]);
+            if result.is_err() {
+                panic!("{}", result.err().unwrap());
+            }
+            assert!(result.is_ok());
+
+            let result = result.unwrap();
+            assert!(result == expected_result);
+        }
     }
 }
 
-use rust_test::Bencher;
+extern crate hex;
+extern crate csv;
 
-#[bench]
-fn bench_single(b: &mut Bencher) {
-    let calldata = assemble_single();
-    b.iter(|| {
-        call_bls12_engine(&calldata[..]).expect("must use");
-    });
+use hex::{encode};
+use csv::{Writer};
+
+#[test]
+fn dump_g2_mul_vectors() {
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    assert!(curves.len() != 0);
+    let mut writer = Writer::from_path("src/test/test_vectors/bls12/g2_mul.csv").expect("must open a test file");
+    writer.write_record(&["input", "result"]).expect("must write header");
+    for curve in curves.into_iter() {
+        let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
+        for pair in curve.g2_mul_vectors.into_iter() {
+            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
+            let mut input_data = vec![OPERATION_G2_MUL];
+            input_data.extend(calldata.clone());
+            input_data.extend(points_data);
+
+            writer.write_record(&[
+                prepend_0x(&encode(&input_data[..])), 
+                prepend_0x(&encode(&expected_result[..]))],
+            ).expect("must write a record");
+        }
+    }
+    writer.flush().expect("must finalize writing");
 }
+
+
+// use rust_test::Bencher;
+
+// #[bench]
+// fn bench_single(b: &mut Bencher) {
+//     let calldata = assemble_single();
+//     b.iter(|| {
+//         call_bls12_engine(&calldata[..]).expect("must use");
+//     });
+// }
 

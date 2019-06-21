@@ -195,7 +195,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp4<'a,
     fn square(&mut self)
     {
         let a = self.c0.clone();
-        let mut b = self.c1.clone();
+        let b = self.c1.clone();
         let mut ab_add = a.clone();
         ab_add.add_assign(&b);
         let mut ab_mul = a.clone();

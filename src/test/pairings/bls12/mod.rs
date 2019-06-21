@@ -6,7 +6,7 @@ use num_bigint::BigUint;
 use crate::test::parsers::*;
 use super::call_pairing_engine;
 
-fn assemble_single_curve_params(curve: JsonCurveParameters) -> Vec<u8> {
+fn assemble_single_curve_params(curve: JsonPairingCurveParameters) -> Vec<u8> {
     // - Curve type
     // - Lengths of modulus (in bytes)
     // - Field modulus
@@ -223,7 +223,6 @@ fn assemble_single() -> Vec<u8> {
     // - number of pairs
     // - list of encoded pairs
 
-    use num_bigint::BigUint;
     use num_traits::FromPrimitive;
     use num_integer::Integer;
     use num_traits::Zero;

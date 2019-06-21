@@ -1,9 +1,10 @@
-#[macro_use]
 mod decode_g1;
-
 mod decode_g2;
 mod decode_fp;
 mod decode_utils;
+
+#[macro_use]
+mod api_specialization_macro;
 
 mod g1_ops;
 mod g2_ops;

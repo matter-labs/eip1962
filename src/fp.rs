@@ -299,7 +299,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
         unreachable!();
     }
 
-    fn frobenius_map(&mut self, power: usize) {
-        unimplemented!();
+    fn frobenius_map(&mut self, _power: usize) {
+        unreachable!();
     }
 }

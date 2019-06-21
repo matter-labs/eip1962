@@ -7,7 +7,7 @@ extern crate serde_json;
 use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct JsonCurveParameters {
+pub struct JsonPairingCurveParameters {
     #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
     pub non_residue: (BigUint, bool),
 
@@ -37,6 +37,22 @@ pub struct JsonCurveParameters {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "B")]
     pub b: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_0")]
+    pub a_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_1")]
+    pub a_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_0")]
+    pub b_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_1")]
+    pub b_twist_1: BigUint,
 
     #[serde(deserialize_with = "biguint_from_hex_string")]
     pub g1_x: BigUint,
@@ -223,7 +239,7 @@ fn strip_0x_and_pad(string: &str) -> String {
     std::string::String::from_utf8(string).unwrap()
 }
 
-pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<JsonCurveParameters> {
+pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<JsonPairingCurveParameters> {
     use std::io::Read;
     use std::fs::{self};
     use std::path::Path;
@@ -250,7 +266,7 @@ pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<JsonCurveParameter
         let mut buffer = Vec::new();
         let mut f = File::open(path).expect("must open file");
         f.read_to_end(&mut buffer).expect("must read bytes from file");
-        let c: JsonCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
+        let c: JsonPairingCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
         results.push(c);
     }
     

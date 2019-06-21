@@ -4,7 +4,7 @@ use crate::test::parsers::*;
 
 use super::*;
 
-fn assemble_single_curve_params(curve: JsonCurveParameters) -> (Vec<u8>, usize, usize) {
+fn assemble_single_curve_params(curve: JsonPairingCurveParameters) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -122,7 +122,7 @@ fn dump_g1_mul_vectors() {
             ).expect("must write a record");
         }
     }
-    writer.flush().expect("mush finalize writing");
+    writer.flush().expect("must finalize writing");
 }
 
 // use rust_test::Bencher;

@@ -152,3 +152,35 @@ pub(crate) fn serialize_g2_point_in_fp2<
     
     Ok(result)
 }
+
+pub(crate) fn parse_ab_in_fp2_from_encoding<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >(
+        encoding: &'a [u8], 
+        modulus_len: usize,
+        field: &'a fp2::Extension2<'a, FE, F>
+    ) -> Result<(fp2::Fp2<'a, FE, F>, fp2::Fp2<'a, FE, F>, &'a [u8]), ApiError>
+{
+    let (a, rest) = decode_fp2(&encoding, modulus_len, field)?;
+    let (b, rest) = decode_fp2(&rest, modulus_len, field)?;
+
+    Ok((a, b, rest))
+}
+
+pub(crate) fn parse_ab_in_fp3_from_encoding<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >(
+        encoding: &'a [u8], 
+        modulus_len: usize,
+        field: &'a fp3::Extension3<'a, FE, F>
+    ) -> Result<(fp3::Fp3<'a, FE, F>, fp3::Fp3<'a, FE, F>, &'a [u8]), ApiError>
+{
+    let (a, rest) = decode_fp3(&encoding, modulus_len, field)?;
+    let (b, rest) = decode_fp3(&rest, modulus_len, field)?;
+
+    Ok((a, b, rest))
+}

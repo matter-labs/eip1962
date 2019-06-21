@@ -1,8 +1,7 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, MsbBitIterator};
-use crate::weierstrass::Group;
+use crate::traits::{FieldElement, MsbBitIterator};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::weierstrass::twist::{WeierstrassCurveTwist, TwistPoint};
 use crate::extension_towers::fp2::{Fp2, Extension2};
@@ -486,7 +485,7 @@ mod tests {
         let modulus = BigUint::from_str_radix("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
         let base_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
         let nonres_repr = U320Repr::from(17);
-        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_2 = Extension2 {
             field: &base_field,
@@ -619,7 +618,7 @@ mod tests {
         let modulus = BigUint::from_str_radix("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
         let base_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
         let nonres_repr = U320Repr::from(17);
-        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_2 = Extension2 {
             field: &base_field,

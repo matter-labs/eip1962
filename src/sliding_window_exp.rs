@@ -1,6 +1,4 @@
-use crate::representation::ElementRepr;
 use crate::traits::FieldElement;
-use crate::representation::IntoWnaf;
 use crate::traits::LsbBitIterator;
 
 pub(crate) fn calculate_window_table<F: FieldElement>(base: &F, window: usize) -> Vec<F> {
@@ -80,7 +78,7 @@ impl IntoWindows for Vec<u64> {
         let mut found_begining = false;
         let mut w = 0u64;
         let mut bit_count = 0u64;
-        let mut iter = LsbBitIterator::new(&self);
+        let iter = LsbBitIterator::new(&self);
         for b in iter.into_iter() {
             if b {
                 if found_begining {

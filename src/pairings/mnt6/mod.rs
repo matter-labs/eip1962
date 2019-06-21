@@ -1,8 +1,7 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, MsbBitIterator};
-use crate::weierstrass::Group;
+use crate::traits::{FieldElement, MsbBitIterator};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::weierstrass::cubic_twist::{WeierstrassCurveTwist, TwistPoint};
 use crate::extension_towers::fp3::{Fp3, Extension3};

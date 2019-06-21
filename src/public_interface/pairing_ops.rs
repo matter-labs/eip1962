@@ -13,7 +13,6 @@
 /// 
 /// 
 
-use crate::weierstrass::Group;
 use crate::weierstrass::curve;
 use crate::weierstrass::twist;
 use crate::field::field_from_modulus;
@@ -32,13 +31,14 @@ use crate::sliding_window_exp::WindowExpBase;
 use num_bigint::BigUint;
 use num_traits::Num;
 
-#[macro_use]
 use super::decode_g1::*;
-
 use super::decode_utils::*;
 use super::decode_fp::*;
 use super::decode_g2::*;
 use super::constants::*;
+
+#[macro_use]
+use super::api_specialization_macro::*;
 
 use crate::errors::ApiError;
 
@@ -46,28 +46,12 @@ pub struct PublicPairingApi;
 
 impl PairingApi for PublicPairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        use crate::field::{U256Repr, U320Repr, U384Repr, U640Repr};
+        use crate::field::*;
         let (_, modulus) = parse_curve_type_and_modulus(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ApiError> = match modulus_limbs {
-            4 => {
-                PairingApiImplementation::<U256Repr, U256Repr>::pair(&bytes)
-            },
-            5 => {
-                PairingApiImplementation::<U320Repr, U256Repr>::pair(&bytes)
-            },
-            6 => {
-                PairingApiImplementation::<U384Repr, U256Repr>::pair(&bytes)
-            },
-            10 => {
-                PairingApiImplementation::<U640Repr, U256Repr>::pair(&bytes)
-            },
-            field_limbs => {
-                unimplemented!("unimplemented for {} modulus limbs", field_limbs);
-            }
-        };
-
+        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, bytes, pair, U256Repr);
+        
         result
     }
 }
@@ -102,8 +86,8 @@ impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<F
 
 impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
     fn pair_bls12(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (base_field, modulus_len, modulus, rest) = create_base_field_with_modulus!(bytes, FE);
-        let (a_fp, b_fp, rest) = get_ab_in_base_field!(rest, base_field, modulus_len);
+        let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
         }

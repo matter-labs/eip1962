@@ -47,18 +47,18 @@ fn test_mul_from_csv() {
         encoding.extend(order.into_iter());
 
         // x
-        let mut coord = decode(point_x).expect("must decode hex");
+        let coord = decode(point_x).expect("must decode hex");
         let coord = pad_for_len_be(coord, field_byte_len as usize);
         encoding.extend(coord.into_iter());
 
         // y
-        let mut coord = decode(point_y).expect("must decode hex");
+        let coord = decode(point_y).expect("must decode hex");
         let coord = pad_for_len_be(coord, field_byte_len as usize);
         encoding.extend(coord.into_iter());
 
         // scalar 
 
-        let mut scalar = decode(scalar).expect("must decode hex");
+        let scalar = decode(scalar).expect("must decode hex");
         let scalar = pad_for_len_be(scalar, order_byte_len as usize);
         encoding.extend(scalar.into_iter());
 
@@ -67,12 +67,12 @@ fn test_mul_from_csv() {
         let mut result = vec![];
 
         // result_x
-        let mut coord = decode(result_x).expect("must decode hex");
+        let coord = decode(result_x).expect("must decode hex");
         let coord = pad_for_len_be(coord, field_byte_len as usize);
         result.extend(coord.into_iter());
 
         // result_y 
-        let mut coord = decode(result_y).expect("must decode hex");
+        let coord = decode(result_y).expect("must decode hex");
         let coord = pad_for_len_be(coord, field_byte_len as usize);
         result.extend(coord.into_iter());
 

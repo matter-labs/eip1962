@@ -2,10 +2,8 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator};
+use crate::traits::{FieldElement};
 use crate::weierstrass::Group;
-use crate::weierstrass::curve::CurvePoint;
-use crate::weierstrass::twist::TwistPoint;
 use crate::extension_towers::{fp2::Fp2, fp2::Extension2};
 use crate::extension_towers::{fp3::Fp3, fp3::Extension3};
 use crate::extension_towers::fp4_as_2_over_2;
@@ -112,7 +110,7 @@ pub(crate) fn frobenius_calculator_fp4_as_2_over_2<'a, FE: ElementRepr, F: Sized
         // TODO: change into bitshift
 
         let one = BigUint::from_u64(1).unwrap();
-        let divisor = BigUint::from_u64(4).unwrap();
+        // let divisor = BigUint::from_u64(4).unwrap();
     
         // NON_REDISUE**(((q^0) - 1) / 4)
         let non_residue = extension.field.non_residue.clone();
@@ -271,7 +269,7 @@ pub(crate) fn frobenius_calculator_fp6_as_3_over_2_using_sliding_window<'a, FE: 
         let three = BigUint::from_u64(3).unwrap();
 
         // NON_RESIDUE**(((q^0) - 1) / 3)
-        let non_residue = extension.non_residue.clone();
+        // let non_residue = extension.non_residue.clone();
         let f_0 = Fp2::one(extension.field);
 
         let mut powers = vec![];
@@ -328,7 +326,6 @@ pub(crate) fn frobenius_calculator_fp12_using_sliding_window<'a, FE: ElementRepr
         let six = BigUint::from_u64(6).unwrap();
     
         // Fq2(u + 1)**(((q^0) - 1) / 6)
-        let non_residue = extension.field.non_residue.clone();
         let f_0 = Fp2::one(extension.field.field);
 
         // Fq2(u + 1)**(((q^1) - 1) / 6)
@@ -354,9 +351,6 @@ pub(crate) fn frobenius_calculator_fp12_using_sliding_window<'a, FE: ElementRepr
         // 6
         {
             q_power *= q_power.clone();
-            // q_power *= &modulus;
-            // q_power *= &modulus;
-            // q_power *= &modulus;
             let power = q_power.clone() - &one;
             let (power, rem) = power.div_rem(&six);
             debug_assert!(rem.is_zero());

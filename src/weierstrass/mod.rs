@@ -15,6 +15,7 @@ pub trait Group: Sized + Clone {
     fn mul<S: AsRef<[u64]>>(&self, exp: S) -> Self;
     fn wnaf_mul<S: crate::representation::IntoWnaf>(&self, exp: S) -> Self;
     fn is_zero(&self) -> bool;
+    fn check_correct_subgroup(&self) -> bool;
 }
 
 pub mod curve;

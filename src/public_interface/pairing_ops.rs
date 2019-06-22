@@ -6,6 +6,8 @@
 /// - Field modulus
 /// - Curve A
 /// - Curve B
+/// - Lengths of group size (in bytes)
+/// - Group size
 /// - Type specific params
 ///
 /// Assumptions:
@@ -15,21 +17,17 @@
 
 use crate::weierstrass::curve;
 use crate::weierstrass::twist;
-use crate::field::field_from_modulus;
+use crate::weierstrass::Group;
 use crate::fp::Fp;
 use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance, TwistType};
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
-use crate::field::{U256Repr};
 use crate::representation::ElementRepr;
 use crate::traits::FieldElement;
 use crate::field::biguint_to_u64_vec;
 use crate::sliding_window_exp::WindowExpBase;
-
-use num_bigint::BigUint;
-use num_traits::Num;
 
 use super::decode_g1::*;
 use super::decode_utils::*;
@@ -47,11 +45,16 @@ pub struct PublicPairingApi;
 impl PairingApi for PublicPairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::field::*;
-        let (_, modulus) = parse_curve_type_and_modulus(&bytes)?;
+        if bytes.len() < CURVE_TYPE_LENGTH {
+            return Err(ApiError::InputError("Input should be longer than curve type encoding".to_owned()));
+        }
+        let (_curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
+        let (modulus, _, _, _, order, _, _) = parse_encodings(&rest)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
+        let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, bytes, pair, U256Repr);
-        
+        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_and_group_limbs!(modulus_limbs, order_limbs, PairingApiImplementation, bytes, pair); 
+
         result
     }
 }
@@ -71,9 +74,10 @@ impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<F
             return Err(ApiError::InputError("Input should be longer than curve type encoding".to_owned()));
         }
         let (curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
+
         match curve_type[0] {
             BLS12 => {
-                Self::pair_bls12(&rest)
+                PairingApiImplementation::<FE, GE>::pair_bls12(&rest)
             },
             _ => {
                 unimplemented!("Not implemented for not BLS12 curves");
@@ -91,10 +95,8 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
         }
-        let scalar_field = field_from_modulus::<U256Repr>(
-            BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap()
-        ).unwrap();
-        let g1_curve = curve::WeierstrassCurve::new(&scalar_field, a_fp, b_fp.clone());
+        let (group, _order_len, order, rest) = parse_group_order_from_encoding::<GE>(rest)?;
+        let g1_curve = curve::WeierstrassCurve::new(&group, a_fp, b_fp.clone());
 
         // Now we need to expect:
         // - non-residue for Fp2
@@ -187,7 +189,7 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         };
 
         let a_fp2 = Fp2::zero(&extension_2);
-        let g2_curve = twist::WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+        let g2_curve = twist::WeierstrassCurveTwist::new(&group, &extension_2, a_fp2, b_fp2);
 
         let (x, rest) = decode_biguint_with_length(&rest)?;
         if rest.len() < SIGN_ENCODING_LENGTH {
@@ -221,6 +223,10 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
             global_rest = rest;
             if !g1.check_on_curve() || !g2.check_on_curve() {
                 return Err(ApiError::InputError("G1 or G2 point is not on curve".to_owned()));
+            }
+
+            if !g1.check_correct_subgroup() || !g2.check_correct_subgroup() {
+                return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
             }
 
             g1_points.push(g1);

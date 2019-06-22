@@ -159,6 +159,8 @@ fn assemble_single_curve_params(curve: JsonPairingCurveParameters) -> Vec<u8> {
     calldata.extend(modulus_encoded.into_iter());
     calldata.extend(a_encoded.into_iter());
     calldata.extend(b_encoded.into_iter());
+    calldata.extend(group_len_encoded.into_iter());
+    calldata.extend(group_size_encoded.into_iter());
     calldata.extend(fp2_nonres_encoded.into_iter());
     calldata.extend(fp6_nonres_encoded_c0.into_iter());
     calldata.extend(fp6_nonres_encoded_c1.into_iter());
@@ -186,7 +188,7 @@ fn test_single() {
 }
 
 #[test]
-fn test_from_vectors() {
+fn test_bls12_pairings_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     for curve in curves.into_iter() {

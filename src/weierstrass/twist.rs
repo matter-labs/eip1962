@@ -586,6 +586,12 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         c.double();
         self.y.sub_assign(&c);
     }
+
+    fn check_correct_subgroup_impl(&self) -> bool {
+        let p = self.mul_impl(&self.curve.scalar_field.modulus());
+
+        p.is_zero_generic_impl()
+    }
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Group for TwistPoint<'a, FE, F, GE, G> {
@@ -651,6 +657,14 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         match self.curve.curve_type {
             _ => {
                 return self.wnaf_mul_impl(exp);
+            },
+        }
+    }
+
+    fn check_correct_subgroup(&self) -> bool {
+        match self.curve.curve_type {
+            _ => {
+                return self.check_correct_subgroup_impl();
             },
         }
     }

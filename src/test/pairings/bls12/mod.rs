@@ -201,15 +201,15 @@ fn test_bls12_pairings_from_vectors() {
     }
 }
 
-use rust_test::Bencher;
+// use rust_test::Bencher;
 
-#[bench]
-fn bench_single(b: &mut Bencher) {
-    let calldata = assemble_single();
-    b.iter(|| {
-        call_pairing_engine(&calldata[..]).expect("must use");
-    });
-}
+// #[bench]
+// fn bench_single(b: &mut Bencher) {
+//     let calldata = assemble_single();
+//     b.iter(|| {
+//         call_pairing_engine(&calldata[..]).expect("must use");
+//     });
+// }
 
 fn assemble_single() -> Vec<u8> {
     /// - Curve type

@@ -9,12 +9,7 @@ use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use crate::extension_towers::fp6_as_3_over_2::{Extension3Over2};
 use crate::pairings::{PairingEngine};
-
-#[derive(Eq, PartialEq, Clone, Copy, Debug)]
-pub enum TwistType {
-    D,
-    M
-}
+use crate::pairings::TwistType;
 
 pub struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     is_infinity: bool,
@@ -22,19 +17,19 @@ pub struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, FE, F> {
-    pub fn is_zero(&self) -> bool {
+    pub(crate) fn is_zero(&self) -> bool {
         self.is_infinity
     }
 }
 
 pub struct BnInstance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
-    pub u: Vec<u64>,
-    pub six_u_plus_2: Vec<u64>,
-    pub u_is_negative: bool,
-    pub twist_type: TwistType,
-    pub base_field: &'a F,
-    pub curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
+    pub(crate) u: Vec<u64>,
+    pub(crate) six_u_plus_2: Vec<u64>,
+    pub(crate) u_is_negative: bool,
+    pub(crate) twist_type: TwistType,
+    pub(crate) base_field: &'a F,
+    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
+    pub(crate) curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
     fp2_extension: &'a Extension2<'a, FE, F>,
     fp6_extension: &'a Extension3Over2<'a, FE, F>,
     fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
@@ -490,18 +485,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
             self.final_exponentiation(&loop_result)
         }   
-}
-
-fn print_to_radix_16(string: &str) {
-    use num_bigint::BigUint;
-    use num_traits::Num;
-    println!("{:x}", BigUint::from_str_radix(string, 10).unwrap());
-}
-
-fn print_to_radix_10(string: &str) {
-    use num_bigint::BigUint;
-    use num_traits::Num;
-    println!("{}", BigUint::from_str_radix(string, 16).unwrap());
 }
 
 #[cfg(test)]

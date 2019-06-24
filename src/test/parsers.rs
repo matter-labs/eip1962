@@ -7,7 +7,7 @@ extern crate serde_json;
 use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct JsonPairingCurveParameters {
+pub(crate) struct JsonBls12PairingCurveParameters {
     #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
     pub non_residue: (BigUint, bool),
 
@@ -75,7 +75,7 @@ pub struct JsonPairingCurveParameters {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct JsonG1PointScalarMultiplicationPair {
+pub(crate) struct JsonG1PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "a")]
     pub scalar: BigUint,
@@ -98,7 +98,7 @@ pub struct JsonG1PointScalarMultiplicationPair {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct JsonG2PointScalarMultiplicationPair {
+pub(crate) struct JsonG2PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "a")]
     pub scalar: BigUint,
@@ -239,7 +239,7 @@ fn strip_0x_and_pad(string: &str) -> String {
     std::string::String::from_utf8(string).unwrap()
 }
 
-pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<JsonPairingCurveParameters> {
+pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<(JsonBls12PairingCurveParameters, String)> {
     use std::io::Read;
     use std::fs::{self};
     use std::path::Path;
@@ -264,10 +264,11 @@ pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<JsonPairingCurvePa
             }
         }
         let mut buffer = Vec::new();
+        let file_name = path.file_name().unwrap().to_str().unwrap().to_owned();
         let mut f = File::open(path).expect("must open file");
         f.read_to_end(&mut buffer).expect("must read bytes from file");
-        let c: JsonPairingCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
-        results.push(c);
+        let c: JsonBls12PairingCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
+        results.push((c, file_name));
     }
     
     results

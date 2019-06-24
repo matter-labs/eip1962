@@ -15,11 +15,11 @@ use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_ov
 use crate::weierstrass::{Group};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
-use crate::pairings::{PairingEngine};
+use crate::pairings::{PairingEngine, TwistType};
 use crate::representation::ElementRepr;
 use rust_test::Bencher;
 
-use crate::pairings::bn::{TwistType, BnInstance};
+use crate::pairings::bn::{BnInstance};
 
 #[bench]
 fn bench_bn254_pairing(b: &mut Bencher) {

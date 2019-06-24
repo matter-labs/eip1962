@@ -5,7 +5,7 @@ use super::*;
 
 const EXTENSION_DEGREE: usize = 2;
 
-fn assemble_single_curve_params(curve: JsonPairingCurveParameters) -> (Vec<u8>, usize, usize) {
+fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -97,7 +97,7 @@ fn assemble_single_point_scalar_pair(
 fn test_g2_mul_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
-    for curve in curves.into_iter() {
+    for (curve, _) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g2_mul_vectors.into_iter() {
             let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
@@ -129,7 +129,7 @@ fn dump_g2_mul_vectors() {
     assert!(curves.len() != 0);
     let mut writer = Writer::from_path("src/test/test_vectors/bls12/g2_mul.csv").expect("must open a test file");
     writer.write_record(&["input", "result"]).expect("must write header");
-    for curve in curves.into_iter() {
+    for (curve, _) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g2_mul_vectors.into_iter() {
             let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);

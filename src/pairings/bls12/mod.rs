@@ -9,12 +9,7 @@ use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use crate::extension_towers::fp6_as_3_over_2::{Extension3Over2};
 use crate::pairings::PairingEngine;
-
-#[derive(Eq, PartialEq, Clone, Copy, Debug)]
-pub enum TwistType {
-    D,
-    M
-}
+use crate::pairings::TwistType;
 
 pub struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     is_infinity: bool,
@@ -28,15 +23,15 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, 
 }
 
 pub struct Bls12Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
-    pub x: Vec<u64>,
-    pub x_is_negative: bool,
-    pub twist_type: TwistType,
-    pub base_field: &'a F,
-    pub curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
-    pub fp2_extension: &'a Extension2<'a, FE, F>,
-    pub fp6_extension: &'a Extension3Over2<'a, FE, F>,
-    pub fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
+    pub(crate) x: Vec<u64>,
+    pub(crate) x_is_negative: bool,
+    pub(crate) twist_type: TwistType,
+    pub(crate) base_field: &'a F,
+    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
+    pub(crate) curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
+    pub(crate) fp2_extension: &'a Extension2<'a, FE, F>,
+    pub(crate) fp6_extension: &'a Extension3Over2<'a, FE, F>,
+    pub(crate) fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Bls12Instance<'a, FE, F, GE, G> {
@@ -229,7 +224,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         let mut r = TwistPoint::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
 
         for i in MsbBitIterator::new(&self.x).skip(1) {
-        // for i in BitIterator::new(&self.x).skip(1) {
             ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
 
             if i {
@@ -267,7 +261,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         let mut f = Fp12::one(self.fp12_extension);
 
         for i in MsbBitIterator::new(&self.x).skip(1) {
-        // for i in BitIterator::new(&self.x).skip(1) {
             f.square();
 
             for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
@@ -390,9 +383,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;
-    use num_traits::FromPrimitive;
-    use num_integer::Integer;
-    use num_traits::Zero;
     use crate::field::{U384Repr, U256Repr, new_field};
     use crate::fp::Fp;
     use crate::traits::{FieldElement};
@@ -401,7 +391,6 @@ mod tests {
     use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
     use num_traits::Num;
     use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
-    use crate::weierstrass::{Group};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
     use crate::pairings::{PairingEngine};
@@ -444,9 +433,9 @@ mod tests {
         extension_6.frobenius_coeffs_c1 = coeffs_c1;
         extension_6.frobenius_coeffs_c2 = coeffs_c2;
 
-        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        let fp2_non_residue = Fp2::zero(&extension_2);
 
-         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
+        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
                     Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];

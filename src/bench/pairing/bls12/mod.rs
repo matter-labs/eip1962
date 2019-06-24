@@ -16,8 +16,8 @@ use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_ov
 use crate::weierstrass::{Group};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
-use crate::pairings::{PairingEngine};
-use crate::pairings::bls12::{TwistType, Bls12Instance};
+use crate::pairings::{PairingEngine, TwistType};
+use crate::pairings::bls12::{Bls12Instance};
 
 #[bench]
 fn bench_bls12_381_pairing(b: &mut Bencher) {

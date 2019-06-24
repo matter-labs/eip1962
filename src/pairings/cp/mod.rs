@@ -62,17 +62,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
         let mut f = Fp6::one(self.fp6_extension);
 
-        // The for loop is executed for all bits (EXCEPT the MSB itself) of
-        // sw6_param_p (skipping leading zeros) in MSB to LSB order
-        // let mut found_one = false;
+        // The for loop is executed for all bits (EXCEPT the MSB itself)
         for bit in MsbBitIterator::new(&self.x).skip(1) {
-        // for bit in BitIterator::new(&self.x) {
-        //     if !found_one && bit {
-        //         found_one = true;
-        //         continue;
-        //     } else if !found_one {
-        //         continue;
-        //     }
 
             old_rx = rx;
             old_ry = ry;
@@ -259,7 +250,7 @@ mod tests {
         let modulus = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
         let base_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
         let nonres_repr = U832Repr::from(13);
-        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_3 = Extension3 {
             field: &base_field,

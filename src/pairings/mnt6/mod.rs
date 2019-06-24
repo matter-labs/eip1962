@@ -469,7 +469,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;
-    use crate::field::{U320Repr, new_field, biguint_to_u64_vec};
+    use crate::field::{U320Repr, new_field};
     use crate::fp::Fp;
     use crate::traits::{FieldElement};
     use crate::extension_towers::fp3::{Fp3, Extension3};
@@ -485,7 +485,7 @@ mod tests {
         let modulus = BigUint::from_str_radix("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
         let base_field = new_field::<U320Repr>("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
         let nonres_repr = U320Repr::from(5);
-        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_3 = Extension3 {
             field: &base_field,

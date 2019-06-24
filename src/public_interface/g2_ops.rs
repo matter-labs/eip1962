@@ -37,8 +37,8 @@ pub struct G2ApiImplementationFp2<FE: ElementRepr, GE: ElementRepr> {
 
 impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(rest, modulus_len, &field)?;
+        let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (group, order_len, _, rest) = parse_group_order_from_encoding::<GE>(rest)?;
 
@@ -53,8 +53,8 @@ impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> 
     }
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(rest, modulus_len, &field)?;
+        let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (group, order_len, _, rest) = parse_group_order_from_encoding::<GE>(rest)?;
 
@@ -70,8 +70,8 @@ impl<FE: ElementRepr, GE: ElementRepr> G2Api for G2ApiImplementationFp2<FE, GE> 
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         unimplemented!();
-        // let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        // let (extension_2, rest) = create_fp2_extension(&rest, modulus_len, &field)?;
+        // let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        // let (extension_2, rest) = create_fp2_extension(&rest, modulus, modulus_len, &field)?;
         // let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         // let (group, order_len, _, rest) = parse_group_order_from_encoding::<GE>(rest)?;
 

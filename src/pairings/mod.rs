@@ -21,6 +21,12 @@ pub(crate) mod cp;
 pub(crate) mod mnt6;
 pub(crate) mod mnt4;
 
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
+pub(crate) enum TwistType {
+    D,
+    M
+}
+
 pub(crate) trait PairingEngine: Sized {
     type PairingResult: FieldElement;
     type G1: Group;
@@ -524,9 +530,6 @@ pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;
-    use num_traits::FromPrimitive;
-    use num_integer::Integer;
-    use num_traits::Zero;
     use crate::field::{U384Repr, U832Repr, new_field};
     use crate::fp::Fp;
     use crate::traits::{FieldElement};
@@ -539,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_bls12_381_frob_fp2() {
-        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let _modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
@@ -567,7 +570,7 @@ mod tests {
         let modulus = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
         let base_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
         let nonres_repr = U832Repr::from(13);
-        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let extension = Extension3 {
             field: &base_field,
@@ -592,7 +595,7 @@ mod tests {
         let modulus = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
         let base_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
         let nonres_repr = U832Repr::from(13);
-        let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_3 = Extension3 {
             field: &base_field,

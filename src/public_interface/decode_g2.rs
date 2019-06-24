@@ -2,13 +2,16 @@ use crate::weierstrass::twist;
 use crate::weierstrass::cubic_twist;
 use crate::field::{SizedPrimeField};
 use crate::fp::Fp;
+use crate::extension_towers::*;
 use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
-use crate::representation::ElementRepr;
+use crate::representation::{ElementRepr, LegendreSymbol};
 use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp3};
 use crate::traits::FieldElement;
+use crate::field::biguint_to_u64_vec;
 
 use num_bigint::BigUint;
+use num_traits::FromPrimitive;
 
 use super::decode_fp::*;
 use super::constants::*;
@@ -22,6 +25,7 @@ pub(crate) fn create_fp2_extension<
     >
     (
         bytes: &'a [u8], 
+        modulus: BigUint,
         field_byte_len: usize,
         base_field: &'a F,
     ) -> Result<(fp2::Extension2<'a, FE, F>, &'a [u8]), ApiError>
@@ -38,12 +42,27 @@ pub(crate) fn create_fp2_extension<
     if fp_non_residue.is_zero() {
         return Err(ApiError::UnexpectedZero("Fp2 non-residue can not be zero".to_owned()));
     }
+
+    {
+        let modulus_minus_one_by_2 = modulus.clone() - BigUint::from_u32(1).unwrap();
+        let modulus_minus_one_by_2 = modulus_minus_one_by_2 >> 1;
+        let legendre = legendre_symbol(&fp_non_residue, biguint_to_u64_vec(modulus_minus_one_by_2));
+
+        match legendre {
+            LegendreSymbol::QuadraticResidue | LegendreSymbol::Zero => {
+                return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
+            },
+            _ => {}
+        }
+    }
+
     let mut extension_2 = fp2::Extension2 {
         field: base_field,
         non_residue: fp_non_residue,
         frobenius_coeffs_c1: [Fp::zero(base_field), Fp::zero(base_field)]
     };
 
+    // TODO: Check if need to delay until gas is estimated
     let coeffs = frobenius_calculator_fp2(&extension_2).map_err(|_| {
         ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
     })?;

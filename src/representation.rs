@@ -112,6 +112,13 @@ pub trait IntoWnaf {
     fn wnaf(&self, window: u32) -> Vec<i64>;
 }
 
+#[derive(Debug, PartialEq)]
+pub enum LegendreSymbol {
+    Zero = 0,
+    QuadraticResidue = 1,
+    QuadraticNonResidue = -1,
+}
+
 /// An error that may occur when trying to interpret a `PrimeFieldRepr` as a
 /// `PrimeField` element.
 #[derive(Debug)]

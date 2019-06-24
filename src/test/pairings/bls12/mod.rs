@@ -6,7 +6,7 @@ use num_bigint::BigUint;
 use crate::test::parsers::*;
 use super::call_pairing_engine;
 
-fn assemble_single_curve_params(curve: JsonPairingCurveParameters) -> Vec<u8> {
+fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters) -> Vec<u8> {
     // - Curve type
     // - Lengths of modulus (in bytes)
     // - Field modulus
@@ -191,7 +191,7 @@ fn test_single() {
 fn test_bls12_pairings_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
-    for curve in curves.into_iter() {
+    for (curve, _) in curves.into_iter() {
         let calldata = assemble_single_curve_params(curve);
         let result = call_pairing_engine(&calldata[..]);
         assert!(result.is_ok());

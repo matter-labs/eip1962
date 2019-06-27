@@ -129,19 +129,19 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
             let mut n5 = t5.clone();
             n5.mul_by_nonresidue(self.extension_field);
 
-            let mut s0 = t0.clone();
+            let mut s0 = t0;
             s0.sub_assign(&n5);
-            let mut s1 = t2.clone();
+            let mut s1 = t2;
             s1.mul_by_nonresidue(self.extension_field);
             s1.sub_assign(&t3);
-            let mut s2 = t1.clone();
+            let mut s2 = t1;
             s2.sub_assign(&t4); // typo in paper referenced above. should be "-" as per Scott, but is "*"
 
             let mut a1 = self.c2.clone();
             a1.mul_assign(&s1);
             let mut a2 = self.c1.clone();
             a2.mul_assign(&s2);
-            let mut a3 = a1.clone();
+            let mut a3 = a1;
             a3.add_assign(&a2);
             a3.mul_by_nonresidue(self.extension_field);
             let mut t6 = self.c0.clone();
@@ -158,7 +158,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
             c0.mul_assign(&s0);
             let mut c1 = t6.clone();
             c1.mul_assign(&s1);
-            let mut c2 = t6.clone();
+            let mut c2 = t6;
             c2.mul_assign(&s2);
 
 

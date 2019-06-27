@@ -206,17 +206,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         y.sub_assign(&ad);
         y.sub_assign(&be);
 
-        let mut t0 = a.clone();
+        let mut t0 = a;
         t0.add_assign(&c);
 
-        let mut z = d.clone();
+        let mut z = d;
         z.add_assign(&f);
         z.mul_assign(&t0);
         z.sub_assign(&ad);
         z.add_assign(&be);
         z.sub_assign(&cf);
 
-        let mut t0 = x.clone();
+        let mut t0 = x;
         t0.mul_by_nonresidue(self.extension_field);
 
         self.c0 = t0;

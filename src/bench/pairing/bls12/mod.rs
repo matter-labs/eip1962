@@ -4,7 +4,6 @@ use self::rust_test::Bencher;
 use num_bigint::BigUint;
 use num_traits::FromPrimitive;
 use num_integer::Integer;
-use num_traits::Zero;
 use crate::field::{U384Repr, U256Repr, new_field};
 use crate::fp::Fp;
 use crate::traits::{FieldElement};
@@ -13,7 +12,6 @@ use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use num_traits::Num;
 use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
-use crate::weierstrass::{Group};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
 use crate::pairings::{PairingEngine, TwistType};
@@ -135,4 +133,20 @@ fn bench_bls12_381_pairing(b: &mut Bencher) {
     b.iter(|| {
         bls12_engine.pair(&[p.clone()], &[q.clone()]).unwrap();
     });
+}
+
+#[bench]
+fn bench_bls12_pairings_from_vectors(b: &mut Bencher) {
+    use crate::test::parsers::*;
+    use crate::test::pairings::bls12::assemble_single_curve_params;
+    use crate::public_interface::{PairingApi, PublicPairingApi};
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    assert!(curves.len() != 0);
+    for (curve, _) in curves.into_iter() {
+        let calldata = assemble_single_curve_params(curve);
+        let calldata = rust_test::black_box(calldata);
+        b.iter(|| {
+            PublicPairingApi::pair(&(calldata.clone())).unwrap()
+        });
+    }
 }

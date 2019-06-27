@@ -1,4 +1,4 @@
-mod bls12;
+pub(crate) mod bls12;
 
 use crate::public_interface::{PairingApi, PublicPairingApi};
 use crate::errors::ApiError;

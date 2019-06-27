@@ -47,12 +47,12 @@ pub(crate) fn is_non_cube<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, S:
 pub(crate) fn is_non_cube_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, S: AsRef<[u64]>>
 (
     element: & self::fp2::Fp2<'a, FE, F>,
-    modulus_minus_one_by_3: S
+    modulus_squared_minus_one_by_3: S
 ) -> bool {
     if element.is_zero() {
         return false;
     }
-    let l = element.pow(modulus_minus_one_by_3);
+    let l = element.pow(modulus_squared_minus_one_by_3);
     let one = self::fp2::Fp2::one(element.extension_field);
     if l == one {
         return false;

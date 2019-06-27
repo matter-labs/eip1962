@@ -4,9 +4,6 @@ extern crate byteorder;
 extern crate num_bigint;
 extern crate num_integer;
 extern crate num_traits;
-extern crate hex;
-extern crate rand;
-extern crate rand_xorshift;
 extern crate repr_derive;
 
 mod arithmetics;
@@ -22,6 +19,7 @@ mod extension_towers;
 mod pairings;
 mod sliding_window_exp;
 mod errors;
+mod gas_meter;
 
 pub mod public_interface;
 
@@ -35,6 +33,10 @@ mod bench;
 
 #[cfg(test)]
 mod tests {
+    extern crate hex;
+    extern crate rand;
+    extern crate rand_xorshift;
+
     use crate::field::*;
     use crate::fp::Fp;
     use crate::weierstrass::curve::*;

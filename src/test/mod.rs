@@ -1,5 +1,5 @@
 mod no_compression;
-mod pairings;
+pub(crate) mod pairings;
 mod g2_ops;
 mod g1_ops;
 

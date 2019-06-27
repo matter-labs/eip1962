@@ -127,16 +127,15 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         }
 
         // build an extension field
-        let mut extension_2 = Extension2 {
-            field: &base_field,
-            non_residue: fp_non_residue,
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
-
-        let coeffs = frobenius_calculator_fp2(&extension_2).map_err(|_| {
+        let mut extension_2 = Extension2::new(fp_non_residue);
+        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
-        extension_2.frobenius_coeffs_c1 = coeffs;
+
+        // let coeffs = frobenius_calculator_fp2(&extension_2).map_err(|_| {
+        //     ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
+        // })?;
+        // extension_2.frobenius_coeffs_c1 = coeffs;
 
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
@@ -154,40 +153,35 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
             },
         };
 
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-        let mut extension_6 = Extension3Over2 {
-            non_residue: fp2_non_residue.clone(),
-            field: &extension_2,
-            frobenius_coeffs_c1: f_c1.clone(),
-            frobenius_coeffs_c2: f_c1,
-        };
+        let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
 
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2_using_sliding_window(modulus.clone(), &exp_base, &extension_6).map_err(|_| {
-            ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
-        })?;
+        // let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2_using_sliding_window(modulus.clone(), &exp_base, &extension_6).map_err(|_| {
+        //     ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
+        // })?;
 
-        extension_6.frobenius_coeffs_c1 = coeffs_c1;
-        extension_6.frobenius_coeffs_c2 = coeffs_c2;
+        // extension_6.frobenius_coeffs_c1 = coeffs_c1;
+        // extension_6.frobenius_coeffs_c2 = coeffs_c2;
 
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+        {
+            extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+                ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
+            })?;
+        }
 
-        let mut extension_12 = Extension2Over3Over2 {
-            non_residue: Fp6::zero(&extension_6),
-            field: &extension_6,
-            frobenius_coeffs_c1: f_c1,
-        };
+        let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
-        let coeffs = frobenius_calculator_fp12_using_sliding_window(modulus, &exp_base, &extension_12).map_err(|_| {
-            ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
-        })?;
-        extension_12.frobenius_coeffs_c1 = coeffs;
+        // let coeffs = frobenius_calculator_fp12_using_sliding_window(modulus, &exp_base, &extension_12).map_err(|_| {
+        //     ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
+        // })?;
+        // extension_12.frobenius_coeffs_c1 = coeffs;
+
+        {
+            extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+                ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
+            })?;
+        }
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
 

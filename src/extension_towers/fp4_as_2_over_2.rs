@@ -249,6 +249,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp4<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
+        debug_assert!(self.extension_field.frobenius_coeffs_are_calculated);
         match power {
             1 | 2 => {
 
@@ -264,9 +265,63 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp4<'a,
 }
 
 pub struct Extension2Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    pub field: &'a Extension2<'a, E, F>,
-    pub non_residue: Fp2<'a, E, F>,
-    pub frobenius_coeffs_c1: [Fp<'a, E, F>; 4],
+    pub(crate) field: &'a Extension2<'a, E, F>,
+    pub(crate) non_residue: Fp2<'a, E, F>,
+    pub(crate) frobenius_coeffs_c1: [Fp<'a, E, F>; 4],
+    pub(crate) frobenius_coeffs_are_calculated: bool
+}
+
+use num_bigint::BigUint;
+use num_traits::FromPrimitive;
+// use num_integer::Integer;
+// use num_traits::Zero;
+// use crate::sliding_window_exp::{WindowExpBase};
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F> {
+    pub (crate) fn new(non_residue: Fp2<'a, E, F>) -> Self {
+        let field = non_residue.extension_field.field;
+
+        let zeros = [Fp::zero(field), Fp::zero(field),
+                    Fp::zero(field), Fp::zero(field)];
+        
+        Self {
+            non_residue: non_residue.clone(),
+            field: non_residue.extension_field,
+            frobenius_coeffs_c1: zeros,
+            frobenius_coeffs_are_calculated: false
+        }
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs(
+        &mut self,
+        modulus: BigUint,
+        // base: &WindowExpBase<Fp<'a, E, F>>
+    ) -> Result<(), ()> {
+        use crate::field::biguint_to_u64_vec;
+
+        let one = BigUint::from_u64(1).unwrap();
+    
+        // NON_REDISUE**(((q^0) - 1) / 4)
+        let non_residue = self.field.non_residue.clone();
+        let f_0 = Fp::one(self.field.field);
+
+        // NON_REDISUE**(((q^1) - 1) / 4)
+        let mut q_power = modulus.clone();
+        let power = (q_power.clone() - &one) >> 2;
+        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        // NON_REDISUE**(((q^2) - 1) / 4)
+        q_power *= &modulus;
+        let power = (q_power.clone() - &one) >> 2;
+        let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        let f_3 = Fp::zero(self.field.field);
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension2Over2<'a, E, F> {

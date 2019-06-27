@@ -56,17 +56,16 @@ pub(crate) fn create_fp2_extension<
         }
     }
 
-    let mut extension_2 = fp2::Extension2 {
-        field: base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(base_field), Fp::zero(base_field)]
-    };
-
-    // TODO: Check if need to delay until gas is estimated
-    let coeffs = frobenius_calculator_fp2(&extension_2).map_err(|_| {
+    let mut extension_2 = fp2::Extension2::new(fp_non_residue);
+    extension_2.calculate_frobenius_coeffs(modulus).map_err(|_| {
         ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
     })?;
-    extension_2.frobenius_coeffs_c1 = coeffs;
+
+    // // TODO: Check if need to delay until gas is estimated
+    // let coeffs = frobenius_calculator_fp2(&extension_2).map_err(|_| {
+    //     ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
+    // })?;
+    // extension_2.frobenius_coeffs_c1 = coeffs;
     
     Ok((extension_2, rest))
 }
@@ -95,18 +94,17 @@ pub(crate) fn create_fp3_extension<
     if fp_non_residue.is_zero() {
         return Err(ApiError::UnexpectedZero("Fp2 non-residue can not be zero".to_owned()));
     }
-    let mut extension_3 = fp3::Extension3 {
-        field: base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(base_field), Fp::zero(base_field), Fp::zero(base_field)],
-        frobenius_coeffs_c2: [Fp::zero(base_field), Fp::zero(base_field), Fp::zero(base_field)]
-    };
 
-    let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus, &extension_3).map_err(|_| {
-        ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fpe".to_owned())
+    let mut extension_3 = fp3::Extension3::new(fp_non_residue);
+    extension_3.calculate_frobenius_coeffs(modulus).map_err(|_| {
+        ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
     })?;
-    extension_3.frobenius_coeffs_c1 = coeffs_1;
-    extension_3.frobenius_coeffs_c2 = coeffs_2;
+
+    // let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus, &extension_3).map_err(|_| {
+    //     ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
+    // })?;
+    // extension_3.frobenius_coeffs_c1 = coeffs_1;
+    // extension_3.frobenius_coeffs_c2 = coeffs_2;
     
     Ok((extension_3, rest))
 }

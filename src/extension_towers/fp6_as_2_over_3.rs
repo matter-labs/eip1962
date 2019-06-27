@@ -249,6 +249,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
+        debug_assert!(self.extension_field.frobenius_coeffs_are_calculated);
         match power {
             1 | 3 => {
 
@@ -260,15 +261,75 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
         self.c0.frobenius_map(power);
         self.c1.frobenius_map(power);
         self.c1.mul_by_fp(&self.extension_field.frobenius_coeffs_c1[power % 6]);
-        // self.c1.mul_assign(&self.extension_field.frobenius_coeffs_c1[power % 6]);
     }
 }
 
 pub struct Extension2Over3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    pub field: &'a Extension3<'a, E, F>,
-    pub non_residue: Fp3<'a, E, F>,
-    pub frobenius_coeffs_c1: [Fp<'a, E, F>; 6],
-    // pub frobenius_coeffs_c1: [Fp3<'a, E, F>; 6],
+    pub(crate) field: &'a Extension3<'a, E, F>,
+    pub(crate) non_residue: Fp3<'a, E, F>,
+    pub(crate) frobenius_coeffs_c1: [Fp<'a, E, F>; 6],
+    pub(crate) frobenius_coeffs_are_calculated: bool
+}
+
+use num_bigint::BigUint;
+use num_traits::FromPrimitive;
+use num_integer::Integer;
+use num_traits::Zero;
+// use crate::sliding_window_exp::{WindowExpBase};
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F> {
+    pub (crate) fn new(non_residue: Fp3<'a, E, F>) -> Self {
+        let field = non_residue.extension_field.field;
+
+        let zeros = [Fp::zero(field), Fp::zero(field), Fp::zero(field),
+                    Fp::zero(field), Fp::zero(field), Fp::zero(field)];
+        
+        Self {
+            non_residue: non_residue.clone(),
+            field: & non_residue.extension_field,
+            frobenius_coeffs_c1: zeros,
+            frobenius_coeffs_are_calculated: false
+        }
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs(
+        &mut self,
+        modulus: BigUint,
+        // base: &WindowExpBase<Fp<'a, E, F>>
+    ) -> Result<(), ()> {
+        use crate::field::biguint_to_u64_vec;
+
+        let one = BigUint::from_u64(1).unwrap();
+        let divisor = BigUint::from_u64(6).unwrap();
+    
+        // NON_REDISUE**(((q^0) - 1) / 6)
+        let non_residue = self.field.non_residue.clone();
+        let f_0 = Fp::one(self.field.field);
+
+        let mut q_power = modulus.clone();
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        q_power *= &modulus;
+        let f_2 = Fp::zero(self.field.field);
+
+        q_power *= &modulus;
+        let power = q_power.clone() - &one;
+        let (power, rem) = power.div_rem(&divisor);
+        debug_assert!(rem.is_zero());
+        let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
+
+        let f_4 = Fp::zero(self.field.field);
+        let f_5 = Fp::zero(self.field.field);
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3, f_4, f_5];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
+
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension2Over3<'a, E, F> {

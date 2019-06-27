@@ -537,7 +537,7 @@ mod tests {
     use crate::extension_towers::fp3::{Fp3, Extension3};
     use crate::extension_towers::fp6_as_2_over_3;
     use crate::extension_towers::fp6_as_3_over_2;
-    use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
+    use crate::extension_towers::fp12_as_2_over3_over_2::{Extension2Over3Over2};
     use num_traits::Num;
 
     #[test]
@@ -547,22 +547,9 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
-        let extension = Extension2 {
-            field: &base_field,
-            non_residue: fp_non_residue,
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
+        let extension = Extension2::new(fp_non_residue);
 
         let coeffs = super::frobenius_calculator_fp2(&extension).unwrap();
-
-
-        // let coeffs = super::frobenius_calculator_fp2(&base_field, &extension).unwrap();
-
-        println!("C_0 = {}", coeffs[0]);
-        println!("C_1 = {}", coeffs[1]);
-
-
-        println!("C_0_1 = {:x}", coeffs[0].repr.0[0]); 
     }
 
     #[test]
@@ -572,22 +559,9 @@ mod tests {
         let nonres_repr = U832Repr::from(13);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
-        let extension = Extension3 {
-            field: &base_field,
-            non_residue: fp_non_residue,
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
-            frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
+        let extension = Extension3::new(fp_non_residue);
 
         let (coeffs_0, coeffs_1) = super::frobenius_calculator_fp3(modulus, &extension).unwrap();
-
-        println!("C_0 = {}", coeffs_0[0].repr);
-        println!("C_1 = {}", coeffs_0[1].repr);
-        println!("C_2 = {}", coeffs_0[2].repr);
-
-        println!("C_0 = {}", coeffs_1[0].repr);
-        println!("C_1 = {}", coeffs_1[1].repr);
-        println!("C_2 = {}", coeffs_1[2].repr);
     }
 
     #[test]
@@ -597,48 +571,19 @@ mod tests {
         let nonres_repr = U832Repr::from(13);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
-        let mut extension_3 = Extension3 {
-            field: &base_field,
-            non_residue: fp_non_residue.clone(),
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
-            frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
+        let mut extension_3 = Extension3::new(fp_non_residue.clone());
 
         let (coeffs_1, coeffs_2) = super::frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
         extension_3.frobenius_coeffs_c1 = coeffs_1;
         extension_3.frobenius_coeffs_c2 = coeffs_2;
-
-        let one = Fp::one(&base_field);
+        extension_3.frobenius_coeffs_are_calculated = true;
 
         let mut fp3_non_residue = Fp3::zero(&extension_3); // non-residue is 13 + 0*u + 0*u^2
         fp3_non_residue.c0 = fp_non_residue;
 
-        let f_c1 = [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field),
-                    Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)];
-
-        let extension_6 = fp6_as_2_over_3::Extension2Over3 {
-            non_residue: fp3_non_residue,
-            field: &extension_3,
-            frobenius_coeffs_c1: f_c1
-        };
+        let extension_6 = fp6_as_2_over_3::Extension2Over3::new(fp3_non_residue);
 
         let coeffs = super::frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
-
-        // println!("C_0_0 = {}", coeffs[0].c0.repr);
-        // println!("C_0_1 = {}", coeffs[0].c1.repr);
-        // println!("C_0_2 = {}", coeffs[0].c2.repr);
-
-        // println!("C_1_0 = {}", coeffs[1].c0.repr);
-        // println!("C_1_1 = {}", coeffs[1].c1.repr);
-        // println!("C_1_2 = {}", coeffs[1].c2.repr);
-
-        // println!("C_2_0 = {}", coeffs[2].c0.repr);
-        // println!("C_2_1 = {}", coeffs[2].c1.repr);
-        // println!("C_2_2 = {}", coeffs[2].c2.repr);
-
-        // println!("C_3_0 = {}", coeffs[3].c0.repr);
-        // println!("C_3_1 = {}", coeffs[3].c1.repr);
-        // println!("C_3_2 = {}", coeffs[3].c2.repr);
 
     }
 
@@ -649,11 +594,7 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
-        let mut extension_2 = Extension2 {
-            field: &base_field,
-            non_residue: fp_non_residue,
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
+        let mut extension_2 = Extension2::new(fp_non_residue);
 
         let coeffs = super::frobenius_calculator_fp2(&extension_2).unwrap();
         extension_2.frobenius_coeffs_c1 = coeffs;
@@ -664,26 +605,9 @@ mod tests {
         fp2_non_residue.c0 = one.clone();
         fp2_non_residue.c1 = one.clone();
 
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-        let extension_6 = fp6_as_3_over_2::Extension3Over2 {
-            non_residue: fp2_non_residue,
-            field: &extension_2,
-            frobenius_coeffs_c1: f_c1.clone(),
-            frobenius_coeffs_c2: f_c1,
-        };
+        let extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
 
         let coeffs = super::frobenius_calculator_fp6_as_3_over_2(modulus, &extension_6).unwrap();
-
-        println!("C_0_0 = {}", coeffs.0[0]);
-        println!("C_0_1 = {}", coeffs.0[1]);
-
-        println!("C_1_0 = {}", coeffs.1[0]);
-        println!("C_1_1 = {}", coeffs.1[1]);
-
-
-        // println!("C_0_1 = {:x}", coeffs[0].repr.0[0]); 
     }
 
     #[test]
@@ -693,11 +617,7 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
-        let mut extension_2 = Extension2 {
-            field: &base_field,
-            non_residue: fp_non_residue,
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
+        let mut extension_2 = Extension2::new(fp_non_residue);
 
         let coeffs = super::frobenius_calculator_fp2(&extension_2).unwrap();
         extension_2.frobenius_coeffs_c1 = coeffs;
@@ -708,15 +628,7 @@ mod tests {
         fp2_non_residue.c0 = one.clone();
         fp2_non_residue.c1 = one.clone();
 
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-        let mut extension_6 = fp6_as_3_over_2::Extension3Over2 {
-            non_residue: fp2_non_residue,
-            field: &extension_2,
-            frobenius_coeffs_c1: f_c1.clone(),
-            frobenius_coeffs_c2: f_c1,
-        };
+        let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
 
         let (coeffs_c1, coeffs_c2) = super::frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
@@ -725,21 +637,8 @@ mod tests {
 
         let mut fp2_non_residue = Fp2::zero(&extension_2);
 
-         let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                    Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-        let mut extension_12 = Extension2Over3Over2 {
-            non_residue: fp6_as_3_over_2::Fp6::zero(&extension_6),
-            field: &extension_6,
-            frobenius_coeffs_c1: f_c1,
-        };
+        let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
 
         let coeffs = super::frobenius_calculator_fp12(modulus, &extension_12).unwrap();
-
-        println!("C_0 = {}", coeffs[0]);
-        println!("C_1 = {}", coeffs[1]);
-        println!("C_10 = {}", coeffs[10]);
     }
 }

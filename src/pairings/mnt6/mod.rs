@@ -487,33 +487,23 @@ mod tests {
         let nonres_repr = U320Repr::from(5);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
-        let mut extension_3 = Extension3 {
-            field: &base_field,
-            non_residue: fp_non_residue.clone(),
-            frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
-            frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
-        };
+        let mut extension_3 = Extension3::new(fp_non_residue.clone());
 
         let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
         extension_3.frobenius_coeffs_c1 = coeffs_1;
         extension_3.frobenius_coeffs_c2 = coeffs_2;
+        extension_3.frobenius_coeffs_are_calculated = true;
 
         let one = Fp::one(&base_field);
 
         let mut fp3_non_residue = Fp3::zero(&extension_3); // non-residue is 13 + 0*u + 0*u^2
         fp3_non_residue.c0 = fp_non_residue;
 
-        let f_c1 = [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field),
-                    Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)];
-
-        let mut extension_6 = Extension2Over3 {
-            non_residue: fp3_non_residue,
-            field: &extension_3,
-            frobenius_coeffs_c1: f_c1
-        };
+        let mut extension_6 = Extension2Over3::new(fp3_non_residue);
 
         let coeffs = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
         extension_6.frobenius_coeffs_c1 = coeffs;
+        extension_6.frobenius_coeffs_are_calculated = true;
 
         let b_fp = BigUint::from_str_radix("106700080510851735677967319632585352256454251201367587890185989362936000262606668469523074", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();

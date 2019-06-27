@@ -13,7 +13,7 @@ pub struct WeierstrassCurveTwist<'a, FE: ElementRepr, F: SizedPrimeField<Repr = 
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> WeierstrassCurveTwist<'a, FE, F, GE, G> {
-    pub fn new(
+    pub(crate) fn new(
         scalar_field: &'a G,
         extension_field: &'a Extension2<'a, FE, F>,
         a: Fp2<'a, FE, F>, 

@@ -241,17 +241,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         s0.square();
         let mut ab = a.clone();
         ab.mul_assign(&b);
-        let mut s1 = ab.clone();
+        let mut s1 = ab;
         s1.double();
-        let mut s2 = a.clone();
+        let mut s2 = a;
         s2.sub_assign(&b);
         s2.add_assign(&c);
         s2.square();
-        let mut bc = b.clone();
+        let mut bc = b;
         bc.mul_assign(&c);
-        let mut s3 = bc.clone();
+        let mut s3 = bc;
         s3.double();
-        let mut s4 = c.clone();
+        let mut s4 = c;
         s4.square();
 
         self.c0 = s0.clone();

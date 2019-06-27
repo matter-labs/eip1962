@@ -8,15 +8,15 @@ use crate::extension_towers::fp3::{Fp3, Extension3};
 use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 use crate::pairings::PairingEngine;
 
-pub struct MNT6Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
+pub struct MNT6Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub x: Vec<u64>,
     pub x_is_negative: bool,
     pub exp_w0: Vec<u64>,
     pub exp_w1: Vec<u64>,
     pub exp_w0_is_negative: bool,
     pub base_field: &'a F,
-    pub curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
+    pub curve: &'a WeierstrassCurve<'a, FE, F>,
+    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F>,
     pub twist: Fp3<'a, FE, F>,
     fp3_extension: &'a Extension3<'a, FE, F>,
     fp6_extension: &'a Extension2Over3<'a, FE, F>,
@@ -57,12 +57,12 @@ struct ExtendedCoordinates<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub t: Fp3<'a, FE, F>,
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> MNT6Instance<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> MNT6Instance<'a, FE, F> {
     fn miller_loop<'b, I>(&self, i: I) -> Fp6<'a, FE, F>
     where 'a: 'b,
         I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, FE, F, GE, G>, 
-                &'b TwistPoint<'a, FE, F, GE, G>)
+            Item = &'b (&'b CurvePoint<'a, FE, F>, 
+                &'b TwistPoint<'a, FE, F>)
         >
     {
         let mut f = Fp6::one(self.fp6_extension);
@@ -73,7 +73,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         f
     }
 
-    fn precompute_g1(&self, g1_point: &CurvePoint<'a, FE, F, GE, G>) -> PrecomputedG1<'a, FE, F> {
+    fn precompute_g1(&self, g1_point: &CurvePoint<'a, FE, F>) -> PrecomputedG1<'a, FE, F> {
         // not asserting normalization, it will be asserted in the loop
         let mut x_twist = self.twist.clone();
         x_twist.mul_by_fp(&g1_point.x);
@@ -248,7 +248,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
 
-    fn precompute_g2(&self, g2_point: &TwistPoint<'a, FE, F, GE, G>, twist_inv: &Fp3<'a, FE, F>) -> PrecomputedG2<'a, FE, F> {
+    fn precompute_g2(&self, g2_point: &TwistPoint<'a, FE, F>, twist_inv: &Fp3<'a, FE, F>) -> PrecomputedG2<'a, FE, F> {
         // not asserting normalization, it will be asserted in the loop
         // precompute addition and doubling coefficients
         let mut x_over_twist = g2_point.x.clone();
@@ -310,8 +310,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn ate_pairing_loop(
         &self, 
-        point: &CurvePoint<'a, FE, F, GE, G>, 
-        twist_point: &TwistPoint<'a, FE, F, GE, G> 
+        point: &CurvePoint<'a, FE, F>, 
+        twist_point: &TwistPoint<'a, FE, F> 
     ) -> Fp6<'a, FE, F> {
         debug_assert!(point.is_normalized());
         debug_assert!(twist_point.is_normalized());
@@ -449,13 +449,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 }
 
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> PairingEngine for MNT6Instance<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PairingEngine for MNT6Instance<'a, FE, F> {
     type PairingResult = Fp6<'a, FE, F>;
-    type G1 = CurvePoint<'a, FE, F, GE, G>;
-    type G2 = TwistPoint<'a, FE, F, GE, G>;
+    type G1 = CurvePoint<'a, FE, F>;
+    type G2 = TwistPoint<'a, FE, F>;
 
     fn pair<'b>
-        (&self, points: &'b [CurvePoint<'a, FE, F, GE, G>], twists: &'b [TwistPoint<'a, FE, F, GE, G>]) -> Option<Self::PairingResult> {
+        (&self, points: &'b [CurvePoint<'a, FE, F>], twists: &'b [TwistPoint<'a, FE, F>]) -> Option<Self::PairingResult> {
             let mut pairs = vec![];
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
@@ -479,6 +479,7 @@ mod tests {
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::cubic_twist::{TwistPoint, WeierstrassCurveTwist};
     use crate::pairings::{PairingEngine};
+    use crate::field::{biguint_to_u64_vec};
 
     #[test]
     fn test_mnt6_pairing() {
@@ -525,10 +526,12 @@ mod tests {
         let mut b_fp3 = twist_cubed.clone();
         b_fp3.mul_by_fp(&b_fp);
 
-        let scalar_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
+        // let scalar_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
+        let group_order = BigUint::from_str_radix("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
 
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let curve_twist = WeierstrassCurveTwist::new(&scalar_field, &extension_3, a_fp3, b_fp3);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+        let curve_twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_3, a_fp3, b_fp3);
 
         let p_x = BigUint::from_str_radix("336685752883082228109289846353937104185698209371404178342968838739115829740084426881123453", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("402596290139780989709332707716568920777622032073762749862342374583908837063963736098549800", 10).unwrap().to_bytes_be();

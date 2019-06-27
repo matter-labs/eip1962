@@ -53,11 +53,11 @@ impl PairingApi for PublicPairingApi {
             return Err(ApiError::InputError("Input should be longer than curve type encoding".to_owned()));
         }
         let (_curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
-        let (modulus, _, _, _, order, _, _) = parse_encodings(&rest)?;
+        let (modulus, _, _, _, _order, _, _) = parse_encodings(&rest)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
-        let order_limbs = (order.bits() / 64) + 1;
+        // let order_limbs = (order.bits() / 64) + 1;
 
-        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_and_group_limbs!(modulus_limbs, order_limbs, PairingApiImplementation, bytes, pair); 
+        let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, bytes, pair); 
 
         result
     }
@@ -67,12 +67,11 @@ pub trait PairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
 }
 
-struct PairingApiImplementation<FE: ElementRepr, GE: ElementRepr> {
+struct PairingApiImplementation<FE: ElementRepr> {
     _marker_fe: std::marker::PhantomData<FE>,
-    _marker_ge: std::marker::PhantomData<GE>
 }
 
-impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<FE, GE> {
+impl<FE: ElementRepr> PairingApi for PairingApiImplementation<FE> {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         if bytes.len() < CURVE_TYPE_LENGTH {
             return Err(ApiError::InputError("Input should be longer than curve type encoding".to_owned()));
@@ -81,7 +80,7 @@ impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<F
 
         match curve_type[0] {
             BLS12 => {
-                PairingApiImplementation::<FE, GE>::pair_bls12(&rest)
+                PairingApiImplementation::<FE>::pair_bls12(&rest)
             },
             _ => {
                 unimplemented!("Not implemented for not BLS12 curves");
@@ -90,17 +89,15 @@ impl<FE: ElementRepr, GE: ElementRepr> PairingApi for PairingApiImplementation<F
     }
 }
 
-// impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>>
-
-impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
+impl<FE: ElementRepr>PairingApiImplementation<FE> {
     fn pair_bls12(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
         }
-        let (group, _order_len, _order, rest) = parse_group_order_from_encoding::<GE>(rest)?;
-        let g1_curve = curve::WeierstrassCurve::new(&group, a_fp, b_fp.clone());
+        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let g1_curve = curve::WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone());
 
         // Now we need to expect:
         // - non-residue for Fp2
@@ -201,7 +198,7 @@ impl<FE: ElementRepr, GE: ElementRepr>PairingApiImplementation<FE, GE> {
         };
 
         let a_fp2 = Fp2::zero(&extension_2);
-        let g2_curve = twist::WeierstrassCurveTwist::new(&group, &extension_2, a_fp2, b_fp2);
+        let g2_curve = twist::WeierstrassCurveTwist::new(order_repr, &extension_2, a_fp2, b_fp2);
 
         let (x, rest) = decode_biguint_with_length(&rest)?;
         if rest.len() < SIGN_ENCODING_LENGTH {

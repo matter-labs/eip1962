@@ -28,17 +28,18 @@ pub(crate) fn parse_base_field_from_encoding<
 }
 
 pub(crate) fn parse_group_order_from_encoding<
-    'a,
-    GE: ElementRepr,
-    >(encoding: &'a [u8]) -> Result<(PrimeField<GE>, usize, BigUint, &'a [u8]), ApiError>
+    'a
+    >(encoding: &'a [u8]) -> Result<(Vec<u64>, usize, BigUint, &'a [u8]), ApiError>
 {
+    use crate::field::biguint_to_u64_vec;
     let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
     let order = BigUint::from_bytes_be(&order);
-    let group = field_from_modulus::<GE>(order.clone()).map_err(|_| {
-        ApiError::InputError("Failed to create scalar field from group order".to_owned())
-    })?;
+    if order.is_zero() {
+        return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())))
+    }
+    let as_vec = biguint_to_u64_vec(order.clone());
 
-    Ok((group, order_len, order, rest))
+    Ok((as_vec, order_len, order, rest))
 }
 
 pub(crate) fn parse_ab_in_base_field_from_encoding<
@@ -60,13 +61,11 @@ pub(crate) fn parse_ab_in_base_field_from_encoding<
 pub(crate) fn serialize_g1_point<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         modulus_len: usize,
-        point: &CurvePoint<'a, FE, F, GE, G>
+        point: &CurvePoint<'a, FE, F>
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
@@ -113,15 +112,13 @@ pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]
 pub(crate) fn decode_g1_point_from_xy<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a WeierstrassCurve<'a, FE, F, GE, G>
-    ) -> Result<(CurvePoint<'a, FE, F, GE, G>, &'a [u8]), ApiError>
+        curve: &'a WeierstrassCurve<'a, FE, F>
+    ) -> Result<(CurvePoint<'a, FE, F>, &'a [u8]), ApiError>
 {
     if bytes.len() < field_byte_len {
         return Err(ApiError::InputError("Input is not long enough to get X".to_owned()));
@@ -138,37 +135,33 @@ pub(crate) fn decode_g1_point_from_xy<
         ApiError::InputError("Failed to parse Y".to_owned())
     })?;
     
-    let p: CurvePoint<'a, FE, F, GE, G> = CurvePoint::point_from_xy(&curve, x, y);
+    let p: CurvePoint<'a, FE, F> = CurvePoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
 
 pub(crate) fn decode_scalar_representation<
-    'a,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    'a
     >
     (
         bytes: &'a [u8], 
         order_byte_len: usize,
-        group: &G,
-    ) -> Result<(GE, &'a [u8]), ApiError>
+        order: &BigUint,
+        order_repr: &[u64],
+    ) -> Result<(Vec<u64>, &'a [u8]), ApiError>
 {
+    use crate::field::biguint_to_u64_vec;
     if bytes.len() < order_byte_len {
         return Err(ApiError::InputError("Input is not long enough to get scalar".to_owned()));
     }
     let (encoding, rest) = bytes.split_at(order_byte_len);
-    let mut repr = GE::default();
-    if encoding.len() >= repr.as_ref().len() * 8 {
-        repr.read_be(encoding).map_err(|_| {
-            ApiError::InputError("Failed to parse scalar".to_owned())
-        })?;
-    } else {
-        let mut padded = vec![0u8; repr.as_ref().len() * 8 - encoding.len()];
-        padded.extend_from_slice(encoding);
-        repr.read_be(&padded[..]).map_err(|_| {
-            ApiError::InputError("Failed to parse scalar".to_owned())
-        })?;
+    let scalar = BigUint::from_bytes_be(&encoding);
+    if &scalar >= order {
+        return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())));
+    }
+    let mut repr = biguint_to_u64_vec(scalar);
+    if repr.len() < order_repr.len() {
+        repr.resize(order_repr.len(), 0u64);
     }
 
     Ok((repr, rest))

@@ -117,48 +117,47 @@ impl<FE: ElementRepr, GE: ElementRepr> PrecompileAPI for ApiImplementation<FE, G
     }
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ()> {
-        let (field, modulus_len, rest) = create_field!(bytes, FE);
-        let (a, b, rest) = get_ab!(rest, field, modulus_len);
-        let (group, order_len, rest) = create_group!(rest, GE);
+        unimplemented!();
+        // let (field, modulus_len, rest) = create_field!(bytes, FE);
+        // let (a, b, rest) = get_ab!(rest, field, modulus_len);
+        // let (group, order_len, rest) = create_group!(rest, GE);
 
-        let curve = WeierstrassCurve::new(&group, a, b);
+        // let curve = WeierstrassCurve::new(&group, a, b);
 
-        let expected_pair_len = 2*modulus_len + order_len;
-        if rest.len() % expected_pair_len != 0 {
-            return Err(());
-        }
+        // let expected_pair_len = 2*modulus_len + order_len;
+        // if rest.len() % expected_pair_len != 0 {
+        //     return Err(());
+        // }
 
-        let expected_pairs = rest.len() / expected_pair_len;
-        if expected_pairs == 0 {
-            return Err(());
-        }
+        // let expected_pairs = rest.len() / expected_pair_len;
+        // if expected_pairs == 0 {
+        //     return Err(());
+        // }
 
-        let mut acc = CurvePoint::zero(&curve);
+        // let mut acc = CurvePoint::zero(&curve);
 
-        let mut global_rest = rest;
+        // let mut global_rest = rest;
 
-        for _ in 0..expected_pairs {
-            let (p, local_rest) = decode_point_from_xy(global_rest, modulus_len, &curve)?;
-            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &group)?;
+        // for _ in 0..expected_pairs {
+        //     let (p, local_rest) = decode_point_from_xy(global_rest, modulus_len, &curve)?;
+        //     let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &group)?;
 
-            acc.add_assign(&p.mul(&scalar));
-            global_rest = local_rest;
-        }
+        //     acc.add_assign(&p.mul(&scalar));
+        //     global_rest = local_rest;
+        // }
 
-        serialize_point(modulus_len, &acc)   
+        // serialize_point(modulus_len, &acc)   
     }
 }
 
 fn serialize_point<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         modulus_len: usize,
-        point: &CurvePoint<'a, FE, F, GE, G>
+        point: &CurvePoint<'a, FE, F>
     ) -> Result<Vec<u8>, ()>
 {
     let (x, y) = point.into_xy();
@@ -233,15 +232,13 @@ fn get_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ()> {
 fn decode_point_from_xy<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a WeierstrassCurve<'a, FE, F, GE, G>
-    ) -> Result<(CurvePoint<'a, FE, F, GE, G>, &'a [u8]), ()>
+        curve: &'a WeierstrassCurve<'a, FE, F>
+    ) -> Result<(CurvePoint<'a, FE, F>, &'a [u8]), ()>
 {
     if bytes.len() < field_byte_len {
         return Err(());
@@ -254,33 +251,33 @@ fn decode_point_from_xy<
     let (y_encoding, rest) = rest.split_at(field_byte_len);
     let y = Fp::from_be_bytes(curve.base_field, y_encoding, true).map_err(|_| ())?;
     
-    let p: CurvePoint<'a, FE, F, GE, G> = CurvePoint::point_from_xy(&curve, x, y);
+    let p: CurvePoint<'a, FE, F> = CurvePoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
 
 fn decode_scalar_representation<
     'a,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
     >
     (
         bytes: &'a [u8], 
         order_byte_len: usize,
-        group: &G,
-    ) -> Result<(GE, &'a [u8]), ()>
+        order: &BigUint,
+        order_repr: &[u64],
+    ) -> Result<(Vec<u64>, &'a [u8]), ()>
 {
+    use crate::field::biguint_to_u64_vec;
     if bytes.len() < order_byte_len {
         return Err(());
     }
     let (encoding, rest) = bytes.split_at(order_byte_len);
-    let mut repr = GE::default();
-    if encoding.len() >= repr.as_ref().len() * 8 {
-        repr.read_be(encoding).map_err(|_| ())?;
-    } else {
-        let mut padded = vec![0u8; repr.as_ref().len() * 8 - encoding.len()];
-        padded.extend_from_slice(encoding);
-        repr.read_be(&padded[..]).map_err(|_| ())?;
+    let scalar = BigUint::from_bytes_be(&encoding);
+    if &scalar >= order {
+        return Err(());
+    }
+    let mut repr = biguint_to_u64_vec(scalar);
+    if repr.len() < order_repr.len() {
+        repr.resize(order_repr.len(), 0u64);
     }
 
     Ok((repr, rest))

@@ -25,18 +25,17 @@ use crate::pairings::bn::{BnInstance};
 fn bench_bn254_pairing(b: &mut Bencher) {
     let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
     let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
-    let mut extension_2 = Extension2 {
-        field: &base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-    };
+    let mut extension_2 = Extension2::new(fp_non_residue);
 
     let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
     extension_2.frobenius_coeffs_c1 = coeffs;
+    extension_2.frobenius_coeffs_are_calculated = true;
 
     let one = Fp::one(&base_field);
 
@@ -47,34 +46,19 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     fp2_non_residue.c0 = fp_9.clone();
     fp2_non_residue.c1 = one.clone();
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_6 = Extension3Over2 {
-        non_residue: fp2_non_residue.clone(),
-        field: &extension_2,
-        frobenius_coeffs_c1: f_c1.clone(),
-        frobenius_coeffs_c2: f_c1,
-    };
+    let mut extension_6 = Extension3Over2::new(fp2_non_residue);
 
     let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
     extension_6.frobenius_coeffs_c1 = coeffs_c1;
     extension_6.frobenius_coeffs_c2 = coeffs_c2;
+    extension_6.frobenius_coeffs_are_calculated = true;
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
+    let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
-    let mut extension_12 = Extension2Over3Over2 {
-        non_residue: Fp6::zero(&extension_6),
-        field: &extension_6,
-        frobenius_coeffs_c1: f_c1,
-    };
-
-    let coeffs = frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap();
+    let coeffs = frobenius_calculator_fp12(modulus, &extension_12).unwrap();
     extension_12.frobenius_coeffs_c1 = coeffs;
+    extension_12.frobenius_coeffs_are_calculated = true;
 
     let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
     // here it's b/(u+9)
@@ -84,8 +68,8 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     let a_fp = Fp::zero(&base_field);
     let a_fp2 = Fp2::zero(&extension_2);
 
-    let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-    let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+    let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
 
     let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();

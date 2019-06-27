@@ -4,18 +4,18 @@ use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator};
 use super::{CurveType, Group};
 
-pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
+pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub(crate) base_field: &'a F,
-    pub(crate) scalar_field: &'a G,
     pub(crate) a: Fp<'a, FE, F>,
     pub(crate) b: Fp<'a, FE, F>,
-    pub(crate) curve_type: CurveType
+    pub(crate) curve_type: CurveType,
+    pub(crate) subgroup_order_repr: Vec<u64>,
 }
 
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> WeierstrassCurve<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> WeierstrassCurve<'a, FE, F> {
     pub fn new(
-        scalar_field: &'a G,
+        subgroup_order: Vec<u64>,
         a: Fp<'a, FE, F>, 
         b: Fp<'a, FE, F>,
     ) -> Self {
@@ -25,22 +25,22 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         }
         Self {
             base_field: &a.field,
-            scalar_field: scalar_field,
             a: a,
             b: b,
-            curve_type: curve_type
+            curve_type: curve_type,
+            subgroup_order_repr: subgroup_order
         }
     }
 }
 
-pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
-    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
+pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F>,
     pub(crate) x: Fp<'a, FE, F>,
     pub(crate) y: Fp<'a, FE, F>,
     pub(crate) z: Fp<'a, FE, F>,
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Clone for CurvePoint<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Clone for CurvePoint<'a, FE, F> {
     #[inline(always)]
     fn clone(&self) -> Self {
         Self {
@@ -52,8 +52,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> CurvePoint<'a, FE, F, GE, G> {    
-    pub fn zero(curve: &'a WeierstrassCurve<'a, FE, F, GE, G>) -> Self {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {    
+    pub fn zero(curve: &'a WeierstrassCurve<'a, FE, F>) -> Self {
         Self {
             curve: curve,
             x: Fp::<'a, FE, F>::zero(&curve.base_field),
@@ -80,10 +80,10 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
     pub fn point_from_xy(
-        curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
+        curve: &'a WeierstrassCurve<'a, FE, F>,
         x: Fp<'a, FE, F>, 
         y: Fp<'a, FE, F>
-    ) -> CurvePoint<'a, FE, F, GE, G> {
+    ) -> CurvePoint<'a, FE, F> {
         CurvePoint {
             curve: curve,
             x: x,
@@ -586,13 +586,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     }
 
     fn check_correct_subgroup_impl(&self) -> bool {
-        let p = self.mul_impl(&self.curve.scalar_field.modulus());
+        let p = self.mul_impl(&self.curve.subgroup_order_repr);
 
         p.is_zero_generic_impl()
     }
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Group for CurvePoint<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Group for CurvePoint<'a, FE, F> {
     fn add_assign(&mut self, other: &Self) {
         match self.curve.curve_type {
             _ => {

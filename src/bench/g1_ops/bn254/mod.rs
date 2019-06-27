@@ -5,15 +5,19 @@ use crate::fp::Fp;
 use crate::weierstrass::curve::*;
 use crate::traits::FieldElement;
 use rust_test::Bencher;
-use crate::multiexp::{ben_coster, ben_coster_wnaf, peppinger};
+use crate::multiexp::{peppinger};
 use crate::weierstrass::Group;
+use num_bigint::BigUint;
+use num_traits::Num;
 
 const MULTIEXP_NUM_POINTS: usize = 100;
 
 #[bench]
 fn bench_doubling_bn254(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -21,7 +25,7 @@ fn bench_doubling_bn254(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -39,7 +43,9 @@ fn bench_doubling_bn254(b: &mut Bencher) {
 #[bench]
 fn bench_addition_bn254(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -47,7 +53,7 @@ fn bench_addition_bn254(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -68,7 +74,9 @@ fn bench_addition_bn254(b: &mut Bencher) {
 #[bench]
 fn bench_multiplication_bn254(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -76,7 +84,7 @@ fn bench_multiplication_bn254(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -100,7 +108,9 @@ fn bench_multiplication_bn254(b: &mut Bencher) {
 #[bench]
 fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -108,7 +118,7 @@ fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -132,7 +142,9 @@ fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
 #[bench]
 fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -140,7 +152,7 @@ fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -168,15 +180,13 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
     use crate::extension_towers::fp2::{Fp2, Extension2};
     use crate::weierstrass::twist::{WeierstrassCurveTwist, TwistPoint};
     let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
-    let mut extension_2 = Extension2 {
-        field: &base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-    };
+    let mut extension_2 = Extension2::new(fp_non_residue);
 
     let one = Fp::one(&base_field);
 
@@ -194,7 +204,7 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
 
     let a_fp2 = Fp2::zero(&extension_2);
 
-    let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+    let twist = WeierstrassCurveTwist::new(group_order, &extension_2, a_fp2, b_fp2);
 
     let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
     let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
@@ -245,85 +255,85 @@ fn bench_field_mont_inverse(b: &mut Bencher) {
     b.iter(|| element.mont_inverse().unwrap());
 }
 
-#[bench]
-fn bench_ben_coster_bn254(b: &mut Bencher) {
-    use crate::representation::ElementRepr;
-    use rand::{RngCore, SeedableRng};
-    use rand_xorshift::XorShiftRng;
+// #[bench]
+// fn bench_ben_coster_bn254(b: &mut Bencher) {
+//     use crate::representation::ElementRepr;
+//     use rand::{RngCore, SeedableRng};
+//     use rand_xorshift::XorShiftRng;
 
-    let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-    let one = Fp::one(&field);
-    let a_coeff = Fp::zero(&field);
-    let mut b_coeff = one.clone();
-    b_coeff.double();
-    b_coeff.add_assign(&one);
+//     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+//     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+//     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+//     let one = Fp::one(&field);
+//     let a_coeff = Fp::zero(&field);
+//     let mut b_coeff = one.clone();
+//     b_coeff.double();
+//     b_coeff.add_assign(&one);
 
-    let curve = WeierstrassCurve::new(
-        &group, 
-        a_coeff, 
-        b_coeff);
+//     let curve = WeierstrassCurve::new(
+//         &group, 
+//         a_coeff, 
+//         b_coeff);
 
-    let mut two = one.clone();
-    two.double();
+//     let mut two = one.clone();
+//     two.double();
 
-    let point = CurvePoint::point_from_xy(
-        &curve, 
-        one, 
-        two);
+//     let point = CurvePoint::point_from_xy(
+//         &curve, 
+//         one, 
+//         two);
 
-    let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-        let mut scalar = U256Repr::default();
-        let mut bytes = vec![0u8; 32];
-        rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+//     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+//         let mut scalar = U256Repr::default();
+//         let mut bytes = vec![0u8; 32];
+//         rng.fill_bytes(&mut bytes[1..]);
+//         scalar.read_be(& bytes[..]).unwrap();
 
-        (point.clone(), scalar)
-    }).collect();
+//         (point.clone(), scalar)
+//     }).collect();
 
-    b.iter(move || ben_coster(pairs.clone()));
-}
+//     b.iter(move || ben_coster(pairs.clone()));
+// }
 
-#[bench]
-fn bench_ben_coster_bn254_using_wnaf(b: &mut Bencher) {
-    use crate::representation::ElementRepr;
-    use rand::{RngCore, SeedableRng};
-    use rand_xorshift::XorShiftRng;
+// #[bench]
+// fn bench_ben_coster_bn254_using_wnaf(b: &mut Bencher) {
+//     use crate::representation::ElementRepr;
+//     use rand::{RngCore, SeedableRng};
+//     use rand_xorshift::XorShiftRng;
 
-    let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-    let one = Fp::one(&field);
-    let a_coeff = Fp::zero(&field);
-    let mut b_coeff = one.clone();
-    b_coeff.double();
-    b_coeff.add_assign(&one);
+//     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+//     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+//     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+//     let one = Fp::one(&field);
+//     let a_coeff = Fp::zero(&field);
+//     let mut b_coeff = one.clone();
+//     b_coeff.double();
+//     b_coeff.add_assign(&one);
 
-    let curve = WeierstrassCurve::new(
-        &group, 
-        a_coeff, 
-        b_coeff);
+//     let curve = WeierstrassCurve::new(
+//         &group, 
+//         a_coeff, 
+//         b_coeff);
 
-    let mut two = one.clone();
-    two.double();
+//     let mut two = one.clone();
+//     two.double();
 
-    let point = CurvePoint::point_from_xy(
-        &curve, 
-        one, 
-        two);
+//     let point = CurvePoint::point_from_xy(
+//         &curve, 
+//         one, 
+//         two);
 
-    let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-        let mut scalar = U256Repr::default();
-        let mut bytes = vec![0u8; 32];
-        rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+//     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+//         let mut scalar = U256Repr::default();
+//         let mut bytes = vec![0u8; 32];
+//         rng.fill_bytes(&mut bytes[1..]);
+//         scalar.read_be(& bytes[..]).unwrap();
 
-        (point.clone(), scalar)
-    }).collect();
+//         (point.clone(), scalar)
+//     }).collect();
 
-    b.iter(move || ben_coster_wnaf(pairs.clone()));
-}
+//     b.iter(move || ben_coster_wnaf(pairs.clone()));
+// }
 
 #[bench]
 fn bench_peppinger_bn254(b: &mut Bencher) {
@@ -334,6 +344,8 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(order.clone());
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -341,7 +353,7 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -354,10 +366,11 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
         two);
 
     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-        let mut scalar = U256Repr::default();
         let mut bytes = vec![0u8; 32];
-        rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+        rng.fill_bytes(&mut bytes[..]);
+        let scalar = BigUint::from_bytes_be(&bytes);
+        let scalar = scalar % &order;
+        let scalar = biguint_to_u64_vec(scalar);
 
         (point.clone(), scalar)
     }).collect();
@@ -373,7 +386,9 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
 
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = biguint_to_u64_vec(order.clone());
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -381,7 +396,7 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
     b_coeff.add_assign(&one);
 
     let curve = WeierstrassCurve::new(
-        &group, 
+        group_order, 
         a_coeff, 
         b_coeff);
 
@@ -394,17 +409,18 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
         two);
 
     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-        let mut scalar = U256Repr::default();
         let mut bytes = vec![0u8; 32];
-        rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+        rng.fill_bytes(&mut bytes[..]);
+        let scalar = BigUint::from_bytes_be(&bytes);
+        let scalar = scalar % &order;
+        let scalar = biguint_to_u64_vec(scalar);
 
         (point.clone(), scalar)
     }).collect();
 
 
     b.iter(move || {
-        let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.mul(el.1)).collect();
+        let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.mul(&el.1)).collect();
         let mut acc = pairs.pop().unwrap();
         while let Some(p) = pairs.pop() {
             acc.add_assign(&p);
@@ -412,49 +428,51 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
     });
 }
 
-#[bench]
-fn bench_wnaf_multiexp_bn254(b: &mut Bencher) {
-    use crate::representation::ElementRepr;
-    use rand::{RngCore, SeedableRng};
-    use rand_xorshift::XorShiftRng;
+// #[bench]
+// fn bench_wnaf_multiexp_bn254(b: &mut Bencher) {
+//     use crate::representation::ElementRepr;
+//     use rand::{RngCore, SeedableRng};
+//     use rand_xorshift::XorShiftRng;
 
-    let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-    let one = Fp::one(&field);
-    let a_coeff = Fp::zero(&field);
-    let mut b_coeff = one.clone();
-    b_coeff.double();
-    b_coeff.add_assign(&one);
+//     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+//     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+//     // let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+//     let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+//     let group_order = biguint_to_u64_vec(order.clone());
+//     let one = Fp::one(&field);
+//     let a_coeff = Fp::zero(&field);
+//     let mut b_coeff = one.clone();
+//     b_coeff.double();
+//     b_coeff.add_assign(&one);
 
-    let curve = WeierstrassCurve::new(
-        &group, 
-        a_coeff, 
-        b_coeff);
+//     let curve = WeierstrassCurve::new(
+//         group_order, 
+//         a_coeff, 
+//         b_coeff);
 
-    let mut two = one.clone();
-    two.double();
+//     let mut two = one.clone();
+//     two.double();
 
-    let point = CurvePoint::point_from_xy(
-        &curve, 
-        one, 
-        two);
+//     let point = CurvePoint::point_from_xy(
+//         &curve, 
+//         one, 
+//         two);
 
-    let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-        let mut scalar = U256Repr::default();
-        let mut bytes = vec![0u8; 32];
-        rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+//     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+//         let mut bytes = vec![0u8; 32];
+//         rng.fill_bytes(&mut bytes[..]);
+//         let scalar = BigUint::from_bytes_be(&bytes);
+//         let scalar = scalar % &order;
+//         let scalar = biguint_to_u64_vec(scalar);
 
-        (point.clone(), scalar)
-    }).collect();
+//         (point.clone(), scalar)
+//     }).collect();
 
-
-    b.iter(move || {
-        let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.wnaf_mul_impl(el.1)).collect();
-        let mut acc = pairs.pop().unwrap();
-        while let Some(p) = pairs.pop() {
-            acc.add_assign(&p);
-        }
-    });
-}
+//     b.iter(move || {
+//         let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.wnaf_mul_impl(&el.1)).collect();
+//         let mut acc = pairs.pop().unwrap();
+//         while let Some(p) = pairs.pop() {
+//             acc.add_assign(&p);
+//         }
+//     });
+// }

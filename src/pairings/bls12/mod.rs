@@ -22,24 +22,24 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, 
     }
 }
 
-pub struct Bls12Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
+pub struct Bls12Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub(crate) x: Vec<u64>,
     pub(crate) x_is_negative: bool,
     pub(crate) twist_type: TwistType,
     pub(crate) base_field: &'a F,
-    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    pub(crate) curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
+    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F>,
+    pub(crate) curve_twist: &'a WeierstrassCurveTwist<'a, FE, F>,
     pub(crate) fp2_extension: &'a Extension2<'a, FE, F>,
     pub(crate) fp6_extension: &'a Extension3Over2<'a, FE, F>,
     pub(crate) fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> Bls12Instance<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Bls12Instance<'a, FE, F> {
     fn ell(
         &self,
         f: &mut Fp12<'a, FE, F>,
         coeffs: &(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>),
-        p: & CurvePoint<'a, FE, F, GE, G>,
+        p: & CurvePoint<'a, FE, F>,
     ) {
         debug_assert!(p.is_normalized());
         let mut c0 = coeffs.0.clone();
@@ -69,7 +69,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn doubling_step(
         &self,
-        r: &mut TwistPoint<'a, FE, F, GE, G>,
+        r: &mut TwistPoint<'a, FE, F>,
         two_inv: &Fp<'a, FE, F>,
     ) -> (Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>) {
         // Use adapted formulas from ZEXE instead
@@ -146,8 +146,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn addition_step(
         &self,
-        r: &mut TwistPoint<'a, FE, F, GE, G>,
-        q: &TwistPoint<'a, FE, F, GE, G>,
+        r: &mut TwistPoint<'a, FE, F>,
+        q: &TwistPoint<'a, FE, F>,
     ) -> (Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>) {
         debug_assert!(q.is_normalized());
         // use adapted zexe formulas too instead of ones from pairing crate
@@ -206,7 +206,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         }
     }
 
-    pub fn prepare(&self, twist_point: & TwistPoint<'a, FE, F, GE, G>) -> PreparedTwistPoint<'a, FE, F> {
+    pub fn prepare(&self, twist_point: & TwistPoint<'a, FE, F>) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
 
         let mut two_inv = Fp::one(self.base_field);
@@ -240,8 +240,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     fn miller_loop<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
     where 'a: 'b,
         I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, FE, F, GE, G>, 
-                &'b TwistPoint<'a, FE, F, GE, G>)
+            Item = &'b (&'b CurvePoint<'a, FE, F>, 
+                &'b TwistPoint<'a, FE, F>)
         >
     {
         let mut g1_references = vec![];
@@ -363,13 +363,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 }
 
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> PairingEngine for Bls12Instance<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PairingEngine for Bls12Instance<'a, FE, F> {
     type PairingResult = Fp12<'a, FE, F>;
-    type G1 = CurvePoint<'a, FE, F, GE, G>;
-    type G2 = TwistPoint<'a, FE, F, GE, G>;
+    type G1 = CurvePoint<'a, FE, F>;
+    type G2 = TwistPoint<'a, FE, F>;
 
     fn pair<'b>
-        (&self, points: &'b [CurvePoint<'a, FE, F, GE, G>], twists: &'b [TwistPoint<'a, FE, F, GE, G>]) -> Option<Self::PairingResult> {
+        (&self, points: &'b [CurvePoint<'a, FE, F>], twists: &'b [TwistPoint<'a, FE, F>]) -> Option<Self::PairingResult> {
             let mut pairs = vec![];
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
@@ -394,12 +394,15 @@ mod tests {
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
     use crate::pairings::{PairingEngine};
+    use crate::field::{biguint_to_u64_vec};
 
     #[test]
     fn test_bls12_381_pairing() {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-        let scalar_field = new_field::<U256Repr>("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+        // let scalar_field = new_field::<U256Repr>("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+        let group_order = BigUint::from_str_radix("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
@@ -436,8 +439,8 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);
 
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
 
         let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap().to_bytes_be();
@@ -498,7 +501,9 @@ mod tests {
     fn test_bls12_377_pairing() {
         let modulus = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
         let base_field = new_field::<U384Repr>("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
-        let scalar_field = new_field::<U256Repr>("8444461749428370424248824938781546531375899335154063827935233455917409239041", 10).unwrap();
+        // let scalar_field = new_field::<U256Repr>("8444461749428370424248824938781546531375899335154063827935233455917409239041", 10).unwrap();
+        let group_order = BigUint::from_str_radix("8444461749428370424248824938781546531375899335154063827935233455917409239041", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
         let fp_nonres_repr = U384Repr::from(5);
         let mut fp_non_residue = Fp::from_repr(&base_field, fp_nonres_repr).unwrap();
         fp_non_residue.negate();
@@ -533,8 +538,8 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);
 
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
 
         let p_x = BigUint::from_str_radix("008848defe740a67c8fc6225bf87ff5485951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef", 16).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("01914a69c5102eff1f674f5d30afeec4bd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6", 16).unwrap().to_bytes_be();

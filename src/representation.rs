@@ -144,3 +144,27 @@ impl fmt::Display for RepresentationDecodingError {
         }
     }
 }
+
+pub(crate) fn num_bits(repr: &[u64]) -> u32 {
+    let mut bits = (64 * repr.len()) as u32;
+    for limb in repr.iter().rev() {
+        let limb = *limb;
+        if limb == 0 {
+            bits -= 64;
+            continue;
+        } else {
+            bits -= limb.leading_zeros();
+            break;
+        }
+    }
+
+    bits
+}
+
+pub(crate) fn left_shift_representation(repr: &mut [u64], shift: u64) {
+    let num_libs = repr.len();
+    for i in 0..(num_libs - 1) {
+        repr[i] = (repr[i] >> shift) | (repr[i+1] << (64 - shift));
+    }
+    repr[num_libs - 1] = repr[num_libs - 1] >> shift;
+}

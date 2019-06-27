@@ -16,23 +16,22 @@ use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
 use crate::pairings::{PairingEngine, TwistType};
 use crate::pairings::bls12::{Bls12Instance};
+use crate::field::biguint_to_u64_vec;
 
 #[bench]
 fn bench_bls12_381_pairing(b: &mut Bencher) {
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-    let scalar_field = new_field::<U256Repr>("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+    let group_order = BigUint::from_str_radix("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
-    let mut extension_2 = Extension2 {
-        field: &base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-    };
+    let mut extension_2 = Extension2::new(fp_non_residue);
 
     let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
     extension_2.frobenius_coeffs_c1 = coeffs;
+    extension_2.frobenius_coeffs_are_calculated = true;
 
     let one = Fp::one(&base_field);
 
@@ -40,37 +39,21 @@ fn bench_bls12_381_pairing(b: &mut Bencher) {
     fp2_non_residue.c0 = one.clone();
     fp2_non_residue.c1 = one.clone();
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_6 = Extension3Over2 {
-        non_residue: fp2_non_residue,
-        field: &extension_2,
-        frobenius_coeffs_c1: f_c1.clone(),
-        frobenius_coeffs_c2: f_c1,
-    };
+    let mut extension_6 = Extension3Over2::new(fp2_non_residue);
 
     let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
     extension_6.frobenius_coeffs_c1 = coeffs_c1;
     extension_6.frobenius_coeffs_c2 = coeffs_c2;
+    extension_6.frobenius_coeffs_are_calculated = true;
 
     let mut fp2_non_residue = Fp2::zero(&extension_2);
 
-        let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_12 = Extension2Over3Over2 {
-        non_residue: Fp6::zero(&extension_6),
-        field: &extension_6,
-        frobenius_coeffs_c1: f_c1,
-    };
-
+    let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
     let coeffs = frobenius_calculator_fp12(modulus, &extension_12).unwrap();
     extension_12.frobenius_coeffs_c1 = coeffs;
+    extension_12.frobenius_coeffs_are_calculated = true;
 
     let b_fp = Fp::from_repr(&base_field, U384Repr::from(4)).unwrap();
     let mut b_fp2 = Fp2::zero(&extension_2);
@@ -80,8 +63,8 @@ fn bench_bls12_381_pairing(b: &mut Bencher) {
     let a_fp = Fp::zero(&base_field);
     let a_fp2 = Fp2::zero(&extension_2);
 
-    let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-    let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+    let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
 
     let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap().to_bytes_be();

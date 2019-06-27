@@ -70,10 +70,12 @@ fn bench_mnt6_pairing(b: &mut Bencher) {
     let mut b_fp3 = twist_cubed.clone();
     b_fp3.mul_by_fp(&b_fp);
 
-    let scalar_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
+    // let scalar_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
+    let group_order = BigUint::from_str_radix("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
+    let group_order = biguint_to_u64_vec(group_order);
 
-    let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-    let curve_twist = WeierstrassCurveTwist::new(&scalar_field, &extension_3, a_fp3, b_fp3);
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+    let curve_twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_3, a_fp3, b_fp3);
 
     let p_x = BigUint::from_str_radix("336685752883082228109289846353937104185698209371404178342968838739115829740084426881123453", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("402596290139780989709332707716568920777622032073762749862342374583908837063963736098549800", 10).unwrap().to_bytes_be();

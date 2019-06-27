@@ -112,20 +112,18 @@ pub(crate) fn create_fp3_extension<
 pub(crate) fn decode_g2_point_from_xy_in_fp2<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a twist::WeierstrassCurveTwist<'a, FE, F, GE, G>
-    ) -> Result<(twist::TwistPoint<'a, FE, F, GE, G>, &'a [u8]), ApiError>
+        curve: &'a twist::WeierstrassCurveTwist<'a, FE, F>
+    ) -> Result<(twist::TwistPoint<'a, FE, F>, &'a [u8]), ApiError>
 {
     let (x, rest) = decode_fp2(&bytes, field_byte_len, curve.base_field)?;
     let (y, rest) = decode_fp2(&rest, field_byte_len, curve.base_field)?;
     
-    let p: twist::TwistPoint<'a, FE, F, GE, G> = twist::TwistPoint::point_from_xy(&curve, x, y);
+    let p: twist::TwistPoint<'a, FE, F> = twist::TwistPoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
@@ -133,20 +131,18 @@ pub(crate) fn decode_g2_point_from_xy_in_fp2<
 pub(crate) fn decode_g2_point_from_xy_in_fp3<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a cubic_twist::WeierstrassCurveTwist<'a, FE, F, GE, G>
-    ) -> Result<(cubic_twist::TwistPoint<'a, FE, F, GE, G>, &'a [u8]), ApiError>
+        curve: &'a cubic_twist::WeierstrassCurveTwist<'a, FE, F>
+    ) -> Result<(cubic_twist::TwistPoint<'a, FE, F>, &'a [u8]), ApiError>
 {
     let (x, rest) = decode_fp3(&bytes, field_byte_len, curve.base_field)?;
     let (y, rest) = decode_fp3(&rest, field_byte_len, curve.base_field)?;
     
-    let p: cubic_twist::TwistPoint<'a, FE, F, GE, G> = cubic_twist::TwistPoint::point_from_xy(&curve, x, y);
+    let p: cubic_twist::TwistPoint<'a, FE, F> = cubic_twist::TwistPoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
@@ -154,13 +150,11 @@ pub(crate) fn decode_g2_point_from_xy_in_fp3<
 pub(crate) fn serialize_g2_point_in_fp2<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>,
-    GE: ElementRepr,
-    G: SizedPrimeField<Repr = GE>
+    F: SizedPrimeField<Repr = FE>
     >
     (
         modulus_len: usize,
-        point: &twist::TwistPoint<'a, FE, F, GE, G>
+        point: &twist::TwistPoint<'a, FE, F>
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();

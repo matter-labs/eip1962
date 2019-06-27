@@ -22,26 +22,26 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, 
     }
 }
 
-pub struct BnInstance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
+pub struct BnInstance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub(crate) u: Vec<u64>,
     pub(crate) six_u_plus_2: Vec<u64>,
     pub(crate) u_is_negative: bool,
     pub(crate) twist_type: TwistType,
     pub(crate) base_field: &'a F,
-    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    pub(crate) curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
+    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F>,
+    pub(crate) curve_twist: &'a WeierstrassCurveTwist<'a, FE, F>,
     fp2_extension: &'a Extension2<'a, FE, F>,
     fp6_extension: &'a Extension3Over2<'a, FE, F>,
     fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
     non_residue_in_p_minus_one_over_2: Fp2<'a, FE, F>
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> BnInstance<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> BnInstance<'a, FE, F> {
     fn ell(
         &self,
         f: &mut Fp12<'a, FE, F>,
         coeffs: &(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>),
-        p: & CurvePoint<'a, FE, F, GE, G>,
+        p: & CurvePoint<'a, FE, F>,
     ) {
         debug_assert!(p.is_normalized());
         let mut c0 = coeffs.0.clone();
@@ -71,7 +71,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn doubling_step(
         &self,
-        r: &mut TwistPoint<'a, FE, F, GE, G>,
+        r: &mut TwistPoint<'a, FE, F>,
         two_inv: &Fp<'a, FE, F>,
     ) -> (Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>) {
         // Use adapted formulas from ZEXE instead
@@ -174,8 +174,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn addition_step(
         &self,
-        r: &mut TwistPoint<'a, FE, F, GE, G>,
-        q: &TwistPoint<'a, FE, F, GE, G>,
+        r: &mut TwistPoint<'a, FE, F>,
+        q: &TwistPoint<'a, FE, F>,
     ) -> (Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>) {
         debug_assert!(q.is_normalized());
         // use adapted zexe formulas too instead of ones from pairing crate
@@ -258,7 +258,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
         }
     }
 
-    pub fn prepare(&self, twist_point: & TwistPoint<'a, FE, F, GE, G>) -> PreparedTwistPoint<'a, FE, F> {
+    pub fn prepare(&self, twist_point: & TwistPoint<'a, FE, F>) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
 
         let mut two_inv = Fp::one(self.base_field);
@@ -314,8 +314,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
     fn miller_loop<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
     where 'a: 'b,
         I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, FE, F, GE, G>, 
-                &'b TwistPoint<'a, FE, F, GE, G>)
+            Item = &'b (&'b CurvePoint<'a, FE, F>, 
+                &'b TwistPoint<'a, FE, F>)
         >
     {
         let mut g1_references = vec![];
@@ -470,13 +470,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 }
 
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> PairingEngine for BnInstance<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PairingEngine for BnInstance<'a, FE, F> {
     type PairingResult = Fp12<'a, FE, F>;
-    type G1 = CurvePoint<'a, FE, F, GE, G>;
-    type G2 = TwistPoint<'a, FE, F, GE, G>;
+    type G1 = CurvePoint<'a, FE, F>;
+    type G2 = TwistPoint<'a, FE, F>;
 
     fn pair<'b>
-        (&self, points: &'b [CurvePoint<'a, FE, F, GE, G>], twists: &'b [TwistPoint<'a, FE, F, GE, G>]) -> Option<Self::PairingResult> {
+        (&self, points: &'b [CurvePoint<'a, FE, F>], twists: &'b [TwistPoint<'a, FE, F>]) -> Option<Self::PairingResult> {
             let mut pairs = vec![];
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
@@ -502,12 +502,15 @@ mod tests {
     use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
     use crate::pairings::{PairingEngine};
     use crate::representation::ElementRepr;
+    use crate::field::{biguint_to_u64_vec};
 
     #[test]
     fn test_bn254_pairing() {
         let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
@@ -545,8 +548,8 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);
 
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -630,7 +633,9 @@ mod tests {
     fn test_final_exponentiation() {
         let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
         let r = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
@@ -669,8 +674,8 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);
 
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let twist = WeierstrassCurveTwist::new(&scalar_field, &extension_2, a_fp2, b_fp2);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+        let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();

@@ -1,7 +1,6 @@
 extern crate hex;
 extern crate csv;
 
-use crate::{API, PrecompileAPI};
 use hex::{decode};
 use csv::{Reader};
 

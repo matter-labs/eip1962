@@ -9,26 +9,26 @@ use crate::pairings::PairingEngine;
 
 // TODO: reformat the code to follow MNT4/6 structure
 
-pub struct CPInstance6<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> {
+pub struct CPInstance6<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub x: Vec<u64>,
     pub x_is_negative: bool,
     pub exp_w0: Vec<u64>,
     pub exp_w1: Vec<u64>,
     pub exp_w0_is_negative: bool,
     pub base_field: &'a F,
-    pub curve: &'a WeierstrassCurve<'a, FE, F, GE, G>,
-    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F, GE, G>,
+    pub curve: &'a WeierstrassCurve<'a, FE, F>,
+    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F>,
     pub twist: Fp3<'a, FE, F>,
     fp3_extension: &'a Extension3<'a, FE, F>,
     fp6_extension: &'a Extension2Over3<'a, FE, F>,
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> CPInstance6<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CPInstance6<'a, FE, F> {
     fn miller_loop<'b, I>(&self, i: I) -> Fp6<'a, FE, F>
     where 'a: 'b,
         I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, FE, F, GE, G>, 
-                &'b TwistPoint<'a, FE, F, GE, G>)
+            Item = &'b (&'b CurvePoint<'a, FE, F>, 
+                &'b TwistPoint<'a, FE, F>)
         >
     {
         let mut f = Fp6::one(self.fp6_extension);
@@ -41,8 +41,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 
     fn ate_pairing_loop(
         &self, 
-        point: &CurvePoint<'a, FE, F, GE, G>, 
-        twist_point: &TwistPoint<'a, FE, F, GE, G> 
+        point: &CurvePoint<'a, FE, F>, 
+        twist_point: &TwistPoint<'a, FE, F> 
     ) -> Fp6<'a, FE, F> {
         debug_assert!(point.is_normalized());
         debug_assert!(twist_point.is_normalized());
@@ -214,13 +214,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: Siz
 }
 
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, GE: ElementRepr, G: SizedPrimeField<Repr = GE>> PairingEngine for CPInstance6<'a, FE, F, GE, G> {
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PairingEngine for CPInstance6<'a, FE, F> {
     type PairingResult = Fp6<'a, FE, F>;
-    type G1 = CurvePoint<'a, FE, F, GE, G>;
-    type G2 = TwistPoint<'a, FE, F, GE, G>;
+    type G1 = CurvePoint<'a, FE, F>;
+    type G2 = TwistPoint<'a, FE, F>;
 
     fn pair<'b>
-        (&self, points: &'b [CurvePoint<'a, FE, F, GE, G>], twists: &'b [TwistPoint<'a, FE, F, GE, G>]) -> Option<Self::PairingResult> {
+        (&self, points: &'b [CurvePoint<'a, FE, F>], twists: &'b [TwistPoint<'a, FE, F>]) -> Option<Self::PairingResult> {
             let mut pairs = vec![];
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
@@ -290,10 +290,12 @@ mod tests {
         let mut b_fp3 = twist_cubed.clone();
         b_fp3.mul_by_fp(&b_fp);
 
-        let scalar_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        // let scalar_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let group_order = BigUint::from_str_radix("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
 
-        let curve = WeierstrassCurve::new(&scalar_field, a_fp, b_fp);
-        let curve_twist = WeierstrassCurveTwist::new(&scalar_field, &extension_3, a_fp3, b_fp3);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
+        let curve_twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_3, a_fp3, b_fp3);
 
         let p_x = BigUint::from_str_radix("5511163824921585887915590525772884263960974614921003940645351443740084257508990841338974915037175497689287870585840954231884082785026301437744745393958283053278991955159266640440849940136976927372133743626748847559939620888818486853646", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("7913123550914612057135582061699117755797758113868200992327595317370485234417808273674357776714522052694559358668442301647906991623400754234679697332299689255516547752391831738454121261248793568285885897998257357202903170202349380518443", 10).unwrap().to_bytes_be();

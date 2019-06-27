@@ -24,30 +24,18 @@ fn bench_cp6_frobenius(b: &mut Bencher) {
     let nonres_repr = U832Repr::from(13);
     let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
-    let mut extension_3 = Extension3 {
-        field: &base_field,
-        non_residue: fp_non_residue.clone(),
-        frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)],
-        frobenius_coeffs_c2: [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)]
-    };
-
+    let mut extension_3 = Extension3::new(fp_non_residue.clone());
     let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
     extension_3.frobenius_coeffs_c1 = coeffs_1;
     extension_3.frobenius_coeffs_c2 = coeffs_2;
+    extension_3.frobenius_coeffs_are_calculated = true;
 
     let one = Fp::one(&base_field);
 
     let mut fp3_non_residue = Fp3::zero(&extension_3); // non-residue is 13 + 0*u + 0*u^2
     fp3_non_residue.c0 = fp_non_residue;
 
-    let f_c1 = [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field),
-                Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field)];
-
-    let mut extension_6 = fp6_as_2_over_3::Extension2Over3 {
-        non_residue: fp3_non_residue,
-        field: &extension_3,
-        frobenius_coeffs_c1: f_c1
-    };
+    let mut extension_6 = fp6_as_2_over_3::Extension2Over3::new(fp3_non_residue);
 
     b.iter(|| {
         frobenius_calculator_fp6_as_2_over_3(modulus.clone(), &extension_6).unwrap()
@@ -61,14 +49,11 @@ fn bench_bls12_381_frob_fp12(b: &mut Bencher) {
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
-    let mut extension_2 = Extension2 {
-        field: &base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-    };
+    let mut extension_2 = Extension2::new(fp_non_residue);
 
     let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
     extension_2.frobenius_coeffs_c1 = coeffs;
+    extension_2.frobenius_coeffs_are_calculated = true;
 
     let one = Fp::one(&base_field);
 
@@ -76,33 +61,17 @@ fn bench_bls12_381_frob_fp12(b: &mut Bencher) {
     fp2_non_residue.c0 = one.clone();
     fp2_non_residue.c1 = one.clone();
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_6 = fp6_as_3_over_2::Extension3Over2 {
-        non_residue: fp2_non_residue,
-        field: &extension_2,
-        frobenius_coeffs_c1: f_c1.clone(),
-        frobenius_coeffs_c2: f_c1,
-    };
+    let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
 
     let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
     extension_6.frobenius_coeffs_c1 = coeffs_c1;
     extension_6.frobenius_coeffs_c2 = coeffs_c2;
+    extension_6.frobenius_coeffs_are_calculated = true;
 
     let mut fp2_non_residue = Fp2::zero(&extension_2);
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_12 = Extension2Over3Over2 {
-        non_residue: fp6_as_3_over_2::Fp6::zero(&extension_6),
-        field: &extension_6,
-        frobenius_coeffs_c1: f_c1,
-    };
+    let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
 
     b.iter(|| frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap());
 }
@@ -115,14 +84,11 @@ fn bench_bls12_381_frob_fp12_using_sliding(b: &mut Bencher) {
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
-    let mut extension_2 = Extension2 {
-        field: &base_field,
-        non_residue: fp_non_residue,
-        frobenius_coeffs_c1: [Fp::zero(&base_field), Fp::zero(&base_field)]
-    };
+    let mut extension_2 = Extension2::new(fp_non_residue);
 
     let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
     extension_2.frobenius_coeffs_c1 = coeffs;
+    extension_2.frobenius_coeffs_are_calculated = true;
 
     let one = Fp::one(&base_field);
 
@@ -132,33 +98,17 @@ fn bench_bls12_381_frob_fp12_using_sliding(b: &mut Bencher) {
 
     let base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 15, 7);
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_6 = fp6_as_3_over_2::Extension3Over2 {
-        non_residue: fp2_non_residue,
-        field: &extension_2,
-        frobenius_coeffs_c1: f_c1.clone(),
-        frobenius_coeffs_c2: f_c1,
-    };
+    let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
 
     let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2_using_sliding_window(modulus.clone(), &base, &extension_6).unwrap();
 
     extension_6.frobenius_coeffs_c1 = coeffs_c1;
     extension_6.frobenius_coeffs_c2 = coeffs_c2;
+    extension_6.frobenius_coeffs_are_calculated = true;
 
     let mut fp2_non_residue = Fp2::zero(&extension_2);
 
-    let f_c1 = [Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2),
-                Fp2::zero(&extension_2), Fp2::zero(&extension_2), Fp2::zero(&extension_2)];
-
-    let mut extension_12 = Extension2Over3Over2 {
-        non_residue: fp6_as_3_over_2::Fp6::zero(&extension_6),
-        field: &extension_6,
-        frobenius_coeffs_c1: f_c1,
-    };
+    let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
 
     b.iter(|| frobenius_calculator_fp12_using_sliding_window(modulus.clone(), &base, &extension_12).unwrap());
 }

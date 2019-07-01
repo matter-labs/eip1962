@@ -61,7 +61,16 @@ Algorithm:
 - ensure that length of the byte array is `> modulus_length`, otherwise return error
 - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `B` coefficient for a curve in the Weierstrass form
 - ensure that `B < base_field_modulus`, otherwise return error
-
+- `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `subgroup_order_length` for encoding of length of the next value
+- ensure that `subgroup_order_length > 0`, otherwise return error
+- ensure that length of the byte array is `> subgroup_order_length`, otherwise return error
+- `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer `main_subgroup_order`
+- ensure that `main_subgroup_order > 1` as a sanity check
+- there are two purposes to requure `main_subgroup_order` to be included into the ABI:
+  - Upfront estimation of the worst-case scenario for a difficulty of the multiplication and multiexponentiation operations
+  - One may want to enforce that any point that would be later supplied for an operation is indeed in the main subgroup. While this check is most likely excessive for G1 (or G2) operations and should be done as a separate call of mutiplication operation, this check is MANDATORY for pairing operations
+- later should follow operation-specific parameters
+  
 This list is a naive algorithm. Real implementation will merge e.g. reading of `A`, range check and parsing it as a representation of some form of the field element in one operation.
 
 Arithmetic is made using some fixed-length representation of a field element. This implementation follows an approach to represent them as a fixed length array `[u64; NUM_LIMBS`], such that for a modulus `M`: `2^(MODULUS_LIMGS*64) > 2*M` to ensure that one never has to take care about carry flags. In this case a field element with `255` bit modulus would be represented as `[u64; 4]`, but `256` bit modulus will be already represented as `[u64; 5]`

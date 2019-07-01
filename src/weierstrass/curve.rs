@@ -206,7 +206,6 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
             // If we're adding -a and a together, self.z becomes zero as H becomes zero.
 
             if u1 == u2 {
-                // The two points are equal, so we double.
                 self.x =  Fp::<'a, FE, F>::zero(&self.curve.base_field);
                 self.y = Fp::<'a, FE, F>::one(&self.curve.base_field);
                 self.z = Fp::<'a, FE, F>::zero(&self.curve.base_field);

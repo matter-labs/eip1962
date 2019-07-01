@@ -77,9 +77,25 @@ Arithmetic is made using some fixed-length representation of a field element. Th
 
 To put some sane limit of the length of the arithmetics modulus `M` must be `< 1024` bits in length, so it's representable as `[u64; 16]` array
 
+#### Specific ABI part for addition in G1
 
+At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
 
-
-
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
+- ensure that `P0.x < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
+- ensure that `P0.y < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P1`
+- ensure that `P1.x < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P1`
+- ensure that `P1.y < base_field_modulus`, otherwise return error
+- at this point curve is well-defined, along with arithmetic on it
+- check that `is_on_curve(P0)` and `is_on_curve(P1)`
+- perform an addition depending on a for of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero) `P_res = P0 + P1`
+- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity (this is an expected result of the addition operation in Jacobian coordinates for `P` and `-P`), otherwise inverse `P_res.z` and perform normalization
 
 

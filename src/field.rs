@@ -191,7 +191,7 @@ pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField
     }
 
     let concrete = PrimeField {
-        mont_power: (num_limbs*4) as u64,
+        mont_power: (num_limbs*64) as u64,
         modulus_bits: bitlength as u64,
         modulus: modulus_repr,
         mont_r: r_repr,

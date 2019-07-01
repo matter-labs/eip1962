@@ -5,7 +5,7 @@ use crate::fp::Fp;
 use crate::extension_towers::*;
 use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
-use crate::representation::{ElementRepr, LegendreSymbol};
+use crate::representation::{ElementRepr};
 use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp3};
 use crate::traits::FieldElement;
 use crate::field::biguint_to_u64_vec;
@@ -46,13 +46,9 @@ pub(crate) fn create_fp2_extension<
     {
         let modulus_minus_one_by_2 = modulus.clone() - BigUint::from_u32(1).expect("is valid bigint");
         let modulus_minus_one_by_2 = modulus_minus_one_by_2 >> 1;
-        let legendre = legendre_symbol(&fp_non_residue, biguint_to_u64_vec(modulus_minus_one_by_2));
-
-        match legendre {
-            LegendreSymbol::QuadraticResidue | LegendreSymbol::Zero => {
-                return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
-            },
-            _ => {}
+        let not_a_square = is_non_square(&fp_non_residue, biguint_to_u64_vec(modulus_minus_one_by_2));
+        if !not_a_square {
+            return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
         }
     }
 

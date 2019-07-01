@@ -18,7 +18,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             let mut s = F::Repr::from(1);
             let mut k = 0u64;
 
-            while !v.is_zero() {
+
+            for _ in 0..E::NUM_LIMBS*128 {
+            // while !v.is_zero() {
+                if v.is_zero() {
+                    break;
+                }
                 if u.is_even() {
                     u.div2();
                     s.mul2();
@@ -60,7 +65,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
                 }
             }
 
-            Some(Fp::from_repr(self.field, r).unwrap())
+            let el = Fp::from_repr(self.field, r);
+            if el.is_err() {
+                return None;
+            }
+            let el = el.expect("guaranteed to exist");
+
+            Some(el)
         }
     }
 }
@@ -70,6 +81,7 @@ mod tests {
     use crate::traits::FieldElement;
     use crate::field::U256Repr;
     use crate::fp::Fp;
+
     #[test]
     fn test_mont_inverse() {
         use crate::field::new_field;
@@ -80,6 +92,24 @@ mod tests {
         let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
         let inverse = element.inverse().unwrap();
         let mont_inverse = element.mont_inverse().unwrap();
-        assert!(inverse == mont_inverse);
+        assert_eq!(inverse, mont_inverse);
+    }
+
+    #[test]
+    fn test_random_mont_inverse() {
+        use rand::thread_rng;
+        use rand::RngCore;
+        use crate::field::new_field;
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let mut rng = thread_rng();
+        let mut be_repr = vec![0u8; 32];
+        for _ in 0..1000 {
+            rng.fill_bytes(&mut be_repr[..]);
+            be_repr[0] = be_repr[0] & 0x1f;
+            let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
+            let inverse = element.inverse().unwrap();
+            let mont_inverse = element.mont_inverse().unwrap();
+            assert_eq!(inverse, mont_inverse);
+        }
     }
 }

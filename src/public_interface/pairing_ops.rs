@@ -18,13 +18,12 @@
 use crate::weierstrass::curve;
 use crate::weierstrass::twist;
 use crate::weierstrass::Group;
-use crate::fp::Fp;
 use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance};
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
-use crate::representation::{ElementRepr, LegendreSymbol};
+use crate::representation::{ElementRepr};
 use crate::traits::FieldElement;
 use crate::field::biguint_to_u64_vec;
 use crate::sliding_window_exp::WindowExpBase;
@@ -111,15 +110,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let modulus_minus_one_by_2 = modulus.clone() - BigUint::from_u32(1).unwrap();
-            let modulus_minus_one_by_2 = modulus_minus_one_by_2 >> 1;
-            let legendre = legendre_symbol(&fp_non_residue, biguint_to_u64_vec(modulus_minus_one_by_2));
-
-            match legendre {
-                LegendreSymbol::QuadraticResidue | LegendreSymbol::Zero => {
-                    return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
-                },
-                _ => {}
+            let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
+            if !is_not_a_square {
+                return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
             }
         }
 

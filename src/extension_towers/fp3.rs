@@ -152,7 +152,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
                 return None;
             }
 
-            let t6 = t6.unwrap();
+            let t6 = t6.expect("is not None");
 
             let mut c0 = t6.clone();
             c0.mul_assign(&s0);
@@ -340,8 +340,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         // base: &WindowExpBase<Fp<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
-        let one = BigUint::from_u64(1).unwrap();
-        let three = BigUint::from_u64(3).unwrap();
+        let one = BigUint::from_u64(1).expect("is valid bigint");
+        let three = BigUint::from_u64(3).expect("is valid bigint");
     
         // NON_RESIDUE**(((q^0) - 1) / 3)
         let non_residue = self.non_residue.clone();

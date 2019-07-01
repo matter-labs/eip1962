@@ -112,7 +112,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
         }
 
         // let z_inv = self.z.mont_inverse().unwrap();
-        let z_inv = self.z.inverse().unwrap();
+        let z_inv = self.z.inverse().unwrap_or_else(|| Fp::zero(self.curve.base_field));
         let mut zinv_powered = z_inv.clone();
         zinv_powered.square();
 
@@ -142,7 +142,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
             return (Fp::zero(self.curve.base_field), Fp::zero(self.curve.base_field));
         }
 
-        let z_inv = self.z.clone().inverse().unwrap();
+        let z_inv = self.z.inverse().unwrap_or_else(|| Fp::zero(self.curve.base_field));
 
         let mut x = self.x.clone();
         x.mul_assign(&z_inv);

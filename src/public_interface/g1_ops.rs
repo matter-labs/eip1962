@@ -19,13 +19,13 @@ use crate::weierstrass::Group;
 use crate::weierstrass::curve::{WeierstrassCurve};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
-use super::decode_utils::parse_encodings;
 use crate::field::*;
 
 #[macro_use]
 use super::api_specialization_macro::*;
 
 use super::decode_g1::*;
+use super::decode_utils::*;
 
 use crate::errors::ApiError;
 
@@ -110,9 +110,8 @@ pub struct PublicG1Api;
 
 impl G1Api for PublicG1Api {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (modulus, _, _, _, _order, _, _) = parse_encodings(&bytes)?;
+        let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
-        // let order_limbs = (order.bits() / 64) + 1;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, add_points); 
 
@@ -120,9 +119,8 @@ impl G1Api for PublicG1Api {
     }
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (modulus, _, _, _, _order, _, _) = parse_encodings(&bytes)?;
+        let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
-        // let order_limbs = (order.bits() / 64) + 1;
         
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, mul_point); 
 
@@ -130,9 +128,8 @@ impl G1Api for PublicG1Api {
     }
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        let (modulus, _, _, _, _order, _, _) = parse_encodings(&bytes)?;
+        let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
-        // let order_limbs = (order.bits() / 64) + 1;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, multiexp); 
 

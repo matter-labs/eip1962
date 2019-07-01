@@ -44,7 +44,7 @@ pub(crate) fn create_fp2_extension<
     }
 
     {
-        let modulus_minus_one_by_2 = modulus.clone() - BigUint::from_u32(1).unwrap();
+        let modulus_minus_one_by_2 = modulus.clone() - BigUint::from_u32(1).expect("is valid bigint");
         let modulus_minus_one_by_2 = modulus_minus_one_by_2 >> 1;
         let legendre = legendre_symbol(&fp_non_residue, biguint_to_u64_vec(modulus_minus_one_by_2));
 

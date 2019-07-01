@@ -107,11 +107,11 @@ fn test_g2_mul_from_vectors() {
 
             let result = call_g2_engine_mul(&calldata[..]);
             if result.is_err() {
-                panic!("{}", result.err().unwrap());
+                panic!("{}", result.err().expect("guaranteed to exist"));
             }
             assert!(result.is_ok());
 
-            let result = result.unwrap();
+            let result = result.expect("guaranteed to exist");
             assert!(result == expected_result);
         }
     }

@@ -26,6 +26,27 @@ pub(crate) fn decode_biguint_with_length<
     Ok((x, rest))
 }
 
+pub(crate) fn parse_modulus_and_length<
+    'a
+    >
+    (
+        bytes: &'a [u8], 
+    ) -> Result<(usize, BigUint, &'a [u8]), ApiError>
+{
+    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
+        return Err(ApiError::InputError("Input is not long enough to get modulus length".to_owned()));
+    }
+    let (length_encoding, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let length = length_encoding[0] as usize;
+    if rest.len() < length {
+        return Err(ApiError::InputError("Input is not long enough to get modulus".to_owned()));
+    }
+    let (be_encoding, rest) = rest.split_at(length);
+    let x = BigUint::from_bytes_be(&be_encoding);
+
+    Ok((length, x, rest))
+}
+
 /// return:
 /// - modulus, 
 /// - modulus_len, 
@@ -90,6 +111,59 @@ pub(crate) fn parse_encodings<'a>(bytes: &'a [u8]) -> Result<(
             b_encoding,
             order,
             order_len,
+            rest
+        )
+    )
+}
+
+/// return:
+/// - modulus, 
+/// - modulus_len, 
+/// - extension degree
+/// - non-residue encoding
+/// - rest
+pub(crate) fn parse_modulus_and_extension_degree<'a>(bytes: &'a [u8]) -> Result<(
+        BigUint, 
+        usize,
+        u8,
+        &'a [u8],
+        &'a [u8]), ApiError> {
+    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
+        return Err(ApiError::InputError("Input is not long enough to get modulus length".to_owned()));
+    }
+    let (modulus_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let modulus_len = modulus_len[0] as usize;
+    if rest.len() < modulus_len {
+        return Err(ApiError::InputError("Input is not long enough to get modulus".to_owned()));
+    }
+    let (modulus_encoding, rest) = rest.split_at(modulus_len);
+    let modulus = BigUint::from_bytes_be(&modulus_encoding);
+    if modulus.is_zero() {
+        return Err(ApiError::InputError("Modulus can not be zero".to_owned()));
+    }
+    if rest.len() < EXTENSION_DEGREE_ENCODING_LENGTH {
+        return Err(ApiError::InputError("Input is not long enough to get extension degree".to_owned()));
+    }
+    let (extension_degree, rest) = rest.split_at(EXTENSION_DEGREE_ENCODING_LENGTH);
+    let extension_degree = extension_degree[0];
+    if !(extension_degree == EXTENSION_DEGREE_2 || extension_degree == EXTENSION_DEGREE_3) {
+        return Err(ApiError::InputError("Extension degree must be 2 or 3".to_owned()));
+    }
+
+    if rest.len() < modulus_len {
+        return Err(ApiError::InputError("Input is not long enough to Fp non-residue".to_owned()));
+    }
+    let (nonresidue_encoding, rest) = rest.split_at(modulus_len);
+    if rest.len() == 0 {
+        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+    }
+
+    Ok(
+        (
+            modulus,
+            modulus_len,
+            extension_degree,
+            nonresidue_encoding,
             rest
         )
     )

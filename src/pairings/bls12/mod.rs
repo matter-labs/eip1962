@@ -211,7 +211,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Bls12Instance<'a, FE, F
 
         let mut two_inv = Fp::one(self.base_field);
         two_inv.double();
-        let two_inv = two_inv.inverse().unwrap();
+        let two_inv = two_inv.inverse().expect("inverse of 2 is guaranteed to exist");
 
         if twist_point.is_zero() {
             return PreparedTwistPoint {

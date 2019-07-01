@@ -67,7 +67,7 @@ fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
     let mut ret = vec![];
 
     while v > BigUint::zero() {
-        ret.push((&v % &m).to_u64().unwrap());
+        ret.push((&v % &m).to_u64().expect("is guaranteed to fit"));
         v = v >> 64;
     }
 
@@ -85,7 +85,7 @@ pub fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
     let mut ret = vec![];
 
     while v > BigUint::zero() {
-        ret.push((&v % &m).to_u64().unwrap());
+        ret.push((&v % &m).to_u64().expect("is guaranteed to fit"));
         v = v >> 64;
     }
 
@@ -202,7 +202,8 @@ pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField
     Ok(concrete)
 }
 
-pub fn new_field<R: ElementRepr>(modulus: &str, radix: u32) -> Result<PrimeField<R>, ()> {
+
+pub(crate) fn new_field<R: ElementRepr>(modulus: &str, radix: u32) -> Result<PrimeField<R>, ()> {
     use num_traits::Num;
     let modulus = BigUint::from_str_radix(&modulus, radix).unwrap();
 

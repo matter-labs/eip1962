@@ -201,7 +201,7 @@ pub const SIGN_PLUS: u8 = 0x00;
 pub const SIGN_MINUS: u8 = 0x01;
 ```
 
-Note that BLS12 is a family of curves that are parametrized by a single scalar `x`, twist type that is either `M` (multiplication) or `D` (division), and structure of the extension tower (non-residues)
+Note that BLS12 is a family of curves that are parametrized by a single scalar `x`, twist type that is either `M` (multiplication) or `D` (division), and structure of the extension tower (non-residues). Nevertheless this ABI required caller to submit `base_field_modulus` and `main_subgroup_order` explicitly. It's also much more convenient for any observer to check validity of parameters for a given known BLS12 curve (e.g. `BLS12-381`). 
 
 - parse `modulus_length`, `base_field_modulus`, `main_subgroup_order` and `A` and `B` coefficients following the G1 ABI
 - check that `A==0` (true for BLS12 curves)

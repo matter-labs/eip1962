@@ -155,13 +155,13 @@ Algorithm:
 - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is a modulus of a base prime field `base_field_modulus`. Ensure that top (most significant) byte is non-zero. This is not an attack and will only require caller to pay more gas, but it's a trivial check
 - ensure that `base_field_modulus >= 3` and `base_field_modulus` is odd. This is the second sanity check and also guarantees that Montgommery form that is used for all the field elements is well-defined (is requires `gcd(modulus, R) == 1` with `R` being power of two in our cases). There is no primarity testing, but arithmetic operations now will not trigger panics
 - ensure that length of the byte array is `> EXTENSION_DEGREE_ENCODING_LENGTH`, otherwise return error
-- `take(EXTENSION_DEGREE_ENCODING_LENGTH)` and parse it as unsigned integer `extension_degree` for encoding of extension degree for a twist. Only `extension_degree == 2` or `extension_degree == 3` are supported, other values should return error
+- `take(EXTENSION_DEGREE_ENCODING_LENGTH)` and parse it as unsigned integer `extension_degree` for encoding of extension degree for a twist. Only `extension_degree == 2` or `extension_degree == 3` are supported, on other values should return error
 - ensure that length of the byte array is `> modulus_length`, otherwise return error
 - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `non_residue` - a quadratic or cubic non-residue to make an extension
 - check that `non_residue` is non-square or non-cube depending of `extension_degree` to have extension well-formed. If it's not - return error
-- - ensure that length of the byte array is `> modulus_length*extension_degree`, otherwise return error
+- ensure that length of the byte array is `> modulus_length*extension_degree`, otherwise return error
 - `take(modulus_length*extension_degree)` and parse it as `extension_degree` densely packed BigEndian encodings of unsigned integers that are coefficient of an element in extension field. Coefficients follow from smallest degree: if element is represented as a polynomial `c0 + c1*x + c2*x^2` then coefficients are parsed as `c0`, `c1`, `c2` one after another. That is an `A` coefficient for a curve twist in the Weierstrass form
-- ensure that each of `c*` coefficientsi `< base_field_modulus`, otherwise return error
+- ensure that each of `c*` coefficients is `< base_field_modulus`, otherwise return error
 - ensure that length of the byte array is `> modulus_length*extension_degree` and perform similar checks for `B` coefficient
 - `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `subgroup_order_length` for encoding of length of the next value
 - ensure that `subgroup_order_length > 0`, otherwise return error

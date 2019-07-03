@@ -40,7 +40,7 @@ Pairing operation is defined only for the following families of curves:
 
 ABI usually consists of two parts: one defines a base field and a curve, with another is operation dependent and encodes points or scalars for a corresponding operations. 
 
-Signature of all the public functions is just `Operation(byte_array)`, so just a pointer to the array of bytes is passes to the function. Remember that operation type is already stripped from the byte array.
+Signature of public function is just `Operation(byte_array)` (one public function), so just a pointer to the array of bytes is passes to the function. Remember that operation type is already stripped from the byte array.
 
 ```
 pub const BYTES_FOR_LENGTH_ENCODING: usize = 1;

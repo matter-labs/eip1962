@@ -1,10 +1,11 @@
 # Specification
 
-Universality of the precompile requires to think about edge cases. Proper splitting of structure ensures that if initial parameters such as field modulus non-residues for extension, etc. are passed correctly, then all the remaining arithmetic is well-defined. This document can be viewed as both API spec, implementation guide and use guide for some aspects
+Universality of the precompile requires to think about edge cases. Proper splitting of the structure ensures that if initial parameters (such as field modulus non-residues for extension, etc.) are passed correctly, then all the remaining arithmetic is well-defined. This document can be viewed as API spec, implementation guide, and user guide for some aspects
 
 ## ABI and parsing checks
 
-One precompile is intended to provide a variety of operations under the same address depending from the passed parameters. Full set of operations is the following:
+One precompile is intended to provide a variety of operations under the same address, depending on the arguments passed. The full set of operations is defined as follows:
+
 ```
 pub const OPERATION_ENCODING_LENGTH: usize = 1;
 
@@ -19,9 +20,9 @@ pub const OPERATION_G2_MULTIEXP: u8 = 0x06;
 pub const OPERATION_PAIRING: u8 = 0x07;
 ```
 
-After operation type is defined by the first byte of the input the rest is passed to the corresponding function for a specific operation.
+The first byte of the input determines the type of the operation. The rest of the input is passed to the corresponding function of the operation called.
 
-G1 additions, multiplications and multiexponentiations are defined for any curve in the Weierstrass form with `b != 0`. Operations in G2 are operations over the curve defined over some extension field. There are only two such extensions supported: degree 2 and degree 3.
+G1 additions, multiplications and multiexponentiations are defined for any curve in the Weierstrass form with `b != 0`. Operations in G2 are performed over the curve defined over some extension field. There are only two such extensions supported: degree 2 and degree 3.
 
 ```
 pub const EXTENSION_DEGREE_ENCODING_LENGTH: usize = 1;

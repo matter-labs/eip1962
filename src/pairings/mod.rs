@@ -16,10 +16,10 @@ use num_integer::Integer;
 use num_traits::Zero;
 
 pub(crate) mod bls12;
-// pub(crate) mod bn;
+pub(crate) mod bn;
 // pub(crate) mod cp;
-// pub(crate) mod mnt6;
-// pub(crate) mod mnt4;
+pub(crate) mod mnt6;
+pub(crate) mod mnt4;
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub(crate) enum TwistType {

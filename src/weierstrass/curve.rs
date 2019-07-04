@@ -26,7 +26,7 @@ pub struct WeierstrassCurve<'a, C: CurveParameters> {
 
 
 impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
-    pub fn new(
+    pub(crate) fn new(
         subgroup_order: Vec<u64>,
         a: C::BaseFieldElement, 
         b: C::BaseFieldElement,

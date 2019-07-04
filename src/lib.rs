@@ -20,10 +20,10 @@ mod sliding_window_exp;
 mod errors;
 mod gas_meter;
 
-// pub mod public_interface;
+pub mod public_interface;
 
-// #[cfg(test)]
-// mod test;
+#[cfg(test)]
+mod test;
 
 // pub use api::{API, PrecompileAPI};
 

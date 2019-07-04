@@ -1,5 +1,5 @@
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
-pub enum CurveType {
+pub(crate) enum CurveType {
     Generic,
     AIsMinus3,
     AIsZero,
@@ -15,7 +15,6 @@ pub trait CurveParameters {
     type BaseFieldElement: FieldElement + ZeroAndOne;
     fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params;
 }
-
 
 use crate::fp::Fp;
 pub(crate) struct CurveOverFpParameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
@@ -54,13 +53,20 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFp2Parameters<
 }
 
 use crate::extension_towers::fp3;
-pub struct CurveOverFp3Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+pub(crate) struct CurveOverFp3Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub(crate) field: &'a fp3::Extension3<'a, FE, F>,
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFp3Parameters<'a, FE, F> {
     type BaseFieldElement = fp3::Fp3<'a, FE, F>;
     fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params {
         self.field
+    }
+}
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFp3Parameters<'a, FE, F> {
+    pub(crate) fn new(field: &'a fp3::Extension3<'a, FE, F>) -> Self {
+        Self {
+            field
+        }
     }
 }
 

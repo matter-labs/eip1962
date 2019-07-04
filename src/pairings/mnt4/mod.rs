@@ -1,22 +1,28 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, MsbBitIterator};
+use crate::traits::{FieldElement, MsbBitIterator, ZeroAndOne};
+use crate::weierstrass::{CurveParameters};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
-use crate::weierstrass::twist::{WeierstrassCurveTwist, TwistPoint};
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp4_as_2_over_2::{Fp4, Extension2Over2};
 use crate::pairings::PairingEngine;
 
-pub struct MNT4Instance<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+pub struct MNT4Instance<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+    > {
     pub x: Vec<u64>,
     pub x_is_negative: bool,
     pub exp_w0: Vec<u64>,
     pub exp_w1: Vec<u64>,
     pub exp_w0_is_negative: bool,
     pub base_field: &'a F,
-    pub curve: &'a WeierstrassCurve<'a, FE, F>,
-    pub curve_twist: &'a WeierstrassCurveTwist<'a, FE, F>,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
     pub twist: Fp2<'a, FE, F>,
     fp2_extension: &'a Extension2<'a, FE, F>,
     fp4_extension: &'a Extension2Over2<'a, FE, F>,
@@ -57,12 +63,18 @@ struct ExtendedCoordinates<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
     pub t: Fp2<'a, FE, F>,
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> MNT4Instance<'a, FE, F> {
+impl<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+    > MNT4Instance<'a, FE, F, CB, CTW> {
     fn miller_loop<'b, I>(&self, i: I) -> Fp4<'a, FE, F>
     where 'a: 'b,
         I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, FE, F>, 
-                &'b TwistPoint<'a, FE, F>)
+            Item = &'b (&'b CurvePoint<'a, CB>, 
+                &'b CurvePoint<'a, CTW>)
         >
     {
         let mut f = Fp4::one(self.fp4_extension);
@@ -73,7 +85,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> MNT4Instance<'a, FE, F>
         f
     }
 
-    fn precompute_g1(&self, g1_point: &CurvePoint<'a, FE, F>) -> PrecomputedG1<'a, FE, F> {
+    fn precompute_g1(&self, g1_point: &CurvePoint<'a, CB>) -> PrecomputedG1<'a, FE, F> {
         // not asserting normalization, it will be asserted in the loop
         let mut x_twist = self.twist.clone();
         x_twist.mul_by_fp(&g1_point.x);
@@ -248,7 +260,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> MNT4Instance<'a, FE, F>
     }
 
 
-    fn precompute_g2(&self, g2_point: &TwistPoint<'a, FE, F>, twist_inv: &Fp2<'a, FE, F>) -> PrecomputedG2<'a, FE, F> {
+    fn precompute_g2(&self, g2_point: &CurvePoint<'a, CTW>, twist_inv: &Fp2<'a, FE, F>) -> PrecomputedG2<'a, FE, F> {
         // not asserting normalization, it will be asserted in the loop
         // precompute addition and doubling coefficients
         let mut x_over_twist = g2_point.x.clone();
@@ -310,8 +322,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> MNT4Instance<'a, FE, F>
 
     fn ate_pairing_loop(
         &self, 
-        point: &CurvePoint<'a, FE, F>, 
-        twist_point: &TwistPoint<'a, FE, F> 
+        point: &CurvePoint<'a, CB>, 
+        twist_point: &CurvePoint<'a, CTW> 
     ) -> Fp4<'a, FE, F> {
         debug_assert!(point.is_normalized());
         debug_assert!(twist_point.is_normalized());
@@ -444,13 +456,19 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> MNT4Instance<'a, FE, F>
 }
 
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PairingEngine for MNT4Instance<'a, FE, F> {
+impl<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+    > PairingEngine for MNT4Instance<'a, FE, F, CB, CTW> {
     type PairingResult = Fp4<'a, FE, F>;
-    type G1 = CurvePoint<'a, FE, F>;
-    type G2 = TwistPoint<'a, FE, F>;
+    type G1 = CurvePoint<'a, CB>;
+    type G2 = CurvePoint<'a, CTW>;
 
     fn pair<'b>
-        (&self, points: &'b [CurvePoint<'a, FE, F>], twists: &'b [TwistPoint<'a, FE, F>]) -> Option<Self::PairingResult> {
+        (&self, points: &'b [CurvePoint<'a, CB>], twists: &'b [CurvePoint<'a, CTW>]) -> Option<Self::PairingResult> {
             let mut pairs = vec![];
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
@@ -466,14 +484,13 @@ mod tests {
     use num_bigint::BigUint;
     use crate::field::{U320Repr, new_field, biguint_to_u64_vec};
     use crate::fp::Fp;
-    use crate::traits::{FieldElement};
+    use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp2::{Fp2, Extension2};
     use crate::extension_towers::fp4_as_2_over_2::{Extension2Over2};
     use num_traits::Num;
     use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp4_as_2_over_2};
-    use crate::weierstrass::{Group};
+    use crate::weierstrass::{Group, CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-    use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
     use crate::pairings::{PairingEngine};
 
     #[test]
@@ -514,18 +531,21 @@ mod tests {
         let mut twist_cubed = twist_squared.clone();
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
-        a_fp3.mul_by_fp(&a_fp);
+        let mut a_fp2 = twist_squared.clone();
+        a_fp2.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
-        b_fp3.mul_by_fp(&b_fp);
+        let mut b_fp2 = twist_cubed.clone();
+        b_fp2.mul_by_fp(&b_fp);
 
         // let scalar_field = new_field::<U320Repr>("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
         let group_order = BigUint::from_str_radix("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
         let group_order = biguint_to_u64_vec(group_order);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
-        let curve_twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp3, b_fp3);
+        let fp_params = CurveOverFpParameters::new(&base_field);
+        let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
+        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
 
         let p_x = BigUint::from_str_radix("60760244141852568949126569781626075788424196370144486719385562369396875346601926534016838", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("363732850702582978263902770815145784459747722357071843971107674179038674942891694705904306", 10).unwrap().to_bytes_be();
@@ -554,7 +574,7 @@ mod tests {
         q_y.c1 = q_y_1;
 
         let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
-        let q = TwistPoint::point_from_xy(&curve_twist, q_x, q_y);
+        let q = CurvePoint::point_from_xy(&curve_twist, q_x, q_y);
 
         let x: Vec<u64> = vec![
             0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55

@@ -11,7 +11,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             // The Montgomery Modular Inverse - Revisited
 
             // Phase 1
-            let modulus = self.field.modulus().clone();
+            let modulus = *self.field.modulus();
             let mut u = modulus;
             let mut v = self.repr;
             let mut r = F::Repr::from(0);

@@ -177,15 +177,15 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     calldata
 }
 
-#[test]
-fn test_single() {
-    let calldata = assemble_single();
-    let result = call_pairing_engine(&calldata[..]);
-    assert!(result.is_ok());
+// #[test]
+// fn test_single() {
+//     let calldata = assemble_single();
+//     let result = call_pairing_engine(&calldata[..]);
+//     assert!(result.is_ok());
 
-    let result = result.unwrap()[0];
-    assert!(result == 1u8);
-}
+//     let result = result.unwrap()[0];
+//     assert!(result == 1u8);
+// }
 
 #[test]
 fn test_bls12_pairings_from_vectors() {

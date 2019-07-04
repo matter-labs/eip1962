@@ -9,6 +9,8 @@ use super::decode_fp::*;
 use num_bigint::BigUint;
 use num_traits::{Zero};
 
+use super::decode_utils::split;
+
 use crate::errors::ApiError;
 
 pub(crate) fn parse_base_field_from_encoding<
@@ -76,16 +78,10 @@ pub(crate) fn serialize_g1_point<
 }
 
 pub(crate) fn get_base_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &[u8]), ApiError> {
-    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
-        return Err(ApiError::InputError("Input is not long enough to get modulus length".to_owned()));
-    }
-    let (modulus_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let (modulus_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
     let modulus_len = modulus_len[0] as usize;
 
-    if rest.len() < modulus_len {
-        return Err(ApiError::InputError("Input is not long enough to get modulus".to_owned()));
-    }
-    let (modulus_encoding, rest) = rest.split_at(modulus_len);
+    let (modulus_encoding, rest) = split(rest, modulus_len, "Input is not long enough to get modulus")?;
     let modulus = BigUint::from_bytes_be(&modulus_encoding);
     if modulus.is_zero() {
         return Err(ApiError::UnexpectedZero("Modulus can not be zero".to_owned()));
@@ -95,16 +91,10 @@ pub(crate) fn get_base_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &
 }
 
 pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ApiError> {
-    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
-        return Err(ApiError::InputError("Input is not long enough to get group size length".to_owned()));
-    }
 
-    let (order_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let (order_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get group size length")?;
     let order_len = order_len[0] as usize;
-    if rest.len() < order_len {
-        return Err(ApiError::InputError("Input is not long enough to get main group order size".to_owned()));
-    }
-    let (order_encoding, rest) = rest.split_at(order_len);
+    let (order_encoding, rest) = split(rest, order_len, "Input is not long enough to get main group order size")?;
 
     Ok(((order_encoding, order_len), rest))
 }
@@ -120,17 +110,11 @@ pub(crate) fn decode_g1_point_from_xy<
         curve: &'a WeierstrassCurve<'a, FE, F>
     ) -> Result<(CurvePoint<'a, FE, F>, &'a [u8]), ApiError>
 {
-    if bytes.len() < field_byte_len {
-        return Err(ApiError::InputError("Input is not long enough to get X".to_owned()));
-    }
-    let (x_encoding, rest) = bytes.split_at(field_byte_len);
+    let (x_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to get X")?;
     let x = Fp::from_be_bytes(curve.base_field, x_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse X".to_owned())
     })?;
-    if rest.len() < field_byte_len {
-        return Err(ApiError::InputError("Input is not long enough to get Y".to_owned()));
-    }
-    let (y_encoding, rest) = rest.split_at(field_byte_len);
+    let (y_encoding, rest) = split(rest, field_byte_len, "Input is not long enough to get Y")?;
     let y = Fp::from_be_bytes(curve.base_field, y_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse Y".to_owned())
     })?;
@@ -151,10 +135,7 @@ pub(crate) fn decode_scalar_representation<
     ) -> Result<(Vec<u64>, &'a [u8]), ApiError>
 {
     use crate::field::biguint_to_u64_vec;
-    if bytes.len() < order_byte_len {
-        return Err(ApiError::InputError("Input is not long enough to get scalar".to_owned()));
-    }
-    let (encoding, rest) = bytes.split_at(order_byte_len);
+    let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
     let scalar = BigUint::from_bytes_be(&encoding);
     if &scalar >= order {
         return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())));

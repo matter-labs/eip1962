@@ -15,6 +15,7 @@ use num_traits::FromPrimitive;
 
 use super::decode_fp::*;
 use super::constants::*;
+use super::decode_utils::split;
 
 use crate::errors::ApiError;
 
@@ -30,10 +31,7 @@ pub(crate) fn create_fp2_extension<
         base_field: &'a F,
     ) -> Result<(fp2::Extension2<'a, FE, F>, &'a [u8]), ApiError>
 {
-    if bytes.len() < EXTENSION_DEGREE_ENCODING_LENGTH {
-        return Err(ApiError::InputError("Input is not long enough to get extension degree".to_owned()));
-    }
-    let (extension_degree, rest) = bytes.split_at(EXTENSION_DEGREE_ENCODING_LENGTH);
+    let (extension_degree, rest) = split(bytes, EXTENSION_DEGREE_ENCODING_LENGTH, "Input is not long enough to get extension degree")?;
     if extension_degree[0] != EXTENSION_DEGREE_2 {
         return Err(ApiError::UnknownParameter("Extension degree expected to be 2".to_owned()));
     }
@@ -78,10 +76,7 @@ pub(crate) fn create_fp3_extension<
         base_field: &'a F,
     ) -> Result<(fp3::Extension3<'a, FE, F>, &'a [u8]), ApiError>
 {
-    if bytes.len() < EXTENSION_DEGREE_ENCODING_LENGTH {
-        return Err(ApiError::InputError("Input is not long enough to get extension degree".to_owned()));
-    }
-    let (extension_degree, rest) = bytes.split_at(EXTENSION_DEGREE_ENCODING_LENGTH);
+    let (extension_degree, rest) = split(bytes, EXTENSION_DEGREE_ENCODING_LENGTH, "Input is not long enough to get extension degree")?;
     if extension_degree[0] != EXTENSION_DEGREE_3 {
         return Err(ApiError::UnknownParameter("Extension degree expected to be 3".to_owned()));
     }

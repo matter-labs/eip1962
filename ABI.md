@@ -1,4 +1,4 @@
-# ABI speficiation
+# ABI interface
 
 ## Supported operations
 

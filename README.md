@@ -23,7 +23,11 @@ Features (WIP):
   - [x] MNT4 family
   - [ ] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing)
     - [x] Test over a single k=6 curve from Zexe 
- 
+
+# ABI interface
+
+See [ABI.md](ABI.md).
+
 # Performance testing
 
 - [ ] Find a way to save on precomputations

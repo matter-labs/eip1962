@@ -2,6 +2,8 @@ use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::field::{SizedPrimeField, field_from_modulus, PrimeField};
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
+use crate::traits::ZeroAndOne;
+use crate::weierstrass::CurveParameters;
 
 use super::constants::*;
 use super::decode_fp::*;
@@ -63,11 +65,12 @@ pub(crate) fn parse_ab_in_base_field_from_encoding<
 pub(crate) fn serialize_g1_point<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>
+    F: SizedPrimeField<Repr = FE> + 'a,
+    C: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>
     >
     (
         modulus_len: usize,
-        point: &CurvePoint<'a, FE, F>
+        point: &CurvePoint<'a, C>
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
@@ -102,24 +105,25 @@ pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]
 pub(crate) fn decode_g1_point_from_xy<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>
+    F: SizedPrimeField<Repr = FE> + 'a,
+    C: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a WeierstrassCurve<'a, FE, F>
-    ) -> Result<(CurvePoint<'a, FE, F>, &'a [u8]), ApiError>
+        curve: &'a WeierstrassCurve<'a, C>
+    ) -> Result<(CurvePoint<'a, C>, &'a [u8]), ApiError>
 {
     let (x_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to get X")?;
-    let x = Fp::from_be_bytes(curve.base_field, x_encoding, true).map_err(|_| {
+    let x = Fp::from_be_bytes(curve.params.params(), x_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse X".to_owned())
     })?;
     let (y_encoding, rest) = split(rest, field_byte_len, "Input is not long enough to get Y")?;
-    let y = Fp::from_be_bytes(curve.base_field, y_encoding, true).map_err(|_| {
+    let y = Fp::from_be_bytes(curve.params.params(), y_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse Y".to_owned())
     })?;
     
-    let p: CurvePoint<'a, FE, F> = CurvePoint::point_from_xy(&curve, x, y);
+    let p: CurvePoint<'a, C> = CurvePoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }

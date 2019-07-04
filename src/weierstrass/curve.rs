@@ -1,6 +1,3 @@
-use crate::field::SizedPrimeField;
-use crate::fp::Fp;
-use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator};
 use super::{CurveType, Group};
 use super::CurveParameters;

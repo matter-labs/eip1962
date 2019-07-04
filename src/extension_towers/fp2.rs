@@ -270,8 +270,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         // base: &WindowExpBase<Fp<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
-        let one = BigUint::from_u64(1).expect("is valid bigint");
-        let two = BigUint::from_u64(2).expect("is valid bigint");
+        let one = BigUint::from(1u64);
+        let two = BigUint::from(2u64);
 
         let non_residue = self.non_residue.clone();
 

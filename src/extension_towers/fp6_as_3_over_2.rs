@@ -432,8 +432,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
 
-        let one = BigUint::from_u64(1).expect("is valid bigint");
-        let three = BigUint::from_u64(3).expect("is valid bigint");
+        let one = BigUint::from(1u64);
+        let three = BigUint::from(3u64);
 
         // NON_RESIDUE**(((q^0) - 1) / 3)
         // let non_residue = extension.non_residue.clone();

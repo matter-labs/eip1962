@@ -462,8 +462,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
 
-        let one = BigUint::from_u64(1).expect("is valid bigint");
-        let six = BigUint::from_u64(6).expect("is valid bigint");
+        let one = BigUint::from(1u64);
+        let six = BigUint::from(6u64);
     
         // Fq2(u + 1)**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);

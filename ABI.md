@@ -103,26 +103,26 @@ The operands are described below for each operation. They follow the same schema
 
 ### OPERATION_G2_ADD operands
 
-|Value              |Length                                   |                                  |
-|-------------------|-----------------------------------------|----------------------------------|
-|lhs                |`extension_degree*field_length` bytes    |First point's X and Y coordinates |
-|rhs                |`extension_degree*field_length` bytes    |Second point's X and Y coordinates|
+|Value              |Length                                   |                                                          |
+|-------------------|-----------------------------------------|----------------------------------------------------------|
+|lhs                |`extension_degree*field_length` bytes    |First point's coordinates in the extension field          |
+|rhs                |`extension_degree*field_length` bytes    |Second point's X and Y coordinates in the extension field |
 
-### OPERATION_G1_MUL operands
+### OPERATION_G2_MUL operands
 
-|Value              |Length                                   |                                  |
-|-------------------|-----------------------------------------|----------------------------------|
-|lhs                |`extension_degree*field_length` bytes    |First point's X and Y coordinates |
-|rhs                |`group_order_length` bytes|Sсalar multiplication factor                     |
+|Value              |Length                                   |                                                         |
+|-------------------|-----------------------------------------|---------------------------------------------------------|
+|lhs                |`extension_degree*field_length` bytes    |First point's coordinates in the extension field         |
+|rhs                |`group_order_length` bytes|Sсalar multiplication factor                                            |
 
 ### OPERATION_G1_MULTIEXP operands
 
 The multiexponentiation operation can take arbitrary number of operands. Each of the operands must be encoded in the following form:
 
-|Value              |Length                                   |                                  |
-|-------------------|-----------------------------------------|----------------------------------|
-|point              |`extension_degree*field_length` bytes    |Point's X and Y coordinates       |
-|scalar             |`group_order_length` bytes|Sсalar order of exponentiation                   |
+|Value              |Length                                   |                                                         |
+|-------------------|-----------------------------------------|---------------------------------------------------------|
+|point              |`extension_degree*field_length` bytes    |Point's coordinates in the extension field               |
+|scalar             |`group_order_length` bytes|Sсalar order of exponentiation                                          |
 
 ## op_data for Pairing operations
 

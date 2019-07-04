@@ -114,7 +114,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
 
             let r2 = Self {
                 field: field,
-                repr: field.mont_r2()
+                repr: field.mont_r2().clone()
             };
 
             r.mul_assign(&r2);
@@ -172,7 +172,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp<'a, E,
     fn one(field: &'a F) -> Self {
         Self {
             field: field,
-            repr: field.mont_r()
+            repr: *field.mont_r()
         }
     }
 }
@@ -215,7 +215,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
     #[inline]
     fn negate(&mut self) {
         if !self.is_zero() {
-            let mut tmp = self.field.modulus();
+            let mut tmp = self.field.modulus().clone();
             tmp.sub_noborrow(&self.repr);
             self.repr = tmp;
         }
@@ -233,10 +233,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
 
             let modulus = self.field.modulus();
             let mut u = self.repr;
-            let mut v = modulus;
+            let mut v = modulus.clone();
             let mut b = Self {
                 field: &self.field,
-                repr: self.field.mont_r2()
+                repr: self.field.mont_r2().clone()
             }; // Avoids unnecessary reduction step.
             let mut c = Self::zero(&self.field);
 

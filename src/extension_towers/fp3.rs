@@ -156,19 +156,19 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
             let mut n5 = t5.clone();
             n5.mul_by_nonresidue(self.extension_field);
 
-            let mut s0 = t0.clone();
+            let mut s0 = t0;
             s0.sub_assign(&n5);
-            let mut s1 = t2.clone();
+            let mut s1 = t2;
             s1.mul_by_nonresidue(self.extension_field);
             s1.sub_assign(&t3);
-            let mut s2 = t1.clone();
+            let mut s2 = t1;
             s2.sub_assign(&t4); // typo in paper referenced above. should be "-" as per Scott, but is "*"
 
             let mut a1 = self.c2.clone();
             a1.mul_assign(&s1);
             let mut a2 = self.c1.clone();
             a2.mul_assign(&s2);
-            let mut a3 = a1.clone();
+            let mut a3 = a1;
             a3.add_assign(&a2);
             a3.mul_by_nonresidue(self.extension_field);
             let mut t6 = self.c0.clone();
@@ -185,7 +185,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
             c0.mul_assign(&s0);
             let mut c1 = t6.clone();
             c1.mul_assign(&s1);
-            let mut c2 = t6.clone();
+            let mut c2 = t6;
             c2.mul_assign(&s2);
 
 
@@ -233,17 +233,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         y.sub_assign(&ad);
         y.sub_assign(&be);
 
-        let mut t0 = a.clone();
+        let mut t0 = a;
         t0.add_assign(&c);
 
-        let mut z = d.clone();
+        let mut z = d;
         z.add_assign(&f);
         z.mul_assign(&t0);
         z.sub_assign(&ad);
         z.add_assign(&be);
         z.sub_assign(&cf);
 
-        let mut t0 = x.clone();
+        let mut t0 = x;
         t0.mul_by_nonresidue(self.extension_field);
 
         self.c0 = t0;
@@ -268,17 +268,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         s0.square();
         let mut ab = a.clone();
         ab.mul_assign(&b);
-        let mut s1 = ab.clone();
+        let mut s1 = ab;
         s1.double();
-        let mut s2 = a.clone();
+        let mut s2 = a;
         s2.sub_assign(&b);
         s2.add_assign(&c);
         s2.square();
-        let mut bc = b.clone();
+        let mut bc = b;
         bc.mul_assign(&c);
-        let mut s3 = bc.clone();
+        let mut s3 = bc;
         s3.double();
-        let mut s4 = c.clone();
+        let mut s4 = c;
         s4.square();
 
         self.c0 = s0.clone();

@@ -16,7 +16,7 @@ The precompile provides multiple elliptic curve operations. The full set of oper
 
 `OPERATION_G1_ADD`, `OPERATION_G1_MUL` and `OPERATION_G1_MULTIEXP` are operations of additon, multiplication and multiexponentiation for G1 elements of any curve in the Weierstrass form with `b != 0`.
 
-`OPERATION_G2_ADD`, `OPERATION_G2_MUL` and `OPERATION_G2_MULTIEXP` are operations for G2 elements for a curve defined over some extension field. Only degree 2 and degree 3 extensions are supported.
+`OPERATION_G2_ADD`, `OPERATION_G2_MUL` and `OPERATION_G2_MULTIEXP` are operations for G2 elements for a curve defined over some extension field.
 
 `OPERATION_PAIRING` is the pairing operation. The following curve families are supported:
 
@@ -30,34 +30,75 @@ The precompile provides multiple elliptic curve operations. The full set of oper
 
 Call data must be a correctly encoded ABI data string of two elements:
 
-|Value  |Type       |
-|-------|-----------|
-|op_code|uint8      |
-|op_data|bytes_array|
+|Value  |Type       |Length  |
+|-------|-----------|--------|
+|op_code|uint8      |1 byte  |
+|op_data|bytes_array|variable|
 
-The first byte of the input specifies the type of the operation. The remaining data is passed to the corresponding operation handler.
+The first byte of the input specifies the type of the operation. The remaining data is passed to the corresponding operation handler (see details below).
 
 All numbers are passed in **big endian** encoding.
 
 Incorrect data input is always handled and returns an error.
 
-### G1 operations
+## op_data for G1 operations
 
-`op_data` for G1 operations must have the following form:
+`op_data` for all G1 operations consists of a common prefix followed by the operands.
 
-|Value              |Length                    |
-|-------------------|--------------------------|
-|field_length       |1 byte                    |
-|modulus            |`field_length` bytes      |
-|a                  |`field_length` bytes      |
-|b                  |`field_length` bytes      |
-|group_order_length |1 bytes                   |
-|group_order        |`group_order_length` bytes|
+The common prefix must have the following form:
+
+|Value              |Length                    |Comment                    |
+|-------------------|--------------------------|---------------------------|
+|field_length       |1 byte                    |                           |
+|modulus            |`field_length` bytes      |Fq modulus                 |
+|a                  |`field_length` bytes      |Curve's a coefficient      |
+|b                  |`field_length` bytes      |Curve's b coefficient      |
+|group_order_length |1 bytes                   |                           |                    
+|group_order        |`group_order_length` bytes|Group order                |
+
+The operands are described below for each operation.
+
+### OPERATION_G1_ADD operands
+
+|Value              |Length                    |                           |
+|-------------------|--------------------------|---------------------------|
+|lhs_x              |`field_length` bytes      |First point's X coordinate |
+|lhs_y              |`field_length` bytes      |First point's Y coordinate |
+|rhs_x              |`field_length` bytes      |Second point's X coordinate|
+|rhs_y              |`field_length` bytes      |Second point's Y coordinate|
+
+### OPERATION_G1_MUL operands
+
+|Value              |Length                    |                           |
+|-------------------|--------------------------|---------------------------|
+|lhs_x              |`field_length` bytes      |First point's X coordinate |
+|lhs_y              |`field_length` bytes      |First point's Y coordinate |
+|rhs                |`field_length` bytes      |Salar multiplication factor|
+
+### OPERATION_G1_MULTIEXP operands
+
+The multiexponentiation operation can take arbitrary number of operands. Each of the operands must be encoded in the following form:
+
+|Value              |Length                    |                           |
+|-------------------|--------------------------|---------------------------|
+|x                  |`field_length` bytes      |Point's X coordinate       |
+|y                  |`field_length` bytes      |Point's Y coordinate       |
+|scalar             |`field_length` bytes      |Salar order of exponentiation|
+
 
 ### G2 operations
 
+`op_data` for G2 operations must have the following form:
 
-
+|Value              |Length                    |Comment                       |
+|-------------------|--------------------------|------------------------------|
+|field_length       |1 byte                    |                              |
+|modulus            |`field_length` bytes      |                              |
+|extension_degree   |1 bytes                   |Only values 2 or 3 are allowed|
+|a                  |`field_length` bytes      |                              |
+|b                  |`field_length` bytes      |                              |
+|group_order_length |1 bytes                   |                              |
+|group_order        |`group_order_length` bytes|                              |
 
 
 # Remainder

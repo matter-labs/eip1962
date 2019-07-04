@@ -4,11 +4,13 @@ use crate::field::*;
 use crate::fp::Fp;
 use crate::weierstrass::curve::*;
 use crate::traits::FieldElement;
+use crate::traits::ZeroAndOne;
 use rust_test::Bencher;
 use crate::multiexp::{peppinger};
 use crate::weierstrass::Group;
 use num_bigint::BigUint;
 use num_traits::Num;
+use crate::weierstrass::{CurveOverFpParameters, CurveOverFp2Parameters};
 
 const MULTIEXP_NUM_POINTS: usize = 100;
 
@@ -24,10 +26,14 @@ fn bench_doubling_bn254(b: &mut Bencher) {
     b_coeff.double();
     b_coeff.add_assign(&one);
 
+    let params = CurveOverFpParameters::new(&field);
+
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();
@@ -52,10 +58,14 @@ fn bench_addition_bn254(b: &mut Bencher) {
     b_coeff.double();
     b_coeff.add_assign(&one);
 
+    let params = CurveOverFpParameters::new(&field);
+
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();
@@ -83,10 +93,14 @@ fn bench_multiplication_bn254(b: &mut Bencher) {
     b_coeff.double();
     b_coeff.add_assign(&one);
 
+    let params = CurveOverFpParameters::new(&field);
+
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();
@@ -117,10 +131,14 @@ fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
     b_coeff.double();
     b_coeff.add_assign(&one);
 
+    let params = CurveOverFpParameters::new(&field);
+
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();
@@ -151,10 +169,14 @@ fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
     b_coeff.double();
     b_coeff.add_assign(&one);
 
+    let params = CurveOverFpParameters::new(&field);
+
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();
@@ -178,7 +200,6 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
     use num_bigint::BigUint;
     use num_traits::Num;
     use crate::extension_towers::fp2::{Fp2, Extension2};
-    use crate::weierstrass::twist::{WeierstrassCurveTwist, TwistPoint};
     let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
     // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
     let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
@@ -204,7 +225,14 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
 
     let a_fp2 = Fp2::zero(&extension_2);
 
-    let twist = WeierstrassCurveTwist::new(group_order, &extension_2, a_fp2, b_fp2);
+    let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+    let twist = WeierstrassCurve::new(
+        group_order, 
+        a_fp2, 
+        b_fp2,
+        &fp2_params
+    );
 
     let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
     let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
@@ -224,7 +252,7 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
     q_y.c0 = q_y_0;
     q_y.c1 = q_y_1;
 
-    let point = TwistPoint::point_from_xy(&twist, q_x, q_y);
+    let point = CurvePoint::point_from_xy(&twist, q_x, q_y);
 
     // scalar is order - 1
     let scalar = U256Repr([0x43e1f593f0000000,
@@ -352,10 +380,14 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
     b_coeff.double();
     b_coeff.add_assign(&one);
 
+    let params = CurveOverFpParameters::new(&field);
+
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();
@@ -394,11 +426,15 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
     let mut b_coeff = one.clone();
     b_coeff.double();
     b_coeff.add_assign(&one);
+    
+    let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
         group_order, 
         a_coeff, 
-        b_coeff);
+        b_coeff,
+        &params
+    );
 
     let mut two = one.clone();
     two.double();

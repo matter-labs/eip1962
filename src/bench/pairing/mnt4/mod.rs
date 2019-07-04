@@ -5,6 +5,7 @@ use num_traits::Zero;
 use crate::field::{U320Repr, new_field, biguint_to_u64_vec};
 use crate::fp::Fp;
 use crate::traits::{FieldElement};
+use crate::traits::ZeroAndOne;
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp4_as_2_over_2::{Fp4, Extension2Over2};
 use num_traits::Num;

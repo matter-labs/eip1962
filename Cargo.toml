@@ -31,4 +31,4 @@ serde_json = "1.0"
 #harness = false
 
 [features]
-unstable = []
+benchmarks = []

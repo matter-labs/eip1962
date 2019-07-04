@@ -16,7 +16,7 @@
 /// 
 
 use crate::weierstrass::curve::WeierstrassCurve;
-use crate::weierstrass::{Group, CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
+use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
 use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance};
 use crate::extension_towers::fp2::{Fp2, Extension2};

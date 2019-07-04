@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "unstable", feature(test))]
+#![cfg_attr(feature = "benchmarks", feature(test))]
 
 extern crate byteorder;
 extern crate num_bigint;
@@ -25,9 +25,7 @@ pub mod public_interface;
 #[cfg(test)]
 mod test;
 
-// pub use api::{API, PrecompileAPI};
-
-#[cfg(all(feature = "unstable", test))]
+#[cfg(all(feature = "benchmarks", test))]
 mod bench;
 
 #[cfg(test)]

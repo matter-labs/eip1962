@@ -1,5 +1,3 @@
-use crate::weierstrass::twist;
-use crate::weierstrass::cubic_twist;
 use crate::field::{SizedPrimeField};
 use crate::fp::Fp;
 use crate::extension_towers::*;
@@ -7,7 +5,9 @@ use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
 use crate::representation::{ElementRepr};
 use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp3};
-use crate::traits::FieldElement;
+use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
+use crate::traits::{FieldElement, ZeroAndOne};
+use crate::weierstrass::CurveParameters;
 use crate::field::biguint_to_u64_vec;
 
 use num_bigint::BigUint;
@@ -103,18 +103,19 @@ pub(crate) fn create_fp3_extension<
 pub(crate) fn decode_g2_point_from_xy_in_fp2<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>
+    F: SizedPrimeField<Repr = FE> + 'a,
+    C: CurveParameters<BaseFieldElement = fp2::Fp2<'a, FE, F>>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a twist::WeierstrassCurveTwist<'a, FE, F>
-    ) -> Result<(twist::TwistPoint<'a, FE, F>, &'a [u8]), ApiError>
+        curve: &'a WeierstrassCurve<'a, C>
+    ) -> Result<(CurvePoint<'a, C>, &'a [u8]), ApiError>
 {
-    let (x, rest) = decode_fp2(&bytes, field_byte_len, curve.base_field)?;
-    let (y, rest) = decode_fp2(&rest, field_byte_len, curve.base_field)?;
+    let (x, rest) = decode_fp2(&bytes, field_byte_len, curve.params.params())?;
+    let (y, rest) = decode_fp2(&rest, field_byte_len, curve.params.params())?;
     
-    let p: twist::TwistPoint<'a, FE, F> = twist::TwistPoint::point_from_xy(&curve, x, y);
+    let p: CurvePoint<'a, C> = CurvePoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
@@ -122,18 +123,19 @@ pub(crate) fn decode_g2_point_from_xy_in_fp2<
 pub(crate) fn decode_g2_point_from_xy_in_fp3<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>
+    F: SizedPrimeField<Repr = FE> + 'a,
+    C: CurveParameters<BaseFieldElement = fp3::Fp3<'a, FE, F>>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a cubic_twist::WeierstrassCurveTwist<'a, FE, F>
-    ) -> Result<(cubic_twist::TwistPoint<'a, FE, F>, &'a [u8]), ApiError>
+        curve: &'a WeierstrassCurve<'a, C>
+    ) -> Result<(CurvePoint<'a, C>, &'a [u8]), ApiError>
 {
-    let (x, rest) = decode_fp3(&bytes, field_byte_len, curve.base_field)?;
-    let (y, rest) = decode_fp3(&rest, field_byte_len, curve.base_field)?;
+    let (x, rest) = decode_fp3(&bytes, field_byte_len, curve.params.params())?;
+    let (y, rest) = decode_fp3(&rest, field_byte_len, curve.params.params())?;
     
-    let p: cubic_twist::TwistPoint<'a, FE, F> = cubic_twist::TwistPoint::point_from_xy(&curve, x, y);
+    let p: CurvePoint<'a, C> = CurvePoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
@@ -141,16 +143,35 @@ pub(crate) fn decode_g2_point_from_xy_in_fp3<
 pub(crate) fn serialize_g2_point_in_fp2<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE>
+    F: SizedPrimeField<Repr = FE> + 'a,
+    C: CurveParameters<BaseFieldElement = fp2::Fp2<'a, FE, F>>
     >
     (
         modulus_len: usize,
-        point: &twist::TwistPoint<'a, FE, F>
+        point: &CurvePoint<'a, C>
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
     let mut result = serialize_fp2_fixed_len(modulus_len, &x)?;
     result.extend(serialize_fp2_fixed_len(modulus_len, &y)?);
+    
+    Ok(result)
+}
+
+pub(crate) fn serialize_g2_point_in_fp3<
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE> + 'a,
+    C: CurveParameters<BaseFieldElement = fp3::Fp3<'a, FE, F>>
+    >
+    (
+        modulus_len: usize,
+        point: &CurvePoint<'a, C>
+    ) -> Result<Vec<u8>, ApiError>
+{
+    let (x, y) = point.into_xy();
+    let mut result = serialize_fp3_fixed_len(modulus_len, &x)?;
+    result.extend(serialize_fp3_fixed_len(modulus_len, &y)?);
     
     Ok(result)
 }

@@ -3,6 +3,7 @@ use crate::fp::Fp;
 use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
 use crate::representation::ElementRepr;
+use crate::traits::ZeroAndOne;
 
 use crate::errors::ApiError;
 use super::decode_utils::split;

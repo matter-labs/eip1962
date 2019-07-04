@@ -7,6 +7,7 @@ use num_traits::Zero;
 use crate::field::{U384Repr, U832Repr, new_field};
 use crate::fp::Fp;
 use crate::traits::{FieldElement};
+use crate::traits::ZeroAndOne;
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp3::{Fp3, Extension3};
 use crate::extension_towers::fp6_as_2_over_3;

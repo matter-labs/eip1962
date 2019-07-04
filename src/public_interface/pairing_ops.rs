@@ -15,22 +15,18 @@
 /// 
 /// 
 
-use crate::weierstrass::curve;
-use crate::weierstrass::twist;
-use crate::weierstrass::Group;
+use crate::weierstrass::curve::WeierstrassCurve;
+use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
 use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance};
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use crate::representation::{ElementRepr};
-use crate::traits::FieldElement;
+use crate::traits::{FieldElement, ZeroAndOne};
 use crate::field::biguint_to_u64_vec;
 use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
-
-use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 
 use super::decode_g1::*;
 use super::decode_utils::*;
@@ -90,7 +86,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
         }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
-        let g1_curve = curve::WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone());
+        let fp_params = CurveOverFpParameters::new(&base_field);
+        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params);
+
 
         // Now we need to expect:
         // - non-residue for Fp2
@@ -181,7 +179,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         };
 
         let a_fp2 = Fp2::zero(&extension_2);
-        let g2_curve = twist::WeierstrassCurveTwist::new(order_repr, &extension_2, a_fp2, b_fp2);
+
+        let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
 
         let (x, rest) = decode_biguint_with_length(&rest)?;
         let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;

@@ -1,7 +1,7 @@
 use crate::fp::Fp;
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, FieldExtension};
+use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
 use super::fp3::{Fp3, Extension3};
 
 pub struct Fp6<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
@@ -93,6 +93,32 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
 
         res
     }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp6<'a, E, F> {
+    type Params = &'a Extension2Over3<'a, E, F>;
+
+    fn zero(extension_field: &'a Extension2Over3<'a, E, F>) -> Self {
+        let zero = Fp3::zero(extension_field.field);
+        
+        Self {
+            c0: zero.clone(),
+            c1: zero,
+            extension_field: extension_field
+        }
+    }
+
+    fn one(extension_field: &'a Extension2Over3<'a, E, F>) -> Self {
+        let zero = Fp3::zero(extension_field.field);
+        let one = Fp3::one(extension_field.field);
+        
+        Self {
+            c0: one,
+            c1: zero,
+            extension_field: extension_field
+        }
+    }
+
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a, E, F> {

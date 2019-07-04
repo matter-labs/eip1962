@@ -1,6 +1,6 @@
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, FieldExtension};
+use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
 use super::fp2::{Fp2, Extension2};
 
 
@@ -52,28 +52,28 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp6<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
-    pub fn zero(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
-        let zero = Fp2::zero(extension_field.field);
+    // pub fn zero(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
+    //     let zero = Fp2::zero(extension_field.field);
         
-        Self {
-            c0: zero.clone(),
-            c1: zero.clone(),
-            c2: zero,
-            extension_field: extension_field
-        }
-    }
+    //     Self {
+    //         c0: zero.clone(),
+    //         c1: zero.clone(),
+    //         c2: zero,
+    //         extension_field: extension_field
+    //     }
+    // }
 
-    pub fn one(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
-        let zero = Fp2::zero(extension_field.field);
-        let one = Fp2::one(extension_field.field);
+    // pub fn one(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
+    //     let zero = Fp2::zero(extension_field.field);
+    //     let one = Fp2::one(extension_field.field);
         
-        Self {
-            c0: one,
-            c1: zero.clone(),
-            c2: zero,
-            extension_field: extension_field
-        }
-    }
+    //     Self {
+    //         c0: one,
+    //         c1: zero.clone(),
+    //         c2: zero,
+    //         extension_field: extension_field
+    //     }
+    // }
 
     pub fn mul_by_1(&mut self, c1: &Fp2<'a, E, F>) {
         let mut b_b = self.c1.clone();
@@ -144,6 +144,33 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
         self.c0 = t1;
         self.c1 = t2;
         self.c2 = t3;
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp6<'a, E, F> {
+    type Params = &'a Extension3Over2<'a, E, F>;
+
+    fn zero(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
+        let zero = Fp2::zero(extension_field.field);
+        
+        Self {
+            c0: zero.clone(),
+            c1: zero.clone(),
+            c2: zero,
+            extension_field: extension_field
+        }
+    }
+
+    fn one(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
+        let zero = Fp2::zero(extension_field.field);
+        let one = Fp2::one(extension_field.field);
+        
+        Self {
+            c0: one,
+            c1: zero.clone(),
+            c2: zero,
+            extension_field: extension_field
+        }
     }
 }
 

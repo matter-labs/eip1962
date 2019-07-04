@@ -7,13 +7,14 @@ use num_integer::Integer;
 use crate::field::{U384Repr, U256Repr, new_field};
 use crate::fp::Fp;
 use crate::traits::{FieldElement};
+use crate::traits::ZeroAndOne;
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use num_traits::Num;
 use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
+use crate::weierstrass::{CurveOverFpParameters, CurveOverFp2Parameters};
 use crate::pairings::{PairingEngine, TwistType};
 use crate::pairings::bls12::{Bls12Instance};
 use crate::field::biguint_to_u64_vec;
@@ -63,8 +64,11 @@ fn bench_bls12_381_pairing(b: &mut Bencher) {
     let a_fp = Fp::zero(&base_field);
     let a_fp2 = Fp2::zero(&extension_2);
 
-    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
-    let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
+    let fp_params = CurveOverFpParameters::new(&base_field);
+    let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
+    let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
 
     let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap().to_bytes_be();
@@ -92,7 +96,7 @@ fn bench_bls12_381_pairing(b: &mut Bencher) {
 
     let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
     // println!("P.x = {}", p.x.into_repr());
-    let q = TwistPoint::point_from_xy(&twist, q_x, q_y);
+    let q = CurvePoint::point_from_xy(&twist, q_x, q_y);
 
     // let x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap();
     // println!("x = {}", x);

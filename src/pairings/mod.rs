@@ -2,7 +2,7 @@
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement};
+use crate::traits::{FieldElement, ZeroAndOne};
 use crate::weierstrass::Group;
 use crate::extension_towers::{fp2::Fp2, fp2::Extension2};
 use crate::extension_towers::{fp3::Fp3, fp3::Extension3};
@@ -17,7 +17,7 @@ use num_traits::Zero;
 
 pub(crate) mod bls12;
 pub(crate) mod bn;
-pub(crate) mod cp;
+// pub(crate) mod cp;
 pub(crate) mod mnt6;
 pub(crate) mod mnt4;
 
@@ -532,7 +532,7 @@ mod tests {
     use num_bigint::BigUint;
     use crate::field::{U384Repr, U832Repr, new_field};
     use crate::fp::Fp;
-    use crate::traits::{FieldElement};
+    use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp2::{Fp2, Extension2};
     use crate::extension_towers::fp3::{Fp3, Extension3};
     use crate::extension_towers::fp6_as_2_over_3;

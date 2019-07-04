@@ -77,9 +77,9 @@ use crate::representation::IntoWnaf;
 
 
 use crate::weierstrass::curve::CurvePoint;
-use crate::field::SizedPrimeField;
-pub(crate) fn peppinger<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>
-    ( pairs: Vec<(CurvePoint<'a, FE, F>, Vec<u64>)> ) -> CurvePoint<'a, FE, F>
+use crate::weierstrass::CurveParameters;
+pub(crate) fn peppinger<'a, C: CurveParameters>
+    ( pairs: Vec<(CurvePoint<'a, C>, Vec<u64>)> ) -> CurvePoint<'a, C>
 {
     use crate::representation::*;
     let mut g = vec![];

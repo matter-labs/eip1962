@@ -15,7 +15,7 @@
 /// Assumptions:
 /// - one byte for length encoding
 
-use crate::weierstrass::Group;
+use crate::weierstrass::{Group, CurveParameters, CurveOverFpParameters};
 use crate::weierstrass::curve::{WeierstrassCurve};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
@@ -45,7 +45,9 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
         let (order_repr, order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
-        let curve = WeierstrassCurve::new(order_repr, a, b);
+        let fp_params = CurveOverFpParameters::new(&field);
+
+        let curve = WeierstrassCurve::new(order_repr, a, b, &fp_params);
 
         let (mut p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
@@ -60,7 +62,9 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b);
+        let fp_params = CurveOverFpParameters::new(&field);
+
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params);
 
         let (p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
@@ -75,7 +79,9 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b);
+        let fp_params = CurveOverFpParameters::new(&field);
+
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params);
 
         let expected_pair_len = 2*modulus_len + order_len;
         if rest.len() % expected_pair_len != 0 {

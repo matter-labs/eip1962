@@ -1,6 +1,5 @@
-use crate::weierstrass::Group;
-use crate::weierstrass::twist;
-use crate::weierstrass::cubic_twist;
+use crate::weierstrass::{Group, CurveParameters, CurveOverFp2Parameters};
+use crate::weierstrass::curve::WeierstrassCurve;
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 
@@ -40,7 +39,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (order_repr, order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
-        let curve = twist::WeierstrassCurveTwist::new(order_repr, &extension_2, a, b);
+        let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+        let curve = WeierstrassCurve::new(order_repr, a, b, &fp2_params);
 
         let (mut p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
@@ -56,7 +57,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
-        let curve = twist::WeierstrassCurveTwist::new(order_repr.clone(), &extension_2, a, b);
+        let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params);
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
@@ -67,37 +70,38 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
     }
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        unimplemented!();
-        // let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        // let (extension_2, rest) = create_fp2_extension(&rest, modulus, modulus_len, &field)?;
-        // let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
-        // let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
+        let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
+        let (extension_2, rest) = create_fp2_extension(&rest, modulus, modulus_len, &field)?;
+        let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
+        let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
-        // let curve = twist::WeierstrassCurveTwist::new(order_repr.clone(), &extension_2, a, b);
+        let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        // let expected_pair_len = 4*modulus_len + order_len;
-        // if rest.len() % expected_pair_len != 0 {
-        //     return Err(());
-        // }
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params);
 
-        // let expected_pairs = rest.len() / expected_pair_len;
-        // if expected_pairs == 0 {
-        //     return Err(());
-        // }
+        let expected_pair_len = 4*modulus_len + order_len;
+        if rest.len() % expected_pair_len != 0 {
+            return Err(ApiError::InputError("invalid input array length, not even number of points encoded".to_owned()));
+        }
 
-        // let mut global_rest = rest;
-        // let mut pairs = vec![];
+        let expected_pairs = rest.len() / expected_pair_len;
+        if expected_pairs == 0 {
+            return Err(ApiError::InputError("should encode at least one pair".to_owned()));
+        }
 
-        // for _ in 0..expected_pairs {
-        //     let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
-        //     let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
-        //     pairs.push((p, scalar));
-        //     global_rest = local_rest;
-        // }
+        let mut global_rest = rest;
+        let mut pairs = vec![];
 
-        // let result = peppinger(pairs);
+        for _ in 0..expected_pairs {
+            let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
+            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
+            pairs.push((p, scalar));
+            global_rest = local_rest;
+        }
 
-        // serialize_g2_point_in_fp2(modulus_len, &result)   
+        let result = peppinger(pairs);
+
+        serialize_g2_point_in_fp2(modulus_len, &result)   
     }
 }
 

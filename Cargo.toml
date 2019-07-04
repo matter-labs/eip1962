@@ -14,7 +14,7 @@ num-integer = "0.1"
 [dev-dependencies]
 hex = "0.3.2"
 rand = "0.6.5"
-rand_xorshift = "*"
+rand_xorshift = "0.1.1"
 csv = "1"
 criterion = "0.2"
 serde = { version = "1.0", features = ["derive"] }

@@ -60,198 +60,71 @@ The operands are described below for each operation.
 
 ### OPERATION_G1_ADD operands
 
-|Value              |Length                    |                           |
-|-------------------|--------------------------|---------------------------|
-|lhs_x              |`field_length` bytes      |First point's X coordinate |
-|lhs_y              |`field_length` bytes      |First point's Y coordinate |
-|rhs_x              |`field_length` bytes      |Second point's X coordinate|
-|rhs_y              |`field_length` bytes      |Second point's Y coordinate|
+|Value              |Length                    |                                  |
+|-------------------|--------------------------|----------------------------------|
+|lhs                |`2*field_length` bytes    |First point's X and Y coordinates |
+|rhs                |`2*field_length` bytes    |Second point's X and Y coordinates|
 
 ### OPERATION_G1_MUL operands
 
-|Value              |Length                    |                            |
-|-------------------|--------------------------|----------------------------|
-|lhs_x              |`field_length` bytes      |First point's X coordinate  |
-|lhs_y              |`field_length` bytes      |First point's Y coordinate  |
-|rhs                |`group_order_length` bytes|Sсalar multiplication factor|
+|Value              |Length                    |                                  |
+|-------------------|--------------------------|----------------------------------|
+|lhs                |`2*field_length` bytes    |First point's X and Y coordinates |
+|rhs                |`group_order_length` bytes|Sсalar multiplication factor      |
 
 ### OPERATION_G1_MULTIEXP operands
 
 The multiexponentiation operation can take arbitrary number of operands. Each of the operands must be encoded in the following form:
 
-|Value              |Length                    |                              |
-|-------------------|--------------------------|------------------------------|
-|x                  |`field_length` bytes      |Point's X coordinate          |
-|y                  |`field_length` bytes      |Point's Y coordinate          |
-|scalar             |`group_order_length` bytes|Sсalar order of exponentiation|
+|Value              |Length                    |                                  |
+|-------------------|--------------------------|----------------------------------|
+|point              |`2*field_length` bytes    |Point's X and Y coordinates       |
+|scalar             |`group_order_length` bytes|Sсalar order of exponentiation    |
 
 
-### G2 operations
+## op_data for G2 operations
 
-`op_data` for G2 operations must have the following form:
+`op_data` for all G2 operations consists of a common prefix followed by the operands.
+
+The common prefix must have the following form:
 
 |Value              |Length                    |Comment                       |
 |-------------------|--------------------------|------------------------------|
 |field_length       |1 byte                    |                              |
-|modulus            |`field_length` bytes      |                              |
+|modulus            |`field_length` bytes      |Fq modulus                    |
 |extension_degree   |1 bytes                   |Only values 2 or 3 are allowed|
-|a                  |`field_length` bytes      |                              |
-|b                  |`field_length` bytes      |                              |
-|group_order_length |1 bytes                   |                              |
-|group_order        |`group_order_length` bytes|                              |
+|fp_non_residue     |`field_length` bytes      |Fp2 non-residue               |
+|a                  |`field_length` bytes      |Curve's a coefficient         |
+|b                  |`field_length` bytes      |Curve's b coefficient         |
+|group_order_length |1 bytes                   |                              |                    
+|group_order        |`group_order_length` bytes|Group order                   |
 
+The operands are described below for each operation. They follow the same schema as for G1 operations, except that all points are encoded in the required extension degree.
 
-# Remainder
+### OPERATION_G2_ADD operands
 
-G1 additions, multiplications and multiexponentiations are defined for any curve in the Weierstrass form with `b != 0`. Operations in G2 are performed over the curve defined over some extension field. There are only two such extensions supported: degree 2 and degree 3.
+|Value              |Length                                   |                                  |
+|-------------------|-----------------------------------------|----------------------------------|
+|lhs                |`extension_degree*field_length` bytes    |First point's X and Y coordinates |
+|rhs                |`extension_degree*field_length` bytes    |Second point's X and Y coordinates|
 
-```
-pub const EXTENSION_DEGREE_ENCODING_LENGTH: usize = 1;
-pub const EXTENSION_DEGREE_2: u8 = 0x02;
-pub const EXTENSION_DEGREE_3: u8 = 0x03;
-```
+### OPERATION_G1_MUL operands
 
-Pairing operation is defined only for the following families of curves:
-- BN
-- BLS12
-- MNT4
-- MNT6
-- Ate pairing for a generic curve in the Weierstrass form with `k = 6` and extension tower `Fp - Fp3 - Fp6` (close sibling of MNT6)
+|Value              |Length                                   |                                  |
+|-------------------|-----------------------------------------|----------------------------------|
+|lhs                |`extension_degree*field_length` bytes    |First point's X and Y coordinates |
+|rhs                |`group_order_length` bytes|Sсalar multiplication factor                     |
 
-### Common ABI for G1 operations
+### OPERATION_G1_MULTIEXP operands
 
-ABI usually consists of two parts: one defines a base field and a curve, with another is operation dependent and encodes points or scalars for a corresponding operations. 
+The multiexponentiation operation can take arbitrary number of operands. Each of the operands must be encoded in the following form:
 
-Signature of public function is just `Operation(byte_array)` (one public function), so just a pointer to the array of bytes is passes to the function. Remember that operation type is already stripped from the byte array.
+|Value              |Length                                   |                                  |
+|-------------------|-----------------------------------------|----------------------------------|
+|point              |`extension_degree*field_length` bytes    |Point's X and Y coordinates       |
+|scalar             |`group_order_length` bytes|Sсalar order of exponentiation                   |
 
-```
-pub const BYTES_FOR_LENGTH_ENCODING: usize = 1;
-```
-
-Important! `take(N)` operation comsumes(!) first `N` bytes from the byte array
-
-Algorithm:
-- ensure that length of the byte array is `> BYTES_FOR_LENGTH_ENCODING`, otherwise return error
-- `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `modulus_length` for encoding of length of the next value. Limit `BYTES_FOR_LENGTH_ENCODING = 1` ensures that byte length of the next parameter that is modulus of the prime field is bounded (not more than 255 bytes), so it's a first sanity check
-- ensure that `modulus_length > 0`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is a modulus of a base prime field `base_field_modulus`. Ensure that top (most significant) byte is non-zero. This is not an attack and will only require caller to pay more gas, but it's a trivial check
-- ensure that `base_field_modulus >= 3` and `base_field_modulus` is odd. This is the second sanity check and also guarantees that Montgommery form that is used for all the field elements is well-defined (is requires `gcd(modulus, R) == 1` with `R` being power of two in our cases). There is no primarity testing, but arithmetic operations now will not trigger panics
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `A` coefficient for a curve in the Weierstrass form
-- ensure that `A < base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `B` coefficient for a curve in the Weierstrass form
-- ensure that `B < base_field_modulus`, otherwise return error
-- `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `subgroup_order_length` for encoding of length of the next value
-- ensure that `subgroup_order_length > 0`, otherwise return error
-- ensure that length of the byte array is `> subgroup_order_length`, otherwise return error
-- `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer `main_subgroup_order`
-- ensure that `main_subgroup_order >= 3` and is odd as a sanity check
-- there are two purposes to requure `main_subgroup_order` to be included into the ABI:
-  - Upfront estimation of the worst-case scenario for a difficulty of the multiplication and multiexponentiation operations
-  - One should not enforce point being in a correct subgroup for correctness of operations and if caller expects to process user's inputs he should make such check as a separate call. Nevertheless, this check is MANDATORY for pairing operations
-- later should follow operation-specific parameters
-  
-This list is a naive algorithm. Real implementation will merge e.g. reading of `A`, range check and parsing it as a representation of some form of the field element in one operation.
-
-Arithmetic is made using some fixed-length representation of a field element. This implementation follows an approach to represent them as a fixed length array `[u64; NUM_LIMBS`], such that for a modulus `M`: `2^(MODULUS_LIMGS*64) > 2*M` to ensure that one never has to take care about carry flags. In this case a field element with `255` bit modulus would be represented as `[u64; 4]`, but `256` bit modulus will be already represented as `[u64; 5]`
-
-To put some sane limit of the length of the arithmetics modulus `M` must be `< 1024` bits in length, so it's representable as `[u64; 16]` array
-
-#### Specific ABI part for addition in G1
-
-At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
-
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
-- ensure that `P0.x < base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
-- ensure that `P0.y < base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P1`
-- ensure that `P1.x < base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P1`
-- ensure that `P1.y < base_field_modulus`, otherwise return error
-- at this point curve is well-defined, along with arithmetic on it
-- check that `is_on_curve(P0)` and `is_on_curve(P1)`, otherwise return error
-- perform an addition depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero) `P_res = P0 + P1`
-- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity (this is an expected result of the addition operation in Jacobian coordinates for `P` and `-P`), otherwise inverse `P_res.z` and perform normalization
-
-#### Specific ABI part for multiplication in G1
-
-At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
-
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
-- ensure that `P0.x < base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
-- ensure that `P0.y < base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `>= subgroup_order_length`, otherwise return error
-- `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer that is an `scalar` for multiplication operation
-- ensure that `scalar <= main_subgroup_order`, otherwise return error. Scalar can be equal to the group order for usefull operations for caller
-- perform a multiplication depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero) `P_res = scalar*P0`
-- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity, otherwise inverse `P_res.z` and perform normalization
-
-Possible variations: explicitly encode length of the BigEndian byte representation of scalar (difficult for gas estimations), or use same level of granularity for any scalar that is an integer number of limbs. In this case one would also want to change common ABI part to allow zero byte padding of a main subgroup order
-
-#### Specific ABI part for multiexponentiation in G1
-
-At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
-
-- calculate expected byte length of one `(point, scalar)` pair as `expected_pair_len = 2*modulus_length + subgroup_order_length`
-- ensure that length of the byte array is a multiple of `expected_pair_len`, otherwise return error
-- calculate number of pairs by dividing the rest of the byte array by `expected_pair_len`
-- in a loop:
-  - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
-  - ensure that `P0.x < base_field_modulus`, otherwise return error
-  - ensure that length of the byte array is `> modulus_length`, otherwise return error
-  - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
-  - ensure that `P0.y < base_field_modulus`, otherwise return error
-  - `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer that is an `scalar` for multiplication operation
-  - ensure that `scalar <= main_subgroup_order`, otherwise return error
-- perform a miltiexponentiation depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero), output `P_res`
-- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity, otherwise inverse `P_res.z` and perform normalization
-
-#### Notes for G1 ABI:
-
-For purposes of caller's convenience it may be reasonable to have some granularity for lengths of encodings of various element. For example, make encodings multiples of 8 bytes (64 bits) to roughtly correspond to limb bits on x64 machine
-
-### Common ABI for G2 operations
-
-Operations on a "twist" are defined and expected to be used for pairing friendly curves. E.G. original protocol of BLS aggregated signatures requires multiplication in G2, as well as some SNARK verification equations.
-
-To save space only common ABI part for G2 is described, with specific part being similar to G1 part.
-```
-pub const EXTENSION_DEGREE_ENCODING_LENGTH: usize = 1;
-```
-
-Algorithm:
-- ensure that length of the byte array is `> BYTES_FOR_LENGTH_ENCODING`, otherwise return error
-- `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `modulus_length` for encoding of length of the next value. Limit `BYTES_FOR_LENGTH_ENCODING = 1` ensures that byte length of the next parameter that is modulus of the prime field is bounded (not more than 255 bytes), so it's a first sanity check
-- ensure that `modulus_length > 0`, otherwise return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is a modulus of a base prime field `base_field_modulus`. Ensure that top (most significant) byte is non-zero. This is not an attack and will only require caller to pay more gas, but it's a trivial check
-- ensure that `base_field_modulus >= 3` and `base_field_modulus` is odd. This is the second sanity check and also guarantees that Montgommery form that is used for all the field elements is well-defined (is requires `gcd(modulus, R) == 1` with `R` being power of two in our cases). There is no primarity testing, but arithmetic operations now will not trigger panics
-- ensure that length of the byte array is `> EXTENSION_DEGREE_ENCODING_LENGTH`, otherwise return error
-- `take(EXTENSION_DEGREE_ENCODING_LENGTH)` and parse it as unsigned integer `extension_degree` for encoding of extension degree for a twist. Only `extension_degree == 2` or `extension_degree == 3` are supported, on other values should return error
-- ensure that length of the byte array is `> modulus_length`, otherwise return error
-- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `non_residue` - a quadratic or cubic non-residue to make an extension
-- check that `non_residue` is non-square or non-cube depending of `extension_degree` to have extension well-formed. If it's not - return error
-- ensure that length of the byte array is `> modulus_length*extension_degree`, otherwise return error
-- `take(modulus_length*extension_degree)` and parse it as `extension_degree` densely packed BigEndian encodings of unsigned integers that are coefficient of an element in extension field. Coefficients follow from smallest degree: if element is represented as a polynomial `c0 + c1*x + c2*x^2` then coefficients are parsed as `c0`, `c1`, `c2` one after another. That is an `A` coefficient for a curve twist in the Weierstrass form
-- ensure that each of `c*` coefficients is `< base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length*extension_degree` and perform similar checks for `B` coefficient
-- `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `subgroup_order_length` for encoding of length of the next value
-- ensure that `subgroup_order_length > 0`, otherwise return error
-- ensure that length of the byte array is `> subgroup_order_length`, otherwise return error
-- `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer `main_subgroup_order`
-- ensure that `main_subgroup_order >= 3` and is odd as a sanity check
-
-Operations in G2 are the same as for G1 with a difference only in encoding of point coordinates now being in the extension of the base field.
+## op_data for Pairing operations
 
 ### Common ABI for pairing operations
 

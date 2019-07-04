@@ -69,21 +69,21 @@ The operands are described below for each operation.
 
 ### OPERATION_G1_MUL operands
 
-|Value              |Length                    |                           |
-|-------------------|--------------------------|---------------------------|
-|lhs_x              |`field_length` bytes      |First point's X coordinate |
-|lhs_y              |`field_length` bytes      |First point's Y coordinate |
-|rhs                |`field_length` bytes      |Salar multiplication factor|
+|Value              |Length                    |                            |
+|-------------------|--------------------------|----------------------------|
+|lhs_x              |`field_length` bytes      |First point's X coordinate  |
+|lhs_y              |`field_length` bytes      |First point's Y coordinate  |
+|rhs                |`group_order_length` bytes|Sсalar multiplication factor|
 
 ### OPERATION_G1_MULTIEXP operands
 
 The multiexponentiation operation can take arbitrary number of operands. Each of the operands must be encoded in the following form:
 
-|Value              |Length                    |                           |
-|-------------------|--------------------------|---------------------------|
-|x                  |`field_length` bytes      |Point's X coordinate       |
-|y                  |`field_length` bytes      |Point's Y coordinate       |
-|scalar             |`field_length` bytes      |Salar order of exponentiation|
+|Value              |Length                    |                              |
+|-------------------|--------------------------|------------------------------|
+|x                  |`field_length` bytes      |Point's X coordinate          |
+|y                  |`field_length` bytes      |Point's Y coordinate          |
+|scalar             |`group_order_length` bytes|Sсalar order of exponentiation|
 
 
 ### G2 operations

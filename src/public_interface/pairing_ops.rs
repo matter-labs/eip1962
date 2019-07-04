@@ -48,10 +48,7 @@ pub struct PublicPairingApi;
 impl PairingApi for PublicPairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::field::*;
-        if bytes.len() < CURVE_TYPE_LENGTH {
-            return Err(ApiError::InputError("Input should be longer than curve type encoding".to_owned()));
-        }
-        let (_curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
+        let (_curve_type, rest) = split(bytes, CURVE_TYPE_LENGTH, "Input should be longer than curve type encoding")?;
         let (modulus, _, _, _, _order, _, _) = parse_encodings(&rest)?;
         let modulus_limbs = (modulus.bits() / 64) + 1;
         // let order_limbs = (order.bits() / 64) + 1;
@@ -72,10 +69,7 @@ struct PairingApiImplementation<FE: ElementRepr> {
 
 impl<FE: ElementRepr> PairingApi for PairingApiImplementation<FE> {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        if bytes.len() < CURVE_TYPE_LENGTH {
-            return Err(ApiError::InputError("Input should be longer than curve type encoding".to_owned()));
-        }
-        let (curve_type, rest) = bytes.split_at(CURVE_TYPE_LENGTH);
+        let (curve_type, rest) = split(bytes, CURVE_TYPE_LENGTH, "Input should be longer than curve type encoding")?;
 
         match curve_type[0] {
             BLS12 => {
@@ -129,11 +123,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
-        if rest.len() < TWIST_TYPE_LENGTH {
-            return Err(ApiError::InputError("Input is not long enough to get twist type".to_owned()));
-        }
-
-        let (twist_type_encoding, rest) = rest.split_at(TWIST_TYPE_LENGTH);
+        let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
 
         let twist_type = match twist_type_encoding[0] {
             TWIST_TYPE_D => TwistType::D,
@@ -194,10 +184,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let g2_curve = twist::WeierstrassCurveTwist::new(order_repr, &extension_2, a_fp2, b_fp2);
 
         let (x, rest) = decode_biguint_with_length(&rest)?;
-        if rest.len() < SIGN_ENCODING_LENGTH {
-            return Err(ApiError::InputError("Input is not long enough to get X sign encoding".to_owned()));
-        }
-        let (x_sign, rest) = rest.split_at(SIGN_ENCODING_LENGTH);
+        let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
         let x_is_negative = match x_sign[0] {
             SIGN_PLUS => false,
             SIGN_MINUS => true,
@@ -206,11 +193,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        if rest.len() < BYTES_FOR_LENGTH_ENCODING {
-            return Err(ApiError::InputError("Input is not long enough to get number of pairs".to_owned()));
-        }
-
-        let (num_pairs_encoding, rest) = rest.split_at(BYTES_FOR_LENGTH_ENCODING);
+        let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
 
         let mut global_rest = rest;

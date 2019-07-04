@@ -25,6 +25,8 @@ use crate::representation::ElementRepr;
 use num_bigint::BigUint;
 use num_traits::{Zero};
 
+use public_interface::decode_utils::split;
+
 const BYTES_FOR_LENGTH_ENCODING: usize = 1;
 
 #[macro_use]
@@ -45,17 +47,11 @@ macro_rules! create_field {
 macro_rules! get_ab {
     ($rest:expr, $field:expr, $modulus_len: expr) => {
         {
-            if $rest.len() < $modulus_len {
-                return Err(());
-            }
-            let (a_encoding, rest) = $rest.split_at($modulus_len);
+            let (a_encoding, rest) = split($rest, $modulus_len, "get_a: input too short")?;
             let a = Fp::from_be_bytes(&$field, a_encoding, true).map_err(|_| ())?;
-            if rest.len() < $modulus_len {
-                return Err(());
-            }
-            let (b_encoding, rest) = rest.split_at($modulus_len);
+            let (b_encoding, rest) = split($rest, $modulus_len, "get_b: input too short")?;
             let b = Fp::from_be_bytes(&$field, b_encoding, true).map_err(|_| ())?;
-            
+
             (a, b, rest)
         }
     }
@@ -196,16 +192,10 @@ fn serialize_point<
 }
 
 fn get_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &[u8]), ()> {
-    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
-        return Err(());
-    }
-    let (modulus_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let (modulus_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "get_field_params: input too short")?;
     let modulus_len = modulus_len[0] as usize;
 
-    if rest.len() < modulus_len {
-        return Err(());
-    }
-    let (modulus_encoding, rest) = rest.split_at(modulus_len);
+    let (modulus_encoding, rest) = split(rest, modulus_len, "get_field_params: input too short")?;
     let modulus = BigUint::from_bytes_be(&modulus_encoding);
     if modulus.is_zero() {
         return Err(());
@@ -215,16 +205,9 @@ fn get_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &[u8]), ()> {
 }
 
 fn get_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ()> {
-    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
-        return Err(());
-    }
-
-    let (order_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let (order_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "get_curve_params: input too short")?;
     let order_len = order_len[0] as usize;
-    if rest.len() < order_len {
-        return Err(());
-    }
-    let (order_encoding, rest) = rest.split_at(order_len);
+    let (order_encoding, rest) = split(rest, order_len, "get_curve_params: input too short")?;
 
     Ok(((order_encoding, order_len), rest))
 }
@@ -240,15 +223,9 @@ fn decode_point_from_xy<
         curve: &'a WeierstrassCurve<'a, FE, F>
     ) -> Result<(CurvePoint<'a, FE, F>, &'a [u8]), ()>
 {
-    if bytes.len() < field_byte_len {
-        return Err(());
-    }
-    let (x_encoding, rest) = bytes.split_at(field_byte_len);
+    let (x_encoding, rest) = split(bytes, field_byte_len, "x_encoding: input too short")?;
     let x = Fp::from_be_bytes(curve.base_field, x_encoding, true).map_err(|_| ())?;
-    if rest.len() < field_byte_len {
-        return Err(());
-    }
-    let (y_encoding, rest) = rest.split_at(field_byte_len);
+    let (y_encoding, rest) = split(rest, field_byte_len, "y_encoding: input too short")?;
     let y = Fp::from_be_bytes(curve.base_field, y_encoding, true).map_err(|_| ())?;
     
     let p: CurvePoint<'a, FE, F> = CurvePoint::point_from_xy(&curve, x, y);
@@ -267,10 +244,7 @@ fn decode_scalar_representation<
     ) -> Result<(Vec<u64>, &'a [u8]), ()>
 {
     use crate::field::biguint_to_u64_vec;
-    if bytes.len() < order_byte_len {
-        return Err(());
-    }
-    let (encoding, rest) = bytes.split_at(order_byte_len);
+    let (encoding, rest) = split(bytes, order_byte_len, "decode_scalar_representation: input too short")?;
     let scalar = BigUint::from_bytes_be(&encoding);
     if &scalar >= order {
         return Err(());
@@ -300,38 +274,19 @@ fn parse_encodings<'a>(bytes: &'a [u8]) -> Result<(
         BigUint,
         usize,
         &'a [u8]), ()> {
-    if bytes.len() < BYTES_FOR_LENGTH_ENCODING {
-        return Err(());
-    }
-    let (modulus_len, rest) = bytes.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let (modulus_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "parse_encodings: input too short")?;
     let modulus_len = modulus_len[0] as usize;
-    if rest.len() < modulus_len {
-        return Err(());
-    }
-    let (modulus_encoding, rest) = rest.split_at(modulus_len);
+    let (modulus_encoding, rest) = split(rest, modulus_len, "modulus_encoding: input too short")?;
     let modulus = BigUint::from_bytes_be(&modulus_encoding);
     if modulus.is_zero() {
         return Err(());
     }
-    if rest.len() < modulus_len {
-        return Err(());
-    }
-    let (a_encoding, rest) = rest.split_at(modulus_len);
+    let (a_encoding, rest) = split(rest, modulus_len, "a_encoding: input too short")?;
+    let (b_encoding, rest) = split(rest, modulus_len, "b_encoding: input too short")?;
 
-    if rest.len() < modulus_len {
-        return Err(());
-    }
-    let (b_encoding, rest) = rest.split_at(modulus_len);
-
-    if rest.len() < BYTES_FOR_LENGTH_ENCODING {
-        return Err(());
-    }
-    let (order_len, rest) = rest.split_at(BYTES_FOR_LENGTH_ENCODING);
+    let (order_len, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "order_len: input too short")?;
     let order_len = order_len[0] as usize;
-    if rest.len() < order_len {
-        return Err(());
-    }
-    let (order_encoding, rest) = rest.split_at(order_len);
+    let (order_encoding, rest) = split(rest, order_len, "order_encoding: input too short")?;
     let order = BigUint::from_bytes_be(&order_encoding);
     if order.is_zero() {
         return Err(());

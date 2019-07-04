@@ -6,6 +6,30 @@ pub enum CurveType {
     BIsZero,
 }
 
+use crate::field::SizedPrimeField;
+use crate::representation::ElementRepr;
+use crate::traits::FieldElement;
+use crate::traits::ZeroAndOne;
+
+pub trait CurveParameters {
+    type BaseFieldElement: FieldElement + ZeroAndOne;
+    fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params;
+}
+
+pub struct CurveOverFpParameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub(crate) field: &'a F,
+}
+
+use crate::fp::Fp;
+
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for &'a CurveOverFpParameters<FE, F> {
+    type BaseFieldElement = Fp<'a, FE, F>;
+    fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params {
+        self.field
+    }
+}
+
+
 pub trait Group: Sized + Clone {
     fn add_assign(&mut self, other: &Self);
     fn add_assign_mixed(&mut self, other: &Self);

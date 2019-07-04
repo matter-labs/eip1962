@@ -3,6 +3,7 @@ use crate::traits::FieldElement;
 use crate::traits::BitIterator;
 use crate::traits::FieldExtension;
 use crate::field::SizedPrimeField;
+use crate::traits::ZeroAndOne;
 
 pub struct Fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) field: &'a F,
@@ -88,21 +89,21 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Display for Fp
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
-    #[inline(always)]
-    pub fn zero(field: &'a F) -> Self {
-        Self {
-            field: field,
-            repr: E::default()
-        }
-    }
+    // #[inline(always)]
+    // pub fn zero(field: &'a F) -> Self {
+    //     Self {
+    //         field: field,
+    //         repr: E::default()
+    //     }
+    // }
 
-    #[inline(always)]
-    pub fn one(field: &'a F) -> Self {
-        Self {
-            field: field,
-            repr: field.mont_r()
-        }
-    }
+    // #[inline(always)]
+    // pub fn one(field: &'a F) -> Self {
+    //     Self {
+    //         field: field,
+    //         repr: field.mont_r()
+    //     }
+    // }
 
     pub fn from_repr(field: &'a F, repr: E) -> Result<Self, RepresentationDecodingError> {
         if field.is_valid_repr(repr) {
@@ -152,6 +153,26 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
     fn reduce(&mut self) {
         if !self.field.is_valid_repr(self.repr) {
             self.repr.sub_noborrow(&self.field.modulus());
+        }
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp<'a, E, F> {
+    type Params = &'a F;
+
+    #[inline(always)]
+    fn zero(field: &'a F) -> Self {
+        Self {
+            field: field,
+            repr: E::default()
+        }
+    }
+
+    #[inline(always)]
+    fn one(field: &'a F) -> Self {
+        Self {
+            field: field,
+            repr: field.mont_r()
         }
     }
 }

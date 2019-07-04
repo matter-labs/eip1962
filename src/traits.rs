@@ -45,6 +45,12 @@ pub trait FieldElement:
     fn frobenius_map(&mut self, power: usize);
 }
 
+pub trait ZeroAndOne {
+    type Params;
+    fn zero(f: Self::Params) -> Self;
+    fn one(f: Self::Params) -> Self;
+}
+
 pub trait FieldExtension {
     const EXTENSION_DEGREE: usize;
 

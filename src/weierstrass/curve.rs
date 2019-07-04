@@ -3,44 +3,57 @@ use crate::fp::Fp;
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator};
 use super::{CurveType, Group};
+use super::CurveParameters;
+use crate::traits::ZeroAndOne;
 
-pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) base_field: &'a F,
-    pub(crate) a: Fp<'a, FE, F>,
-    pub(crate) b: Fp<'a, FE, F>,
+pub struct WeierstrassCurve<'a, C: CurveParameters> {
+    // pub(crate) base_field: CurveParameters::BaseFieldParameters,
+    pub(crate) a: C::BaseFieldElement,
+    pub(crate) b: C::BaseFieldElement,
     pub(crate) curve_type: CurveType,
     pub(crate) subgroup_order_repr: Vec<u64>,
+    pub(crate) params: &'a C
 }
 
+// pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, C: CurveParameters> {
+//     pub(crate) base_field: &'a F,
+//     pub(crate) a: Fp<'a, FE, F>,
+//     pub(crate) b: Fp<'a, FE, F>,
+//     pub(crate) curve_type: CurveType,
+//     pub(crate) subgroup_order_repr: Vec<u64>,
+//     pub(crate) params: 
+// }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> WeierstrassCurve<'a, FE, F> {
+
+impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
     pub fn new(
         subgroup_order: Vec<u64>,
-        a: Fp<'a, FE, F>, 
-        b: Fp<'a, FE, F>,
+        a: C::BaseFieldElement, 
+        b: C::BaseFieldElement,
+        params: &'a C
     ) -> Self {
         let mut curve_type = CurveType::Generic;
         if a.is_zero() {
             curve_type = CurveType::AIsZero;
         }
         Self {
-            base_field: &a.field,
             a: a,
             b: b,
             curve_type: curve_type,
-            subgroup_order_repr: subgroup_order
+            subgroup_order_repr: subgroup_order,
+            params: params
         }
     }
 }
 
-pub struct CurvePoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) curve: &'a WeierstrassCurve<'a, FE, F>,
-    pub(crate) x: Fp<'a, FE, F>,
-    pub(crate) y: Fp<'a, FE, F>,
-    pub(crate) z: Fp<'a, FE, F>,
+pub struct CurvePoint<'a, C: CurveParameters> {
+    pub(crate) curve: &'a WeierstrassCurve<'a, C>,
+    pub(crate) x: C::BaseFieldElement,
+    pub(crate) y: C::BaseFieldElement,
+    pub(crate) z: C::BaseFieldElement,
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Clone for CurvePoint<'a, FE, F> {
+impl<'a, C: CurveParameters> Clone for CurvePoint<'a, C> {
     #[inline(always)]
     fn clone(&self) -> Self {
         Self {
@@ -52,13 +65,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Clone for CurvePoint<'a
     }
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {    
-    pub fn zero(curve: &'a WeierstrassCurve<'a, FE, F>) -> Self {
+impl<'a, C: CurveParameters> CurvePoint<'a, C> {    
+    pub fn zero(curve: &'a WeierstrassCurve<C>) -> Self {
         Self {
             curve: curve,
-            x: Fp::<'a, FE, F>::zero(&curve.base_field),
-            y: Fp::<'a, FE, F>::one(&curve.base_field),
-            z: Fp::<'a, FE, F>::zero(&curve.base_field),
+            x: C::BaseFieldElement::zero(curve.params.params()),
+            y: C::BaseFieldElement::one(curve.params.params()),
+            z: C::BaseFieldElement::zero(curve.params.params()),
         }
     }
 
@@ -80,15 +93,15 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
     }
 
     pub fn point_from_xy(
-        curve: &'a WeierstrassCurve<'a, FE, F>,
-        x: Fp<'a, FE, F>, 
-        y: Fp<'a, FE, F>
-    ) -> CurvePoint<'a, FE, F> {
+        curve: &'a WeierstrassCurve<'a, C>,
+        x: C::BaseFieldElement, 
+        y: C::BaseFieldElement
+    ) -> CurvePoint<'a, C> {
         CurvePoint {
             curve: curve,
             x: x,
             y: y,
-            z: Fp::<'a, FE, F>::one(&curve.base_field)
+            z: C::BaseFieldElement::one(curve.params.params())
         }
     }
 
@@ -97,7 +110,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
             return true;
         }
 
-        let one = Fp::one(self.curve.base_field);
+        let one = C::BaseFieldElement::one(curve.params.params());
         
         self.z == one
     }
@@ -106,13 +119,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
         if self.is_zero() {
             return;
         }
-        let one = Fp::one(self.curve.base_field);
+        let one = C::BaseFieldElement::one(self.curve.params.params());
         if self.z == one {
             return;
         }
 
         // let z_inv = self.z.mont_inverse().unwrap();
-        let z_inv = self.z.inverse().unwrap_or_else(|| Fp::zero(self.curve.base_field));
+        let z_inv = self.z.inverse().unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
         let mut zinv_powered = z_inv.clone();
         zinv_powered.square();
 
@@ -126,9 +139,10 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
         self.z = one;
     }
 
-    pub fn into_xy(&self) -> (Fp<'a, FE, F>, Fp<'a, FE, F>) {
+    pub fn into_xy(&self) -> (C::BaseFieldElement, C::BaseFieldElement) {
         if self.is_zero() {
-            return (Fp::zero(self.curve.base_field), Fp::zero(self.curve.base_field));
+            return (C::BaseFieldElement::zero(self.curve.params.params()),
+                    C::BaseFieldElement::zero(self.curve.params.params()));
         }
 
         let mut point = self.clone();
@@ -137,12 +151,13 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
         (point.x, point.y)
     }
 
-    pub fn into_xy_from_homogenious(&self) -> (Fp<'a, FE, F>, Fp<'a, FE, F>) {
+    pub fn into_xy_from_homogenious(&self) -> (C::BaseFieldElement, C::BaseFieldElement) {
         if self.is_zero() {
-            return (Fp::zero(self.curve.base_field), Fp::zero(self.curve.base_field));
+            return (C::BaseFieldElement::zero(self.curve.params.params()),
+                    C::BaseFieldElement::zero(self.curve.params.params()) );
         }
 
-        let z_inv = self.z.inverse().unwrap_or_else(|| Fp::zero(self.curve.base_field));
+        let z_inv = self.z.inverse().unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
 
         let mut x = self.x.clone();
         x.mul_assign(&z_inv);
@@ -165,7 +180,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
             return;
         }
 
-        let one = Fp::<'a, FE, F>::one(&self.curve.base_field);
+        let one = C::BaseFieldElement::one(self.curve.params.params());
         if other.z == one {
             self.add_assign_mixed_generic_impl(&other);
             return;
@@ -206,9 +221,9 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
             // If we're adding -a and a together, self.z becomes zero as H becomes zero.
 
             if u1 == u2 {
-                self.x =  Fp::<'a, FE, F>::zero(&self.curve.base_field);
-                self.y = Fp::<'a, FE, F>::one(&self.curve.base_field);
-                self.z = Fp::<'a, FE, F>::zero(&self.curve.base_field);
+                self.x = C::BaseFieldElement::zero(self.curve.params.params());
+                self.y = C::BaseFieldElement::one(self.curve.params.params());
+                self.z = C::BaseFieldElement::zero(self.curve.params.params());
                 return;
             }
 
@@ -270,7 +285,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
             return;
         }
 
-        let one = Fp::one(self.curve.base_field);
+        let one = C::BaseFieldElement::one(self.curve.params.params());
         if other.z != one {
             self.add_assign_generic_impl(&other);
             return;
@@ -353,7 +368,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
     }
 
     fn mul_impl<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        let one = Fp::<'a, FE, F>::one(&self.curve.base_field);
+        let one = C::BaseFieldElement::one(self.curve.params.params());
         if self.z == one {
             return self.mul_impl_mixed_addition(exp);
         }
@@ -591,7 +606,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurvePoint<'a, FE, F> {
     }
 }
 
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> Group for CurvePoint<'a, FE, F> {
+impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
     fn add_assign(&mut self, other: &Self) {
         match self.curve.curve_type {
             _ => {

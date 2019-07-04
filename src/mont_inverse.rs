@@ -4,7 +4,7 @@ use crate::field::{SizedPrimeField};
 use crate::fp::Fp;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
-    pub fn mont_inverse(&self) -> Option<Self> {
+    pub(crate) fn mont_inverse(&self) -> Option<Self> {
         if self.is_zero() {
             None
         } else {
@@ -18,10 +18,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             let mut s = F::Repr::from(1);
             let mut k = 0u64;
 
-
+            let mut found = false;
             for _ in 0..E::NUM_LIMBS*128 {
             // while !v.is_zero() {
                 if v.is_zero() {
+                    found = true;
                     break;
                 }
                 if u.is_even() {
@@ -43,6 +44,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
                 }
 
                 k += 1;
+            }
+            if !found {
+                return None;
             }
 
             if r >= modulus {

@@ -222,62 +222,64 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
     }
 
     fn inverse(&self) -> Option<Self> {
-        if self.is_zero() {
-            None
-        } else {
-            // Guajardo Kumar Paar Pelzl
-            // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
-            // Algorithm 16 (BEA for Inversion in Fp)
+        self.mont_inverse()
 
-            let one = F::Repr::from(1);
+        // if self.is_zero() {
+        //     None
+        // } else {
+        //     // Guajardo Kumar Paar Pelzl
+        //     // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
+        //     // Algorithm 16 (BEA for Inversion in Fp)
 
-            let modulus = *self.field.modulus();
-            let mut u = self.repr;
-            let mut v = modulus;
-            let mut b = Self {
-                field: &self.field,
-                repr: *self.field.mont_r2()
-            }; // Avoids unnecessary reduction step.
-            let mut c = Self::zero(&self.field);
+        //     let one = F::Repr::from(1);
 
-            while u != one && v != one {
-                while u.is_even() {
-                    u.div2();
+        //     let modulus = *self.field.modulus();
+        //     let mut u = self.repr;
+        //     let mut v = modulus;
+        //     let mut b = Self {
+        //         field: &self.field,
+        //         repr: *self.field.mont_r2()
+        //     }; // Avoids unnecessary reduction step.
+        //     let mut c = Self::zero(&self.field);
 
-                    if b.repr.is_even() {
-                        b.repr.div2();
-                    } else {
-                        b.repr.add_nocarry(&modulus);
-                        b.repr.div2();
-                    }
-                }
+        //     while u != one && v != one {
+        //         while u.is_even() {
+        //             u.div2();
 
-                while v.is_even() {
-                    v.div2();
+        //             if b.repr.is_even() {
+        //                 b.repr.div2();
+        //             } else {
+        //                 b.repr.add_nocarry(&modulus);
+        //                 b.repr.div2();
+        //             }
+        //         }
 
-                    if c.repr.is_even() {
-                        c.repr.div2();
-                    } else {
-                        c.repr.add_nocarry(&modulus);
-                        c.repr.div2();
-                    }
-                }
+        //         while v.is_even() {
+        //             v.div2();
 
-                if v < u {
-                    u.sub_noborrow(&v);
-                    b.sub_assign(&c);
-                } else {
-                    v.sub_noborrow(&u);
-                    c.sub_assign(&b);
-                }
-            }
+        //             if c.repr.is_even() {
+        //                 c.repr.div2();
+        //             } else {
+        //                 c.repr.add_nocarry(&modulus);
+        //                 c.repr.div2();
+        //             }
+        //         }
 
-            if u == one {
-                Some(b)
-            } else {
-                Some(c)
-            }
-        }
+        //         if v < u {
+        //             u.sub_noborrow(&v);
+        //             b.sub_assign(&c);
+        //         } else {
+        //             v.sub_noborrow(&u);
+        //             c.sub_assign(&b);
+        //         }
+        //     }
+
+        //     if u == one {
+        //         Some(b)
+        //     } else {
+        //         Some(c)
+        //     }
+        // }
     }
 
     #[inline]

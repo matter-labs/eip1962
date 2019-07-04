@@ -2,7 +2,7 @@ use crate::fp::Fp;
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension};
-
+use crate::traits::ZeroAndOne;
 
 // this implementation assumes extension using polynomial u^2 + m = 0
 pub struct Fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
@@ -46,7 +46,37 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp2<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
-    pub fn zero(extension_field: &'a Extension2<'a, E, F>) -> Self {
+    // pub fn zero(extension_field: &'a Extension2<'a, E, F>) -> Self {
+    //     let zero = Fp::zero(extension_field.field);
+        
+    //     Self {
+    //         c0: zero.clone(),
+    //         c1: zero,
+    //         extension_field: extension_field
+    //     }
+    // }
+
+    // pub fn one(extension_field: &'a Extension2<'a, E, F>) -> Self {
+    //     let zero = Fp::zero(extension_field.field);
+    //     let one = Fp::one(extension_field.field);
+        
+    //     Self {
+    //         c0: one,
+    //         c1: zero,
+    //         extension_field: extension_field
+    //     }
+    // }
+
+    pub fn mul_by_fp(&mut self, element: &Fp<'a, E, F>) {
+        self.c0.mul_assign(&element);
+        self.c1.mul_assign(&element);
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp2<'a, E, F> {
+    type Params = &'a Extension2<'a, E, F>;
+
+    fn zero(extension_field: &'a Extension2<'a, E, F>) -> Self {
         let zero = Fp::zero(extension_field.field);
         
         Self {
@@ -56,7 +86,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
         }
     }
 
-    pub fn one(extension_field: &'a Extension2<'a, E, F>) -> Self {
+    #[inline(always)]
+    fn one(extension_field: &'a Extension2<'a, E, F>) -> Self {
         let zero = Fp::zero(extension_field.field);
         let one = Fp::one(extension_field.field);
         
@@ -65,11 +96,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
             c1: zero,
             extension_field: extension_field
         }
-    }
-
-    pub fn mul_by_fp(&mut self, element: &Fp<'a, E, F>) {
-        self.c0.mul_assign(&element);
-        self.c1.mul_assign(&element);
     }
 }
 

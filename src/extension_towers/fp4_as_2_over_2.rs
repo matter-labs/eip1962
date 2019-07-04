@@ -1,7 +1,7 @@
 use crate::fp::Fp;
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, FieldExtension};
+use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
 use super::fp2::{Fp2, Extension2};
 
 pub struct Fp4<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
@@ -45,26 +45,26 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp4<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp4<'a, E, F> {
-    pub fn zero(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
-        let zero = Fp2::zero(extension_field.field);
+    // pub fn zero(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
+    //     let zero = Fp2::zero(extension_field.field);
         
-        Self {
-            c0: zero.clone(),
-            c1: zero,
-            extension_field: extension_field
-        }
-    }
+    //     Self {
+    //         c0: zero.clone(),
+    //         c1: zero,
+    //         extension_field: extension_field
+    //     }
+    // }
 
-    pub fn one(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
-        let zero = Fp2::zero(extension_field.field);
-        let one = Fp2::one(extension_field.field);
+    // pub fn one(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
+    //     let zero = Fp2::zero(extension_field.field);
+    //     let one = Fp2::one(extension_field.field);
         
-        Self {
-            c0: one,
-            c1: zero,
-            extension_field: extension_field
-        }
-    }
+    //     Self {
+    //         c0: one,
+    //         c1: zero,
+    //         extension_field: extension_field
+    //     }
+    // }
 
     pub fn cyclotomic_exp<S: AsRef<[u64]>>(&self, exp: S) -> Self {
         let mut res = Self::one(self.extension_field);
@@ -92,6 +92,31 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp4<'a, E, F> {
         }
 
         res
+    }
+}
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp4<'a, E, F> {
+    type Params = &'a Extension2Over2<'a, E, F>;
+
+    fn zero(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
+        let zero = Fp2::zero(extension_field.field);
+        
+        Self {
+            c0: zero.clone(),
+            c1: zero,
+            extension_field: extension_field
+        }
+    }
+
+    fn one(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
+        let zero = Fp2::zero(extension_field.field);
+        let one = Fp2::one(extension_field.field);
+        
+        Self {
+            c0: one,
+            c1: zero,
+            extension_field: extension_field
+        }
     }
 }
 

@@ -14,17 +14,16 @@ mod fp;
 mod weierstrass;
 mod mont_inverse;
 mod multiexp;
-// mod api;
 mod extension_towers;
 mod pairings;
 mod sliding_window_exp;
 mod errors;
 mod gas_meter;
 
-pub mod public_interface;
+// pub mod public_interface;
 
-#[cfg(test)]
-mod test;
+// #[cfg(test)]
+// mod test;
 
 // pub use api::{API, PrecompileAPI};
 
@@ -45,6 +44,8 @@ mod tests {
     use crate::traits::FieldElement;
     use crate::multiexp::{peppinger};
     use crate::weierstrass::Group;
+    use crate::traits::ZeroAndOne;
+    use crate::weierstrass::{CurveParameters, CurveOverFpParameters};
 
     const MULTIEXP_NUM_POINTS: usize = 100;
 
@@ -60,10 +61,14 @@ mod tests {
         b_coeff.double();
         b_coeff.add_assign(&one);
 
+        let params = CurveOverFpParameters::new(&field);
+
         let curve = WeierstrassCurve::new(
             group_order, 
             a_coeff, 
-            b_coeff);
+            b_coeff,
+            &params
+        );
 
         let mut two = one.clone();
         two.double();
@@ -155,10 +160,14 @@ mod tests {
         b_coeff.double();
         b_coeff.add_assign(&one);
 
+        let params = CurveOverFpParameters::new(&field);
+
         let curve = WeierstrassCurve::new(
             group_order, 
             a_coeff, 
-            b_coeff);
+            b_coeff,
+            &params
+        );
 
         let mut two = one.clone();
         two.double();
@@ -233,10 +242,14 @@ mod tests {
         b_coeff.double();
         b_coeff.add_assign(&one);
 
+        let params = CurveOverFpParameters::new(&field);
+
         let curve = WeierstrassCurve::new(
             group_order, 
             a_coeff, 
-            b_coeff);
+            b_coeff,
+            &params
+        );
 
         let mut two = one.clone();
         two.double();

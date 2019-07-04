@@ -110,7 +110,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             return true;
         }
 
-        let one = C::BaseFieldElement::one(curve.params.params());
+        let one = C::BaseFieldElement::one(self.curve.params.params());
         
         self.z == one
     }

@@ -16,14 +16,49 @@ pub trait CurveParameters {
     fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params;
 }
 
-pub struct CurveOverFpParameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) field: &'a F,
-}
 
 use crate::fp::Fp;
-
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for &'a CurveOverFpParameters<FE, F> {
+pub(crate) struct CurveOverFpParameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub(crate) field: &'a F,
+}
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFpParameters<'a, FE, F> {
     type BaseFieldElement = Fp<'a, FE, F>;
+    fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params {
+        self.field
+    }
+}
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFpParameters<'a, FE, F> {
+    pub(crate) fn new(field: &'a F) -> Self {
+        Self {
+            field
+        }
+    }
+}
+
+use crate::extension_towers::fp2;
+pub(crate) struct CurveOverFp2Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub(crate) field: &'a fp2::Extension2<'a, FE, F>,
+}
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFp2Parameters<'a, FE, F> {
+    type BaseFieldElement = fp2::Fp2<'a, FE, F>;
+    fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params {
+        self.field
+    }
+}
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFp2Parameters<'a, FE, F> {
+    pub(crate) fn new(field: &'a fp2::Extension2<'a, FE, F>) -> Self {
+        Self {
+            field
+        }
+    }
+}
+
+use crate::extension_towers::fp3;
+pub struct CurveOverFp3Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub(crate) field: &'a fp3::Extension3<'a, FE, F>,
+}
+impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFp3Parameters<'a, FE, F> {
+    type BaseFieldElement = fp3::Fp3<'a, FE, F>;
     fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params {
         self.field
     }
@@ -43,5 +78,5 @@ pub trait Group: Sized + Clone {
 }
 
 pub mod curve;
-pub mod twist;
-pub mod cubic_twist;
+// pub mod twist;
+// pub mod cubic_twist;

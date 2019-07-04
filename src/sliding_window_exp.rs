@@ -140,7 +140,7 @@ mod tests {
     fn test_windowed_exp() {
         use crate::field::{U256Repr, new_field};
         use crate::fp::Fp;
-        use crate::traits::{FieldElement};
+        use crate::traits::{FieldElement, ZeroAndOne};
         use super::WindowExpBase;
 
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();

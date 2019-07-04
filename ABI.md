@@ -30,12 +30,10 @@ The precompile provides multiple elliptic curve operations. The full set of oper
 
 Call data must be a correctly encoded ABI data string of two elements:
 
-```
 |Value  |Type       |
 |-------|-----------|
 |op_code|uint8      |
 |op_data|bytes_array|
-```
 
 The first byte of the input specifies the type of the operation. The remaining data is passed to the corresponding operation handler.
 
@@ -47,7 +45,6 @@ Incorrect data input is always handled and returns an error.
 
 `op_data` for G1 operations must have the following form:
 
-```
 |Value              |Length                    |
 |-------------------|--------------------------|
 |field_length       |1 byte                    |
@@ -56,7 +53,6 @@ Incorrect data input is always handled and returns an error.
 |b                  |`field_length` bytes      |
 |group_order_length |1 bytes                   |
 |group_order        |`group_order_length` bytes|
-```
 
 ### G2 operations
 

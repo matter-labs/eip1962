@@ -36,10 +36,10 @@ pub struct BnInstance<
     pub(crate) base_field: &'a F,
     pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
     pub(crate) curve_twist: &'a WeierstrassCurve<'a, CTW>,
-    fp2_extension: &'a Extension2<'a, FE, F>,
-    fp6_extension: &'a Extension3Over2<'a, FE, F>,
-    fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
-    non_residue_in_p_minus_one_over_2: Fp2<'a, FE, F>
+    pub(crate) fp2_extension: &'a Extension2<'a, FE, F>,
+    pub(crate) fp6_extension: &'a Extension3Over2<'a, FE, F>,
+    pub(crate) fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
+    pub(crate) non_residue_in_p_minus_one_over_2: Fp2<'a, FE, F>
 }
 
 impl<

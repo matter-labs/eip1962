@@ -15,17 +15,17 @@ pub struct MNT4Instance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub x: Vec<u64>,
-    pub x_is_negative: bool,
-    pub exp_w0: Vec<u64>,
-    pub exp_w1: Vec<u64>,
-    pub exp_w0_is_negative: bool,
-    pub base_field: &'a F,
-    pub curve: &'a WeierstrassCurve<'a, CB>,
-    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
-    pub twist: Fp2<'a, FE, F>,
-    fp2_extension: &'a Extension2<'a, FE, F>,
-    fp4_extension: &'a Extension2Over2<'a, FE, F>,
+    pub(crate) x: Vec<u64>,
+    pub(crate) x_is_negative: bool,
+    pub(crate) exp_w0: Vec<u64>,
+    pub(crate) exp_w1: Vec<u64>,
+    pub(crate) exp_w0_is_negative: bool,
+    pub(crate) base_field: &'a F,
+    pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
+    pub(crate) curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub(crate) twist: Fp2<'a, FE, F>,
+    pub(crate) fp2_extension: &'a Extension2<'a, FE, F>,
+    pub(crate) fp4_extension: &'a Extension2Over2<'a, FE, F>,
 }
 
 struct PrecomputedG1<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {

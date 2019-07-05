@@ -147,6 +147,85 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         Self::from_repr(field, repr)
     }
 
+    pub(crate) fn eea_inverse(&self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            // Guajardo Kumar Paar Pelzl
+            // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
+            // Algorithm 16 (BEA for Inversion in Fp)
+
+            // also modified to run in a limited time
+
+            let one = F::Repr::from(1);
+
+            let modulus = *self.field.modulus();
+            let mut u = self.repr;
+            let mut v = modulus;
+            let mut b = Self {
+                field: &self.field,
+                repr: *self.field.mont_r2()
+            }; // Avoids unnecessary reduction step.
+            let mut c = Self::zero(&self.field);
+
+            let max_iterations = 2*self.field.mont_power();
+            let mut found = false;
+
+            for _ in 0..max_iterations {
+                if u == one || v == one {
+                    found = true;
+                    break;
+                }
+
+                for _ in 0..max_iterations {
+                    if !u.is_even() {
+                        break;
+                    }
+                    u.div2();
+
+                    if b.repr.is_even() {
+                        b.repr.div2();
+                    } else {
+                        b.repr.add_nocarry(&modulus);
+                        b.repr.div2();
+                    }
+                }
+
+                for _ in 0..max_iterations {
+                    if !v.is_even() {
+                        break;
+                    }
+                    v.div2();
+
+                    if c.repr.is_even() {
+                        c.repr.div2();
+                    } else {
+                        c.repr.add_nocarry(&modulus);
+                        c.repr.div2();
+                    }
+                }
+
+                if v < u {
+                    u.sub_noborrow(&v);
+                    b.sub_assign(&c);
+                } else {
+                    v.sub_noborrow(&u);
+                    c.sub_assign(&b);
+                }
+            }
+
+            if !found {
+                return None;
+            }
+
+            if u == one {
+                Some(b)
+            } else {
+                Some(c)
+            }
+        }
+    }
+
     /// Subtracts the modulus from this element if this element is not in the
     /// field. Only used interally.
     #[inline(always)]
@@ -223,63 +302,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
 
     fn inverse(&self) -> Option<Self> {
         self.mont_inverse()
-
-        // if self.is_zero() {
-        //     None
-        // } else {
-        //     // Guajardo Kumar Paar Pelzl
-        //     // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
-        //     // Algorithm 16 (BEA for Inversion in Fp)
-
-        //     let one = F::Repr::from(1);
-
-        //     let modulus = *self.field.modulus();
-        //     let mut u = self.repr;
-        //     let mut v = modulus;
-        //     let mut b = Self {
-        //         field: &self.field,
-        //         repr: *self.field.mont_r2()
-        //     }; // Avoids unnecessary reduction step.
-        //     let mut c = Self::zero(&self.field);
-
-        //     while u != one && v != one {
-        //         while u.is_even() {
-        //             u.div2();
-
-        //             if b.repr.is_even() {
-        //                 b.repr.div2();
-        //             } else {
-        //                 b.repr.add_nocarry(&modulus);
-        //                 b.repr.div2();
-        //             }
-        //         }
-
-        //         while v.is_even() {
-        //             v.div2();
-
-        //             if c.repr.is_even() {
-        //                 c.repr.div2();
-        //             } else {
-        //                 c.repr.add_nocarry(&modulus);
-        //                 c.repr.div2();
-        //             }
-        //         }
-
-        //         if v < u {
-        //             u.sub_noborrow(&v);
-        //             b.sub_assign(&c);
-        //         } else {
-        //             v.sub_noborrow(&u);
-        //             c.sub_assign(&b);
-        //         }
-        //     }
-
-        //     if u == one {
-        //         Some(b)
-        //     } else {
-        //         Some(c)
-        //     }
-        // }
     }
 
     #[inline]

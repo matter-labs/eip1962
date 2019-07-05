@@ -60,7 +60,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
 
             // phase 2
 
-            for _ in 0..(k-self.field.mont_power()) {
+            let mont_power_param = self.field.mont_power();
+            if k < mont_power_param {
+                return None;
+            }
+
+            for _ in 0..(k - mont_power_param) {
                 if r.is_even() {
                     r.div2();
                 } else {
@@ -111,7 +116,7 @@ mod tests {
             rng.fill_bytes(&mut be_repr[..]);
             be_repr[0] = be_repr[0] & 0x1f;
             let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
-            let inverse = element.inverse().unwrap();
+            let inverse = element.eea_inverse().unwrap();
             let mont_inverse = element.mont_inverse().unwrap();
             assert_eq!(inverse, mont_inverse);
         }

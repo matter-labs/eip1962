@@ -269,4 +269,19 @@ mod tests {
         assert!(res_double_and_add.0 == wnaf_res.0);
         assert!(res_double_and_add.1 == wnaf_res.1);
     }
+
+    #[test]
+    fn test_behavior_of_inversion() {
+        // make a ring using modulus that is two primes product
+        let a = BigUint::from_str_radix("65689266139792731237813120905490767641", 10).unwrap();
+        let b = BigUint::from_str_radix("17059670649062850132785761051500928741", 10).unwrap();
+        let product = a * &b;
+        let field = new_field::<U256Repr>(&product.to_str_radix(10), 10).unwrap();
+        let fe = Fp::from_be_bytes(&field, &b.to_bytes_be(), true).unwrap();
+        // inverse should not exist
+        let inverse = fe.eea_inverse();
+        assert!(inverse.is_none());
+        let mont_inverse = fe.mont_inverse();
+        assert!(mont_inverse.is_none());
+    }
 }

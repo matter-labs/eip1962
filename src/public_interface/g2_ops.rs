@@ -108,7 +108,10 @@ pub struct PublicG2Api;
 impl G2Api for PublicG2Api {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let modulus_limbs = (modulus.bits() / 64) + 1;
+        let mut modulus_limbs = (modulus.bits() / 64) + 1;
+        if modulus_limbs < 4 {
+            modulus_limbs = 4;
+        }
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -116,8 +119,11 @@ impl G2Api for PublicG2Api {
 
                 result
             },
+            EXTENSION_DEGREE_3 => {
+                return Err(ApiError::InputError("Extension degree 3 is not yet implemented".to_owned()));
+            },
             _ => {
-                unimplemented!("Extension degree other than 2 is not yet implemented");
+                return Err(ApiError::InputError("Invalid extension degree".to_owned()));
             }
         };
 
@@ -126,7 +132,10 @@ impl G2Api for PublicG2Api {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let modulus_limbs = (modulus.bits() / 64) + 1;
+        let mut modulus_limbs = (modulus.bits() / 64) + 1;
+        if modulus_limbs < 4 {
+            modulus_limbs = 4;
+        }
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -134,8 +143,11 @@ impl G2Api for PublicG2Api {
 
                 result
             },
+            EXTENSION_DEGREE_3 => {
+                return Err(ApiError::InputError("Extension degree 3 is not yet implemented".to_owned()));
+            },
             _ => {
-                unimplemented!("Extension degree other than 2 is not yet implemented");
+                return Err(ApiError::InputError("Invalid extension degree".to_owned()));
             }
         };
 
@@ -144,7 +156,10 @@ impl G2Api for PublicG2Api {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let modulus_limbs = (modulus.bits() / 64) + 1;
+        let mut modulus_limbs = (modulus.bits() / 64) + 1;
+        if modulus_limbs < 4 {
+            modulus_limbs = 4;
+        }
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -152,8 +167,11 @@ impl G2Api for PublicG2Api {
 
                 result
             },
+            EXTENSION_DEGREE_3 => {
+                return Err(ApiError::InputError("Extension degree 3 is not yet implemented".to_owned()));
+            },
             _ => {
-                unimplemented!("Extension degree other than 2 is not yet implemented");
+                return Err(ApiError::InputError("Invalid extension degree".to_owned()));
             }
         };
 

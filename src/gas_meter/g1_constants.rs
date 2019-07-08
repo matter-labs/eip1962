@@ -1,0 +1,11 @@
+pub(crate) const FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: u64 = 1;
+pub(crate) const FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: u64 = 1;
+pub(crate) const FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: u64 = 1;
+pub(crate) const ORDER_UNITS_LINEAR_TERM: u64 = 100;
+pub(crate) const G1_ADDITION_CONSTANT: u64 = 300;
+pub(crate) const G1_MULTIPLICATION_CONSTANT: u64 = 300;
+pub(crate) const G1_MULTIEXP_CONSTANT: u64 = 300;
+pub(crate) const MULTIEXP_DISCOUNT: u64 = 3;
+
+
+

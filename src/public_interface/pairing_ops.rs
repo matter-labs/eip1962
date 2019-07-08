@@ -47,7 +47,7 @@ impl PairingApi for PublicPairingApi {
         use crate::field::*;
         let (_curve_type, rest) = split(bytes, CURVE_TYPE_LENGTH, "Input should be longer than curve type encoding")?;
         let (_, modulus, _) = parse_modulus_and_length(&rest)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, bytes, pair); 
 

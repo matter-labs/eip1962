@@ -120,7 +120,7 @@ pub struct PublicG1Api;
 impl G1Api for PublicG1Api {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, add_points); 
 
@@ -129,7 +129,7 @@ impl G1Api for PublicG1Api {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
         
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, mul_point); 
 
@@ -138,7 +138,7 @@ impl G1Api for PublicG1Api {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, multiexp); 
 

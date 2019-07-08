@@ -3,6 +3,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum ApiError {
+    Overflow,
     UnexpectedZero(String),
     InputError(String),
     DivisionByZero,
@@ -13,6 +14,7 @@ pub enum ApiError {
 impl Error for ApiError {
     fn description(&self) -> &str {
         match *self {
+            ApiError::Overflow => "overflow",
             ApiError::UnexpectedZero(_) => "parameter expected to be non-zero",
             ApiError::InputError(_) => "invalid input parameters",
             ApiError::DivisionByZero => "division by zero",
@@ -25,6 +27,7 @@ impl Error for ApiError {
 impl fmt::Display for ApiError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
+            ApiError::Overflow => write!(f, "overflow"),
             ApiError::UnexpectedZero(descr) => write!(f, "parameter expected to be non-zero, {}", descr),
             ApiError::InputError(descr) => write!(f, "invalid input parameters, {}", descr),
             ApiError::DivisionByZero => write!(f, "division by zero"),

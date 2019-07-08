@@ -19,10 +19,10 @@ mod extension_towers;
 mod pairings;
 mod sliding_window_exp;
 mod errors;
-mod gas_meter;
 mod constants;
 
 pub mod public_interface;
+pub mod gas_meter;
 
 #[cfg(test)]
 mod test;

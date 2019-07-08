@@ -112,7 +112,7 @@ pub struct PublicG2Api;
 impl G2Api for PublicG2Api {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -133,7 +133,7 @@ impl G2Api for PublicG2Api {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -154,7 +154,7 @@ impl G2Api for PublicG2Api {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let modulus_limbs = num_libs_for_modulus(&modulus)?;
+        let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {

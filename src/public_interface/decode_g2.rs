@@ -53,12 +53,6 @@ pub(crate) fn create_fp2_extension<
     extension_2.calculate_frobenius_coeffs(modulus).map_err(|_| {
         ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
     })?;
-
-    // // TODO: Check if need to delay until gas is estimated
-    // let coeffs = frobenius_calculator_fp2(&extension_2).map_err(|_| {
-    //     ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
-    // })?;
-    // extension_2.frobenius_coeffs_c1 = coeffs;
     
     Ok((extension_2, rest))
 }
@@ -89,12 +83,6 @@ pub(crate) fn create_fp3_extension<
     extension_3.calculate_frobenius_coeffs(modulus).map_err(|_| {
         ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
     })?;
-
-    // let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus, &extension_3).map_err(|_| {
-    //     ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
-    // })?;
-    // extension_3.frobenius_coeffs_c1 = coeffs_1;
-    // extension_3.frobenius_coeffs_c2 = coeffs_2;
     
     Ok((extension_3, rest))
 }

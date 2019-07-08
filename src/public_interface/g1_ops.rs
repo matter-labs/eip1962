@@ -44,7 +44,7 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, _, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
-        let (order_repr, order_len, _, rest) = parse_group_order_from_encoding(rest)?;
+        let (order_repr, _order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp_params = CurveOverFpParameters::new(&field);
 

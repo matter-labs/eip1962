@@ -37,7 +37,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
-        let (order_repr, order_len, _, rest) = parse_group_order_from_encoding(rest)?;
+        let (order_repr, _order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 

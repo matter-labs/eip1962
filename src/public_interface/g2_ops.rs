@@ -82,6 +82,10 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
 
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
+        }
+
         let expected_pair_len = 4*modulus_len + order_len;
         if rest.len() != expected_pair_len * num_pairs {
             return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
@@ -108,10 +112,7 @@ pub struct PublicG2Api;
 impl G2Api for PublicG2Api {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let mut modulus_limbs = (modulus.bits() / 64) + 1;
-        if modulus_limbs < 4 {
-            modulus_limbs = 4;
-        }
+        let modulus_limbs = num_libs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -132,10 +133,7 @@ impl G2Api for PublicG2Api {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let mut modulus_limbs = (modulus.bits() / 64) + 1;
-        if modulus_limbs < 4 {
-            modulus_limbs = 4;
-        }
+        let modulus_limbs = num_libs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {
@@ -156,10 +154,7 @@ impl G2Api for PublicG2Api {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (modulus, _, extension_degree, _, _) = parse_modulus_and_extension_degree(&bytes)?;
-        let mut modulus_limbs = (modulus.bits() / 64) + 1;
-        if modulus_limbs < 4 {
-            modulus_limbs = 4;
-        }
+        let modulus_limbs = num_libs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = match extension_degree {
             EXTENSION_DEGREE_2 => {

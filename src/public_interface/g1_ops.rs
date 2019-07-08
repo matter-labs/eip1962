@@ -87,6 +87,10 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
 
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
+        }
+
         let expected_pair_len = 2*modulus_len + order_len;
         if rest.len() != expected_pair_len * num_pairs {
             return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
@@ -116,10 +120,7 @@ pub struct PublicG1Api;
 impl G1Api for PublicG1Api {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
-        let mut modulus_limbs = (modulus.bits() / 64) + 1;
-        if modulus_limbs < 4 {
-            modulus_limbs = 4;
-        }
+        let modulus_limbs = num_libs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, add_points); 
 
@@ -128,10 +129,7 @@ impl G1Api for PublicG1Api {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
-        let mut modulus_limbs = (modulus.bits() / 64) + 1;
-        if modulus_limbs < 4 {
-            modulus_limbs = 4;
-        }
+        let modulus_limbs = num_libs_for_modulus(&modulus)?;
         
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, mul_point); 
 
@@ -140,10 +138,7 @@ impl G1Api for PublicG1Api {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
-        let mut modulus_limbs = (modulus.bits() / 64) + 1;
-        if modulus_limbs < 4 {
-            modulus_limbs = 4;
-        }
+        let modulus_limbs = num_libs_for_modulus(&modulus)?;
 
         let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, G1ApiImplementation, bytes, multiexp); 
 

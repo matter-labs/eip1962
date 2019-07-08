@@ -254,3 +254,15 @@ pub(crate) fn get_base_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &
 
     Ok(((modulus, modulus_len), rest))
 }
+
+pub(crate) fn num_libs_for_modulus(modulus: &BigUint) -> Result<usize, ApiError> {
+    let mut modulus_limbs = (modulus.bits() / 64) + 1;
+    if modulus_limbs > 16 {
+        return Err(ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())));
+    }
+    if modulus_limbs < 4 {
+        modulus_limbs = 4;
+    }
+
+    Ok(modulus_limbs)
+}

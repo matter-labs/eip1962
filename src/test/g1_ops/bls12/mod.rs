@@ -101,7 +101,6 @@ extern crate csv;
 use hex::{encode};
 use csv::{Writer};
 
-
 #[test]
 fn dump_g1_mul_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");

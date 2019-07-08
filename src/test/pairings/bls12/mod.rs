@@ -201,6 +201,31 @@ fn test_bls12_pairings_from_vectors() {
     }
 }
 
+extern crate hex;
+extern crate csv;
+
+use hex::{encode};
+use csv::{Writer};
+
+#[test]
+fn dump_pairing_vectors() {
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    assert!(curves.len() != 0);
+    let mut writer = Writer::from_path("src/test/test_vectors/bls12/pairing.csv").expect("must open a test file");
+    writer.write_record(&["input", "result"]).expect("must write header");
+    for (curve, _) in curves.into_iter() {
+        let mut input_data = vec![OPERATION_G1_MUL];
+        let calldata = assemble_single_curve_params(curve.clone());
+        input_data.extend(calldata);
+        let expected_result = vec![1u8];
+        writer.write_record(&[
+            prepend_0x(&encode(&input_data[..])), 
+            prepend_0x(&encode(&expected_result[..]))],
+        ).expect("must write a record");
+    }
+    writer.flush().expect("must finalize writing");
+}
+
 // use rust_test::Bencher;
 
 // #[bench]

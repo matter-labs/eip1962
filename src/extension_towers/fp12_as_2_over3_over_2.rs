@@ -434,7 +434,6 @@ pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>
 }
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 use num_integer::Integer;
 use num_traits::Zero;
 use crate::sliding_window_exp::{WindowExpBase};
@@ -461,9 +460,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         base: &WindowExpBase<Fp2<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
+        use crate::constants::ONE_BIGUINT;
+        use crate::constants::SIX_BIGUINT;
 
-        let one = BigUint::from(1u64);
-        let six = BigUint::from(6u64);
+        // let one = BigUint::from(1u64);
+        // let six = BigUint::from(6u64);
     
         // Fq2(u + 1)**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);
@@ -475,25 +476,31 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
 
         // 1
         {
-            let power = q_power.clone() - &one;
-            let (power, rem) = power.div_rem(&six);
-            debug_assert!(rem.is_zero());
+            let power = q_power.clone() - &*ONE_BIGUINT;
+            let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+            if !rem.is_zero() {
+                return Err(());
+            }
             powers.push(biguint_to_u64_vec(power));
         }
         // 2 & 3
         for _ in 1..3 {
             q_power *= &modulus;
-            let power = q_power.clone() - &one;
-            let (power, rem) = power.div_rem(&six);
-            debug_assert!(rem.is_zero());
+            let power = q_power.clone() - &*ONE_BIGUINT;
+            let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+            if !rem.is_zero() {
+                return Err(());
+            }
             powers.push(biguint_to_u64_vec(power));
         }
         // 6
         {
             q_power *= q_power.clone();
-            let power = q_power.clone() - &one;
-            let (power, rem) = power.div_rem(&six);
-            debug_assert!(rem.is_zero());
+            let power = q_power.clone() - &*ONE_BIGUINT;
+            let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+            if !rem.is_zero() {
+                return Err(());
+            }
             powers.push(biguint_to_u64_vec(power));
         }
 

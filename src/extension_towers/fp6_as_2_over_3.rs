@@ -324,27 +324,33 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
         // base: &WindowExpBase<Fp<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
+        use crate::constants::ONE_BIGUINT;
+        use crate::constants::SIX_BIGUINT;
 
-        let one = BigUint::from(1u64);
-        let divisor = BigUint::from(6u64);
+        // let one = BigUint::from(1u64);
+        // let divisor = BigUint::from(6u64);
     
         // NON_REDISUE**(((q^0) - 1) / 6)
         let non_residue = self.field.non_residue.clone();
         let f_0 = Fp::one(self.field.field);
 
         let mut q_power = modulus.clone();
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
+        let power = q_power.clone() - &*ONE_BIGUINT;
+        let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+        if !rem.is_zero() {
+            return Err(());
+        }
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
         q_power *= &modulus;
         let f_2 = Fp::zero(self.field.field);
 
         q_power *= &modulus;
-        let power = q_power.clone() - &one;
-        let (power, rem) = power.div_rem(&divisor);
-        debug_assert!(rem.is_zero());
+        let power = q_power.clone() - &*ONE_BIGUINT;
+        let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+        if !rem.is_zero() {
+            return Err(());
+        }
         let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
 
         let f_4 = Fp::zero(self.field.field);

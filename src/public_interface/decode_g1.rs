@@ -2,11 +2,12 @@ use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::field::{SizedPrimeField, field_from_modulus, PrimeField};
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::traits::ZeroAndOne;
+// use crate::traits::ZeroAndOne;
 use crate::weierstrass::CurveParameters;
 
 use super::constants::*;
 use super::decode_fp::*;
+use super::decode_utils::*;
 
 use num_bigint::BigUint;
 use num_traits::{Zero};
@@ -78,19 +79,6 @@ pub(crate) fn serialize_g1_point<
     result.extend(serialize_fp_fixed_len(modulus_len, &y)?);
 
     Ok(result)
-}
-
-pub(crate) fn get_base_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &[u8]), ApiError> {
-    let (modulus_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
-    let modulus_len = modulus_len[0] as usize;
-
-    let (modulus_encoding, rest) = split(rest, modulus_len, "Input is not long enough to get modulus")?;
-    let modulus = BigUint::from_bytes_be(&modulus_encoding);
-    if modulus.is_zero() {
-        return Err(ApiError::UnexpectedZero("Modulus can not be zero".to_owned()));
-    }
-
-    Ok(((modulus, modulus_len), rest))
 }
 
 pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ApiError> {

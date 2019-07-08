@@ -35,8 +35,8 @@ use super::decode_fp::*;
 use super::decode_g2::*;
 use super::constants::*;
 
-#[macro_use]
-use super::api_specialization_macro::*;
+// #[macro_use]
+// use super::api_specialization_macro::*;
 
 use crate::errors::ApiError;
 

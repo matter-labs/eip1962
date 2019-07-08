@@ -246,7 +246,6 @@ pub struct Extension2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
 }
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 use num_integer::Integer;
 use num_traits::Zero;
 
@@ -270,8 +269,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         // base: &WindowExpBase<Fp<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
-        let one = BigUint::from(1u64);
-        let two = BigUint::from(2u64);
+        use crate::constants::ONE_BIGUINT;
+        use crate::constants::TWO_BIGUINT;
 
         let non_residue = self.non_residue.clone();
 
@@ -280,9 +279,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
 
         // NONRESIDUE**(((q^1) - 1) / 2)
         let q_power = modulus;
-        let power = q_power - &one;
-        let (power, rem) = power.div_rem(&two);
-        debug_assert!(rem.is_zero());
+        let power = q_power - &*ONE_BIGUINT;
+        let (power, rem) = power.div_rem(&*TWO_BIGUINT);
+        if !rem.is_zero() {
+            return Err(());
+        }
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
         self.frobenius_coeffs_c1 = [f_0, f_1];

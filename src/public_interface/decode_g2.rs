@@ -4,9 +4,8 @@ use crate::extension_towers::*;
 use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
 use crate::representation::{ElementRepr};
-use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp3};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
-use crate::traits::{FieldElement, ZeroAndOne};
+use crate::traits::FieldElement;
 use crate::weierstrass::CurveParameters;
 use crate::field::biguint_to_u64_vec;
 

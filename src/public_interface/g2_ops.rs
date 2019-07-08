@@ -1,11 +1,11 @@
-use crate::weierstrass::{Group, CurveParameters, CurveOverFp2Parameters};
+use crate::weierstrass::{Group, CurveOverFp2Parameters};
 use crate::weierstrass::curve::WeierstrassCurve;
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 
 use crate::field::*;
 
-use super::decode_utils::parse_modulus_and_extension_degree;
+use super::decode_utils::*;
 use super::decode_g2::*;
 use super::decode_g1::*;
 use super::constants::*;
@@ -79,20 +79,18 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
         let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params);
 
-        let expected_pair_len = 4*modulus_len + order_len;
-        if rest.len() % expected_pair_len != 0 {
-            return Err(ApiError::InputError("invalid input array length, not even number of points encoded".to_owned()));
-        }
+        let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
+        let num_pairs = num_pairs_encoding[0] as usize;
 
-        let expected_pairs = rest.len() / expected_pair_len;
-        if expected_pairs == 0 {
-            return Err(ApiError::InputError("should encode at least one pair".to_owned()));
+        let expected_pair_len = 4*modulus_len + order_len;
+        if rest.len() != expected_pair_len * num_pairs {
+            return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
         }
 
         let mut global_rest = rest;
         let mut pairs = vec![];
 
-        for _ in 0..expected_pairs {
+        for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
             pairs.push((p, scalar));

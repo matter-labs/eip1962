@@ -431,9 +431,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         base: &WindowExpBase<Fp2<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
+        use crate::constants::ONE_BIGUINT;
+        use crate::constants::THREE_BIGUINT;
 
-        let one = BigUint::from(1u64);
-        let three = BigUint::from(3u64);
+        // let one = BigUint::from(1u64);
+        // let three = BigUint::from(3u64);
 
         // NON_RESIDUE**(((q^0) - 1) / 3)
         // let non_residue = extension.non_residue.clone();
@@ -444,16 +446,22 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         let mut q_power = modulus.clone();
 
         {
-            let power = q_power.clone() - &one;
-            let (power, rem) = power.div_rem(&three);
-            debug_assert!(rem.is_zero());
+            let power = q_power.clone() - &*ONE_BIGUINT;
+            let (power, rem) = power.div_rem(&*THREE_BIGUINT);
+            if !rem.is_zero() {
+                return Err(());
+            }
+            // debug_assert!(rem.is_zero());
             powers.push(biguint_to_u64_vec(power));
         }
         for _ in 1..3 {
             q_power *= &modulus;
-            let power = q_power.clone() - &one;
-            let (power, rem) = power.div_rem(&three);
-            debug_assert!(rem.is_zero());
+            let power = q_power.clone() - &*ONE_BIGUINT;
+            let (power, rem) = power.div_rem(&*THREE_BIGUINT);
+            if !rem.is_zero() {
+                return Err(());
+            }
+            // debug_assert!(rem.is_zero());
             powers.push(biguint_to_u64_vec(power));
         }
 

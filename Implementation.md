@@ -121,9 +121,9 @@ Possible variations: explicitly encode length of the BigEndian byte representati
 
 At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
 
+- `take(BYTES_FOR_LENGTH_ENCODING)` to get `expected_number_pairs`
 - calculate expected byte length of one `(point, scalar)` pair as `expected_pair_len = 2*modulus_length + subgroup_order_length`
-- ensure that length of the byte array is a multiple of `expected_pair_len`, otherwise return error
-- calculate number of pairs by dividing the rest of the byte array by `expected_pair_len`
+- ensure that length of the byte array is `== expected_number_pairs*expected_pair_len`, otherwise return error
 - in a loop:
   - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
   - ensure that `P0.x < base_field_modulus`, otherwise return error

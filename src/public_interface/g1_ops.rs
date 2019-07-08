@@ -15,14 +15,15 @@
 /// Assumptions:
 /// - one byte for length encoding
 
-use crate::weierstrass::{Group, CurveParameters, CurveOverFpParameters};
+use crate::weierstrass::{Group, CurveOverFpParameters};
 use crate::weierstrass::curve::{WeierstrassCurve};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 use crate::field::*;
+use super::constants::*;
 
-#[macro_use]
-use super::api_specialization_macro::*;
+// #[macro_use]
+// use super::api_specialization_macro::*;
 
 use super::decode_g1::*;
 use super::decode_utils::*;
@@ -83,14 +84,12 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
 
         let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params);
 
-        let expected_pair_len = 2*modulus_len + order_len;
-        if rest.len() % expected_pair_len != 0 {
-            return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
-        }
+        let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
+        let num_pairs = num_pairs_encoding[0] as usize;
 
-        let expected_pairs = rest.len() / expected_pair_len;
-        if expected_pairs == 0 {
-            return Err(ApiError::InputError("Number of pairs must be > 0".to_owned()));
+        let expected_pair_len = 2*modulus_len + order_len;
+        if rest.len() != expected_pair_len * num_pairs {
+            return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
         }
 
         // let mut acc = CurvePoint::zero(&curve);
@@ -98,7 +97,7 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let mut global_rest = rest;
         let mut pairs = vec![];
 
-        for _ in 0..expected_pairs {
+        for _ in 0..num_pairs {
             let (p, local_rest) = decode_g1_point_from_xy(global_rest, modulus_len, &curve)?;
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
             pairs.push((p, scalar));

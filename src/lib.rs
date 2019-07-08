@@ -5,6 +5,7 @@ extern crate num_bigint;
 extern crate num_integer;
 extern crate num_traits;
 extern crate repr_derive;
+extern crate lazy_static;
 
 mod arithmetics;
 mod traits;
@@ -19,6 +20,7 @@ mod pairings;
 mod sliding_window_exp;
 mod errors;
 mod gas_meter;
+mod constants;
 
 pub mod public_interface;
 

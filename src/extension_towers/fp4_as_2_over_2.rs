@@ -297,9 +297,8 @@ pub struct Extension2Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
 }
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
-// use num_integer::Integer;
-// use num_traits::Zero;
+use num_integer::Integer;
+use num_traits::Zero;
 // use crate::sliding_window_exp::{WindowExpBase};
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F> {
@@ -323,8 +322,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         // base: &WindowExpBase<Fp<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
+        use crate::constants::ONE_BIGUINT;
+        use crate::constants::FOUR_BIGUINT;
 
-        let one = BigUint::from(1u64);
+        // let one = BigUint::from(1u64);
     
         // NON_REDISUE**(((q^0) - 1) / 4)
         let non_residue = self.field.non_residue.clone();
@@ -332,12 +333,20 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
 
         // NON_REDISUE**(((q^1) - 1) / 4)
         let mut q_power = modulus.clone();
-        let power = (q_power.clone() - &one) >> 2;
+        let power = q_power.clone() - &*ONE_BIGUINT;
+        let (power, rem) = power.div_rem(&*FOUR_BIGUINT);
+        if !rem.is_zero() {
+            return Err(());
+        }
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
         // NON_REDISUE**(((q^2) - 1) / 4)
         q_power *= &modulus;
-        let power = (q_power.clone() - &one) >> 2;
+        let power = q_power.clone() - &*ONE_BIGUINT;
+        let (power, rem) = power.div_rem(&*FOUR_BIGUINT);
+        if !rem.is_zero() {
+            return Err(());
+        }
         let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 
         let f_3 = Fp::zero(self.field.field);

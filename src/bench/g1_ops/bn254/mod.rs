@@ -6,6 +6,7 @@ use crate::weierstrass::curve::*;
 use crate::traits::FieldElement;
 use crate::traits::ZeroAndOne;
 use rust_test::Bencher;
+use rust_test::black_box;
 use crate::multiexp::{peppinger};
 use crate::weierstrass::Group;
 use num_bigint::BigUint;
@@ -562,6 +563,19 @@ fn bench_peppinger_bn254_g2(b: &mut Bencher) {
     }).collect();
 
     b.iter(move || peppinger(pairs.clone()));
+}
+
+#[bench]
+fn bench_bn254_power(b: &mut Bencher) {
+    let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    let power = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208582", 10).unwrap();
+    let mut be_repr = vec![0u8; 32];
+    be_repr[31] = 3u8;
+    let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
+
+    let repr = black_box(biguint_to_u64_vec(power.clone()));
+    
+    b.iter(|| element.pow(&repr));
 }
 
 // #[bench]

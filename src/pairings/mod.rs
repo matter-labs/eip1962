@@ -478,7 +478,6 @@ pub(crate) fn frobenius_calculator_fp12<'a, FE: ElementRepr, F: SizedPrimeField<
 
 pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
     fn is_zero(repr: &[u64]) -> bool {
-
         for el in repr.iter() {
             if *el != 0 {
                 return false;
@@ -506,19 +505,49 @@ pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
         }
     }
 
+    fn sub_noborrow(repr: &mut [u64], value: u64) {
+        let mut borrow = 0;
+
+        repr[0] = crate::arithmetics::sbb(repr[0], value, &mut borrow);
+
+        for a in repr.iter_mut().skip(1) {
+            *a = crate::arithmetics::sbb(*a, 0u64, &mut borrow);
+        }
+    }
+
+    fn add_nocarry(repr: &mut [u64], value: u64) {
+        let mut carry = 0;
+
+        repr[0] = crate::arithmetics::adc(repr[0], value, &mut carry);
+
+        for a in repr.iter_mut().skip(1) {
+            *a = crate::arithmetics::adc(*a, 0u64, &mut carry);
+        }
+    }
+
+    if repr.len() == 0 {
+        return vec![];
+    }
+
     let mut res = vec![];
     let mut e = repr.to_vec();
+
+    const WINDOW: u64 = 1u64;
+    const MIDPOINT: u64 = 1u64 << WINDOW;
+    const MIDPOINT_I64: i64 = MIDPOINT as i64;
+    const MASK: u64 = 1u64 << (WINDOW + 1u64);
+
     while !is_zero(&e) {
         let z: i64;
         if is_odd(&e) {
-            z = 2 - (e[0] % 4) as i64;
+            z = MIDPOINT_I64 - ((e[0] % MASK) as i64);
             if z >= 0 {
-                e[0] -= z as u64;
+                sub_noborrow(&mut e, z as u64);
             } else {
-                e[0] += -z as u64;
+                add_nocarry(&mut e, (-z) as u64);
             }
         } else {
-            z = 0;
+            z = 0i64;
         }
         res.push(z);
         div2(&mut e);

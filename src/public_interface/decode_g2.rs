@@ -7,10 +7,8 @@ use crate::representation::{ElementRepr};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::traits::FieldElement;
 use crate::weierstrass::CurveParameters;
-use crate::field::biguint_to_u64_vec;
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 
 use super::decode_fp::*;
 use super::constants::*;
@@ -41,9 +39,7 @@ pub(crate) fn create_fp2_extension<
     }
 
     {
-        let modulus_minus_one_by_2 = modulus.clone() - BigUint::from_u32(1).expect("is valid bigint");
-        let modulus_minus_one_by_2 = modulus_minus_one_by_2 >> 1;
-        let not_a_square = is_non_square(&fp_non_residue, biguint_to_u64_vec(modulus_minus_one_by_2));
+        let not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2);
         if !not_a_square {
             return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
         }
@@ -77,6 +73,13 @@ pub(crate) fn create_fp3_extension<
     let (fp_non_residue, rest): (Fp<'a, FE, F>, _) = decode_fp(&rest, field_byte_len, base_field)?;
     if fp_non_residue.is_zero() {
         return Err(ApiError::UnexpectedZero("Fp2 non-residue can not be zero".to_owned()));
+    }
+
+    {
+        let not_a_cube = is_non_nth_root(&fp_non_residue, modulus.clone(), 3);
+        if !not_a_cube {
+            return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
+        }
     }
 
     let mut extension_3 = fp3::Extension3::new(fp_non_residue);

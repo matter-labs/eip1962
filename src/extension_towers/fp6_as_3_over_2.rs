@@ -395,7 +395,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
 }
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 use num_integer::Integer;
 use num_traits::Zero;
 use crate::sliding_window_exp::{WindowExpBase};

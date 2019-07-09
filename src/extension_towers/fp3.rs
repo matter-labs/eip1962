@@ -342,7 +342,6 @@ pub struct Extension3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
 }
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 use num_integer::Integer;
 use num_traits::Zero;
 

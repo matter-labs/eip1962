@@ -11,28 +11,11 @@ use crate::traits::FieldElement;
 use crate::representation::{ElementRepr};
 use crate::field::biguint_to_u64_vec;
 use crate::traits::ZeroAndOne;
+use crate::constants::*;
 
 use num_bigint::BigUint;
-// use num_traits::Num;
 use num_integer::Integer;
 use num_traits::Zero;
-
-// pub(crate) fn legendre_symbol<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, S: AsRef<[u64]>>
-// (
-//     element: & Fp<'a, FE, F>,
-//     modulus_minus_one_by_2: S
-// ) -> LegendreSymbol {
-//     if element.is_zero() {
-//         return LegendreSymbol::Zero;
-//     }
-//     let l = element.pow(modulus_minus_one_by_2);
-//     let one = Fp::one(element.field);
-//     if l == one {
-//         return LegendreSymbol::QuadraticResidue;
-//     } else {
-//         return LegendreSymbol::QuadraticNonResidue;
-//     }
-// }
 
 pub(crate) fn is_non_nth_root<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>
 (
@@ -44,7 +27,7 @@ pub(crate) fn is_non_nth_root<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>
         return false;
     }
     let mut power = modulus;
-    power -= BigUint::from(1u64);
+    power -= &*ONE_BIGUINT;
     let divisor = BigUint::from(n);
     let (power, rem) = power.div_rem(&divisor);
     if !rem.is_zero() {
@@ -70,7 +53,7 @@ pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
     }
     let mut power = modulus.clone();
     power *= &modulus;
-    power -= BigUint::from(1u64);
+    power -= &*ONE_BIGUINT;
     let divisor = BigUint::from(n);
     let (power, rem) = power.div_rem(&divisor);
     if !rem.is_zero() {
@@ -97,7 +80,7 @@ pub(crate) fn is_non_nth_root_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
     let mut power = modulus.clone();
     power *= &modulus;
     power *= &modulus;
-    power -= BigUint::from(1u64);
+    power -= &*ONE_BIGUINT;
     let divisor = BigUint::from(n);
     let (power, rem) = power.div_rem(&divisor);
     if !rem.is_zero() {
@@ -112,22 +95,22 @@ pub(crate) fn is_non_nth_root_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
     }
 }
 
-pub(crate) fn is_non_square<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, S: AsRef<[u64]>>
-(
-    element: & Fp<'a, FE, F>,
-    modulus_minus_one_by_2: S
-) -> bool {
-    if element.is_zero() {
-        return false;
-    }
-    let l = element.pow(modulus_minus_one_by_2);
-    let one = Fp::one(element.field);
-    if l == one {
-        return false;
-    } else {
-        return true;
-    }
-}
+// pub(crate) fn is_non_square<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, S: AsRef<[u64]>>
+// (
+//     element: & Fp<'a, FE, F>,
+//     modulus_minus_one_by_2: S
+// ) -> bool {
+//     if element.is_zero() {
+//         return false;
+//     }
+//     let l = element.pow(modulus_minus_one_by_2);
+//     let one = Fp::one(element.field);
+//     if l == one {
+//         return false;
+//     } else {
+//         return true;
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

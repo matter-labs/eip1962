@@ -121,7 +121,6 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             return;
         }
 
-        // let z_inv = self.z.mont_inverse().unwrap();
         let z_inv = self.z.inverse().unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
         let mut zinv_powered = z_inv.clone();
         zinv_powered.square();

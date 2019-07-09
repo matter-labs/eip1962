@@ -298,7 +298,6 @@ pub struct Extension2Over3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
 }
 
 use num_bigint::BigUint;
-use num_traits::FromPrimitive;
 use num_integer::Integer;
 use num_traits::Zero;
 // use crate::sliding_window_exp::{WindowExpBase};

@@ -4,7 +4,7 @@ use crate::test::parsers::*;
 
 use super::*;
 
-fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters) -> (Vec<u8>, usize, usize) {
+pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -38,7 +38,7 @@ fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters) -> (Vec<
     (calldata, modulus_length, group_size_length)
 }
 
-fn assemble_single_point_scalar_pair(
+pub(crate) fn assemble_single_point_scalar_pair(
     pair: JsonG1PointScalarMultiplicationPair,
     modulus_len: usize,
     group_len: usize,
@@ -67,6 +67,34 @@ fn assemble_single_point_scalar_pair(
     let mut result = vec![];
     result.extend(result_x_encoded.into_iter());
     result.extend(result_y_encoded.into_iter());
+
+    (calldata, result)
+}
+
+pub(crate) fn assemble_single_points_addition_pair(
+    pair: JsonG1PointScalarMultiplicationPair,
+    modulus_len: usize,
+    group_len: usize,
+) -> (Vec<u8>, Vec<u8>) {
+    // - X1,
+    // - Y1,
+    // - X2,
+    // - Y2,
+
+    // - Result X
+    // - Result Y
+    let mut calldata = vec![];
+    let x_encoded = pad_for_len_be(pair.base_x.to_bytes_be(), modulus_len);
+    let y_encoded = pad_for_len_be(pair.base_y.to_bytes_be(), modulus_len);
+    calldata.extend(x_encoded.into_iter());
+    calldata.extend(y_encoded.into_iter());
+
+    let result_x_encoded = pad_for_len_be(pair.result_x.to_bytes_be(), modulus_len);
+    let result_y_encoded = pad_for_len_be(pair.result_y.to_bytes_be(), modulus_len);
+
+    let mut result = vec![];
+    calldata.extend(result_x_encoded.into_iter());
+    calldata.extend(result_y_encoded.into_iter());
 
     (calldata, result)
 }

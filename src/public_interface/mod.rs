@@ -50,7 +50,7 @@ impl API {
                 PublicPairingApi::pair(&rest)
             },
             _ => {
-                return Err(ApiError::InputError("Unknown operation type type".to_owned()));
+                return Err(ApiError::InputError("Unknown operation type".to_owned()));
             }
         }
     }

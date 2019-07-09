@@ -1,4 +1,5 @@
 extern crate test as rust_test;
+use self::rust_test::Bencher;
 
 use num_bigint::BigUint;
 use num_traits::FromPrimitive;
@@ -13,12 +14,11 @@ use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use num_traits::Num;
 use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
-use crate::weierstrass::{Group};
+use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-use crate::weierstrass::twist::{TwistPoint, WeierstrassCurveTwist};
 use crate::pairings::{PairingEngine, TwistType};
 use crate::representation::ElementRepr;
-use rust_test::Bencher;
+use crate::field::biguint_to_u64_vec;
 
 use crate::pairings::bn::{BnInstance};
 
@@ -32,7 +32,7 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
-    let mut extension_2 = Extension2::new(fp_non_residue);
+    let mut extension_2 = Extension2::new(fp_non_residue.clone());
 
     let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
     extension_2.frobenius_coeffs_c1 = coeffs;
@@ -47,7 +47,7 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     fp2_non_residue.c0 = fp_9.clone();
     fp2_non_residue.c1 = one.clone();
 
-    let mut extension_6 = Extension3Over2::new(fp2_non_residue);
+    let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
 
     let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
 
@@ -69,8 +69,11 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     let a_fp = Fp::zero(&base_field);
     let a_fp2 = Fp2::zero(&extension_2);
 
-    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp);
-    let twist = WeierstrassCurveTwist::new(group_order.clone(), &extension_2, a_fp2, b_fp2);
+    let fp_params = CurveOverFpParameters::new(&base_field);
+    let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
+    let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
 
     let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -98,7 +101,7 @@ fn bench_bn254_pairing(b: &mut Bencher) {
 
     let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
     // println!("P.x = {}", p.x.into_repr());
-    let q = TwistPoint::point_from_xy(&twist, q_x, q_y);
+    let q = CurvePoint::point_from_xy(&twist, q_x, q_y);
     // println!("Q.x = {}", q.x.c0.repr);
     // println!("Q.y = {}", q.y.c0.repr);
 

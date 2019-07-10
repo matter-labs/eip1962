@@ -2,7 +2,7 @@ extern crate hex;
 
 #[test]
 fn run_on_input() {
-    let filename = "slow-unit-73a3ff99982d484fed518f581ba518394962c29f";
+    let filename = "slow-unit-d1de8a55ab85319cf987ebdd8561f94c05ae1c44";
     use std::time::Instant;
     use std::io::Read;
     use std::fs::File;

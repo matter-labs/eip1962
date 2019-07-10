@@ -4,7 +4,7 @@ extern crate byteorder;
 extern crate num_bigint;
 extern crate num_integer;
 extern crate num_traits;
-extern crate repr_derive;
+extern crate eth_pairings_repr_derive;
 extern crate lazy_static;
 
 mod arithmetics;

@@ -1,4 +1,4 @@
-use repr_derive::*;
+use eth_pairings_repr_derive::*;
 
 #[derive(ElementRepresentation)]
 #[NumberOfLimbs = "4"]

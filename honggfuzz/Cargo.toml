@@ -25,3 +25,9 @@ path = "fuzz_targets/fuzz_target_api.rs"
 [[bin]]
 name = "fuzz_target_gas"
 path = "fuzz_targets/fuzz_target_gas.rs"
+
+[profile.dev]
+opt-level = 2
+debug = true  
+panic = 'unwind'
+overflow-checks = true

@@ -1,6 +1,6 @@
 use crate::weierstrass::Group;
-use crate::representation::ElementRepr;
-use crate::representation::IntoWnaf;
+// use crate::representation::ElementRepr;
+// use crate::representation::IntoWnaf;
 
 // // start with naive implementation. It'll not work faster than
 // // a trivial one before wNAF is implemented

@@ -275,3 +275,36 @@ pub(crate) fn num_units_for_group_order(order: &BigUint) -> Result<usize, ApiErr
 
     Ok(limbs)
 }
+
+pub(crate) fn decode_scalar_with_bit_limit<
+    'a
+    >
+    (
+        bytes: &'a [u8], 
+        bit_limit: usize,
+    ) -> Result<(BigUint, &'a [u8]), ApiError>
+{
+    let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
+    let max_length_for_bits = (bit_limit + 7) / 8;
+    let length = length_encoding[0] as usize;
+    if length > max_length_for_bits {
+        return Err(ApiError::InputError(format!("Scalar is too larget for bit length, file {}, line {}", file!(), line!())));
+    }
+    let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
+    let x = BigUint::from_bytes_be(&be_encoding);
+    let num_bits = x.bits();
+    if num_bits > bit_limit {
+        return Err(ApiError::InputError(format!("Number of bits for scalar is too large, file {}, line {}", file!(), line!())));
+    }
+
+    Ok((x, rest))
+}
+
+pub(crate) fn calculate_hamming_weight(representation: &[u64]) -> u32 {
+    let mut weight = 0;
+    for el in representation.iter() {
+        weight += el.count_ones();
+    }
+
+    weight
+}

@@ -34,6 +34,7 @@ use super::decode_utils::*;
 use super::decode_fp::*;
 use super::decode_g2::*;
 use super::constants::*;
+use super::sane_limits::*;
 
 // #[macro_use]
 // use super::api_specialization_macro::*;
@@ -186,7 +187,12 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
         let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
 
-        let (x, rest) = decode_biguint_with_length(&rest)?;
+        let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_BLS12_X_BIT_LENGTH)?;
+        let x = biguint_to_u64_vec(x);
+        if calculate_hamming_weight(&x) > MAX_BLS12_X_HAMMING {
+            return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
+        }
+
         let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
         let x_is_negative = match x_sign[0] {
             SIGN_PLUS => false,
@@ -198,6 +204,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
+
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+        }
 
         let mut global_rest = rest;
 
@@ -222,7 +232,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = Bls12Instance {
-            x: biguint_to_u64_vec(x),
+            x: x,
             x_is_negative: x_is_negative,
             twist_type: twist_type,
             base_field: &base_field,
@@ -251,7 +261,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
     }
 
     fn pair_bn(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
-        use num_bigint::BigUint;
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
         use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
@@ -350,27 +359,33 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
         let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
 
-        let (u, rest) = decode_biguint_with_length(&rest)?;
-        let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
+        let (u, rest) = decode_scalar_with_bit_limit(&rest, MAX_BN_U_BIT_LENGTH)?;
+        let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get U sign encoding")?;
         let u_is_negative = match u_sign[0] {
             SIGN_PLUS => false,
             SIGN_MINUS => true,
             _ => {
-                return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
+                return Err(ApiError::InputError("U sign is not encoded properly".to_owned()));
             },
         };
 
-        let one = BigUint::from(1u64);
-        let six = BigUint::from(6u64);
-        let two = BigUint::from(2u64);
+        use crate::constants::*;
+        let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) + &*TWO_BIGUINT;
+        let six_u_plus_two = biguint_to_u64_vec(six_u_plus_two);
+        if calculate_hamming_weight(&six_u_plus_two) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
+            return Err(ApiError::InputError("6*U + 2 has too large hamming weight".to_owned()));
+        }
 
-        let six_u_plus_two = (six * &u) + &two;
-        let p_minus_one_over_2 = (modulus.clone() - &one) >> 1;
+        let p_minus_one_over_2 = (modulus.clone() - &*ONE_BIGUINT) >> 1;
 
         let fp2_non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(&biguint_to_u64_vec(p_minus_one_over_2));
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
+
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+        }
 
         let mut global_rest = rest;
 
@@ -396,7 +411,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let engine = BnInstance {
             u: biguint_to_u64_vec(u),
-            six_u_plus_2: biguint_to_u64_vec(six_u_plus_two),
+            six_u_plus_2: six_u_plus_two,
             u_is_negative: u_is_negative,
             twist_type: twist_type,
             base_field: &base_field,
@@ -493,7 +508,11 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
         let g2_curve = WeierstrassCurve::new(order_repr, a_fp3, b_fp3, &fp3_params);
 
-        let (x, rest) = decode_biguint_with_length(&rest)?;
+        let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
+        let x = biguint_to_u64_vec(x);
+        if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
+            return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
+        }
         let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
         let x_is_negative = match x_sign[0] {
             SIGN_PLUS => false,
@@ -503,8 +522,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        let (exp_w0, rest) = decode_biguint_with_length(&rest)?;
-        let (exp_w1, rest) = decode_biguint_with_length(&rest)?;
+        let (exp_w0, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
+        let (exp_w1, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
 
         let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
         let exp_w0_is_negative = match exp_w0_sign[0] {
@@ -517,6 +536,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
+
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+        }
 
         let mut global_rest = rest;
 
@@ -541,7 +564,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = MNT6Instance {
-            x: biguint_to_u64_vec(x),
+            x: x,
             x_is_negative: x_is_negative,
             exp_w0: biguint_to_u64_vec(exp_w0),
             exp_w1: biguint_to_u64_vec(exp_w1),
@@ -639,7 +662,12 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
         let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
 
-        let (x, rest) = decode_biguint_with_length(&rest)?;
+        let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
+        let x = biguint_to_u64_vec(x);
+        if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
+            return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
+        }
+
         let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
         let x_is_negative = match x_sign[0] {
             SIGN_PLUS => false,
@@ -649,8 +677,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        let (exp_w0, rest) = decode_biguint_with_length(&rest)?;
-        let (exp_w1, rest) = decode_biguint_with_length(&rest)?;
+        let (exp_w0, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
+        let (exp_w1, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
 
         let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
         let exp_w0_is_negative = match exp_w0_sign[0] {
@@ -663,6 +691,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
+
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+        }
 
         let mut global_rest = rest;
 
@@ -687,7 +719,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = MNT4Instance {
-            x: biguint_to_u64_vec(x),
+            x: x,
             x_is_negative: x_is_negative,
             exp_w0: biguint_to_u64_vec(exp_w0),
             exp_w1: biguint_to_u64_vec(exp_w1),

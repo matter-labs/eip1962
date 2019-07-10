@@ -1,14 +1,5 @@
 use crate::errors::ApiError;
 
-pub(crate) fn calculate_hamming_weight(representation: &[u64]) -> u32 {
-    let mut weight = 0;
-    for el in representation.iter() {
-        weight += el.count_ones();
-    }
-
-    weight
-}
-
 // pub(crate) fn generate_powers(parameter: u64, max_power: usize) -> Result<Vec<u64>, ApiError> {
 //     let mut powers = vec![];
 //     powers.push(1u64);

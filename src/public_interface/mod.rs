@@ -10,6 +10,7 @@ mod g1_ops;
 mod g2_ops;
 mod pairing_ops;
 
+mod sane_limits;
 pub mod constants;
 
 pub use pairing_ops::{PairingApi, PublicPairingApi};
@@ -38,10 +39,10 @@ impl API {
                 PublicG1Api::multiexp(&rest)
             },
             OPERATION_G2_ADD => {
-                PublicG2Api::multiexp(&rest)
+                PublicG2Api::add_points(&rest)
             },
             OPERATION_G2_MUL => {
-                PublicG2Api::multiexp(&rest)
+                PublicG2Api::mul_point(&rest)
             },
             OPERATION_G2_MULTIEXP => {
                 PublicG2Api::multiexp(&rest)

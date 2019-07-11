@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 edition = "2018"
 description = "Fixed size big integer representation derivation macro"
-license = "Apache 2.0"
+homepage = "https://github.com/matter-labs/eip1962"
+license = "Apache-2.0"
 license-file = "LICENSE"
 
 [lib]

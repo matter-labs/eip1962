@@ -6,7 +6,6 @@ edition = "2018"
 description = "Fixed size big integer representation derivation macro"
 homepage = "https://github.com/matter-labs/eip1962"
 license = "Apache-2.0"
-license-file = "LICENSE"
 
 [lib]
 proc-macro = true

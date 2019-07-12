@@ -498,7 +498,6 @@ mod tests {
     use crate::extension_towers::fp6_as_2_over_3::{Extension2Over3};
     use num_traits::Num;
     use crate::weierstrass::{CurveOverFpParameters, CurveOverFp3Parameters};
-    use crate::pairings::{frobenius_calculator_fp3, frobenius_calculator_fp6_as_2_over_3};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::pairings::{PairingEngine};
     use crate::field::{biguint_to_u64_vec};
@@ -511,11 +510,7 @@ mod tests {
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-
-        let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
-        extension_3.frobenius_coeffs_c1 = coeffs_1;
-        extension_3.frobenius_coeffs_c2 = coeffs_2;
-        extension_3.frobenius_coeffs_are_calculated = true;
+        extension_3.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -523,10 +518,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-
-        let coeffs = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
-        extension_6.frobenius_coeffs_c1 = coeffs;
-        extension_6.frobenius_coeffs_are_calculated = true;
+        extension_6.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let b_fp = BigUint::from_str_radix("106700080510851735677967319632585352256454251201367587890185989362936000262606668469523074", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -634,11 +626,7 @@ mod tests {
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-
-        let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
-        extension_3.frobenius_coeffs_c1 = coeffs_1;
-        extension_3.frobenius_coeffs_c2 = coeffs_2;
-        extension_3.frobenius_coeffs_are_calculated = true;
+        extension_3.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -646,10 +634,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-
-        let coeffs = frobenius_calculator_fp6_as_2_over_3(modulus, &extension_6).unwrap();
-        extension_6.frobenius_coeffs_c1 = coeffs;
-        extension_6.frobenius_coeffs_are_calculated = true;
+        extension_6.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let b_fp = BigUint::from_str_radix("17764315118651679038286329069295091506801468118146712649886336045535808055361274148466772191243305528312843236347777260247138934336850548243151534538734724191505953341403463040067571652261229308333392040104884438208594329793895206056414", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();

@@ -492,7 +492,6 @@ mod tests {
     use crate::extension_towers::fp2::{Fp2, Extension2};
     use crate::extension_towers::fp4_as_2_over_2::{Extension2Over2};
     use num_traits::Num;
-    use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp4_as_2_over_2};
     use crate::weierstrass::{Group, CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::pairings::{PairingEngine};
@@ -505,7 +504,7 @@ mod tests {
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone());
+        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -516,10 +515,7 @@ mod tests {
                     Fp::zero(&base_field)];
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-
-        let coeffs = frobenius_calculator_fp4_as_2_over_2(modulus, &extension_4).unwrap();
-        extension_4.frobenius_coeffs_c1 = coeffs;
-        extension_4.frobenius_coeffs_are_calculated = true;
+        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let b_fp = BigUint::from_str_radix("423894536526684178289416011533888240029318103673896002803341544124054745019340795360841685", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -640,10 +636,7 @@ mod tests {
         fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-
-        let coeffs = frobenius_calculator_fp4_as_2_over_2(modulus, &extension_4).unwrap();
-        extension_4.frobenius_coeffs_c1 = coeffs;
-        extension_4.frobenius_coeffs_are_calculated = true;
+        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let b_fp = BigUint::from_str_radix("28798803903456388891410036793299405764940372360099938340752576406393880372126970068421383312482853541572780087363938442377933706865252053507077543420534380486492786626556269083255657125025963825610840222568694137138741554679540", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -740,7 +733,7 @@ mod tests {
         let mut q2 = q.mul(vec![12345678]);
         q2.normalize();
 
-        let pairing_result = engine.pair(&[p.clone()], &[q.clone()]).unwrap();
+        // let pairing_result = engine.pair(&[p.clone()], &[q.clone()]).unwrap();
 
         let ans1 = engine.pair(&[p.clone()], &[q2]).unwrap();
         let ans2 = engine.pair(&[p2], &[q.clone()]).unwrap();

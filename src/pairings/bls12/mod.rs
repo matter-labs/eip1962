@@ -405,18 +405,18 @@ impl<
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;
-    use crate::field::{U384Repr, U256Repr, new_field};
+    use crate::field::{U384Repr, new_field};
     use crate::fp::Fp;
     use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp2::{Fp2, Extension2};
     use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
     use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
     use num_traits::Num;
-    use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::pairings::{PairingEngine};
     use crate::field::{biguint_to_u64_vec};
+    use crate::sliding_window_exp::WindowExpBase;
 
     #[test]
     fn test_bls12_381_pairing() {
@@ -429,7 +429,7 @@ mod tests {
         fp_non_residue.negate(); // non-residue is -1
 
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone());
+        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -437,21 +437,13 @@ mod tests {
         fp2_non_residue.c0 = one.clone();
         fp2_non_residue.c1 = one.clone();
 
+        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
+
         let mut extension_6 = Extension3Over2::new(fp2_non_residue);
-
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
-
-        extension_6.frobenius_coeffs_c1 = coeffs_c1;
-        extension_6.frobenius_coeffs_c2 = coeffs_c2;
-        extension_6.frobenius_coeffs_are_calculated = true;
-
-        let fp2_non_residue = Fp2::zero(&extension_2);
+        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-
-        let coeffs = frobenius_calculator_fp12(modulus, &extension_12).unwrap();
-        extension_12.frobenius_coeffs_c1 = coeffs;
-        extension_12.frobenius_coeffs_are_calculated = true;
+        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U384Repr::from(4)).unwrap();
         let mut b_fp2 = Fp2::zero(&extension_2);
@@ -534,7 +526,7 @@ mod tests {
         fp_non_residue.negate();
 
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone());
+        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -542,19 +534,13 @@ mod tests {
         let mut fp2_non_residue = Fp2::zero(&extension_2);
         fp2_non_residue.c1 = one.clone();
 
+        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
+
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-
-        let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
-
-        extension_6.frobenius_coeffs_c1 = coeffs_c1;
-        extension_6.frobenius_coeffs_c2 = coeffs_c2;
-        extension_6.frobenius_coeffs_are_calculated = true;
+        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-
-        let coeffs = frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap();
-        extension_12.frobenius_coeffs_c1 = coeffs;
-        extension_12.frobenius_coeffs_are_calculated = true;
+        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U384Repr::from(1)).unwrap();
         let mut b_fp2 = fp2_non_residue.clone().inverse().unwrap();

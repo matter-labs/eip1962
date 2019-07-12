@@ -95,23 +95,6 @@ pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
 //     }
 // }
 
-// pub(crate) fn is_non_square<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, S: AsRef<[u64]>>
-// (
-//     element: & Fp<'a, FE, F>,
-//     modulus_minus_one_by_2: S
-// ) -> bool {
-//     if element.is_zero() {
-//         return false;
-//     }
-//     let l = element.pow(modulus_minus_one_by_2);
-//     let one = Fp::one(element.field);
-//     if l == one {
-//         return false;
-//     } else {
-//         return true;
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;

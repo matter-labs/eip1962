@@ -15,7 +15,7 @@ fn run_on_input() {
     let elapsed = now.elapsed().as_micros();
     let gas_estimate = crate::gas_meter::GasMeter::meter(&input_data[..]);
     if result.is_err() {
-        println!("Api call failed in {} micros wit error {:?}", elapsed, result.err());
+        println!("Api call failed in {} micros with error {:?}", elapsed, result.err());
         if gas_estimate.is_ok() {
             println!("Gas estimate was {}", gas_estimate.unwrap());
         } else {
@@ -34,7 +34,7 @@ fn run_on_input() {
 
 #[test]
 fn run_on_hongg_input() {
-    let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.000000169608cd77.ADDR.0000000000000000.fuzz";
+    let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.000000035c4d6d60.ADDR.0000000000000000.fuzz";
     use std::time::Instant;
     use std::io::Read;
     use std::fs::File;
@@ -48,7 +48,7 @@ fn run_on_hongg_input() {
     let elapsed = now.elapsed().as_micros();
     let gas_estimate = crate::gas_meter::GasMeter::meter(&input_data[..]);
     if result.is_err() {
-        println!("Api call failed in {} micros wit error {:?}", elapsed, result.err());
+        println!("Api call failed in {} micros with error {:?}", elapsed, result.err());
         if gas_estimate.is_ok() {
             println!("Gas estimate was {}", gas_estimate.unwrap());
         } else {

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #![cfg_attr(feature = "benchmarks", feature(test))]
 
 extern crate byteorder;

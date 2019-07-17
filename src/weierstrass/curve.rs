@@ -121,18 +121,24 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             return;
         }
 
-        let z_inv = self.z.inverse().unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
-        let mut zinv_powered = z_inv.clone();
-        zinv_powered.square();
+        match self.z.inverse() {
+            Some(z_inv) => {
+                let mut zinv_powered = z_inv.clone();
+                zinv_powered.square();
 
-        // X/Z^2
-        self.x.mul_assign(&zinv_powered);
+                // X/Z^2
+                self.x.mul_assign(&zinv_powered);
 
-        // Y/Z^3
-        zinv_powered.mul_assign(&z_inv);
-        self.y.mul_assign(&zinv_powered);
+                // Y/Z^3
+                zinv_powered.mul_assign(&z_inv);
+                self.y.mul_assign(&zinv_powered);
 
-        self.z = one;
+                self.z = one;
+            },
+            None => {
+                self.z = C::BaseFieldElement::zero(self.curve.params.params());
+            }
+        }
     }
 
     pub fn into_xy(&self) -> (C::BaseFieldElement, C::BaseFieldElement) {
@@ -142,9 +148,13 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         }
 
         let mut point = self.clone();
-        point.normalize();
 
-        (point.x, point.y)
+        if point.is_normalized() {
+            (point.x, point.y)
+        } else {
+            point.normalize();
+            point.into_xy()
+        }
     }
 
     pub fn into_xy_from_homogenious(&self) -> (C::BaseFieldElement, C::BaseFieldElement) {

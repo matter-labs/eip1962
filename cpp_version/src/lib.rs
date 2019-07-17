@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn run_on_hongg_input() {
         use hex;
-        let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.00000015dfb6b533.ADDR.0000000000000000.fuzz";
+        let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.000000035c4d6d60.ADDR.0000000000000000.fuzz";
         // use std::time::Instant;
         use std::io::Read;
         use std::fs::File;

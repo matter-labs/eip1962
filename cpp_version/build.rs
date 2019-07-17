@@ -10,7 +10,7 @@ fn main() {
         .file("eip1962cpp/src/wrapper.cpp")
         .file("eip1962cpp/src/repr.cpp")
         .warnings(false)
-        // .static_flag(true)
-        // .opt_level_str("3")
+        .static_flag(true)
+        .opt_level_str("3")
         .compile("eip1962cpp.a");
 }

@@ -46,8 +46,11 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         let (mut p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
 
-        if !(p_0.check_on_curve() && p_1.check_on_curve()) {
-            return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+        if !p_0.is_on_curve() {
+            return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+        }
+        if !p_1.is_on_curve() {
+            return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
         }
 
         p_0.add_assign(&p_1);
@@ -68,7 +71,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         let (p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
 
-        if !p_0.check_on_curve() {
+        if !p_0.is_on_curve() {
             return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
         }
 
@@ -104,7 +107,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
-            if !p.check_on_curve() {
+            if !p.is_on_curve() {
                 return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
             }
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
@@ -136,10 +139,12 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         let (mut p_0, rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
 
-        if !(p_0.check_on_curve() && p_1.check_on_curve()) {
-            return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+        if !p_0.is_on_curve() {
+            return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
         }
-
+        if !p_1.is_on_curve() {
+            return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+        }
         p_0.add_assign(&p_1);
 
         serialize_g2_point_in_fp3(modulus_len, &p_0)   
@@ -158,7 +163,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         let (p_0, rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
 
-        if !p_0.check_on_curve() {
+        if !p_0.is_on_curve() {
             return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
         }
 
@@ -194,7 +199,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp3(global_rest, modulus_len, &curve)?;
-            if !p.check_on_curve() {
+            if !p.is_on_curve() {
                 return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
             }
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;

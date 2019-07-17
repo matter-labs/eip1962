@@ -135,8 +135,8 @@ fn bench_cp6_pairing(b: &mut Bencher) {
         0x3848,
     ];
 
-    assert!(p.check_on_curve());
-    assert!(q.check_on_curve());
+    assert!(p.is_on_curve());
+    assert!(q.is_on_curve());
 
     let engine = super::CPInstance6 {
         x: x,

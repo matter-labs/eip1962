@@ -7,11 +7,11 @@ description = "EIP1962 reference implementation"
 homepage = "https://github.com/matter-labs/eip1962"
 license = "Apache-2.0"
 exclude = [
-    "repr_derive",
     "fuzz",
     "honggfuzz",
     "*.sh",
-    "src/test"
+    "src/test",
+    "cpp_version"
 ]
 
 [dependencies]

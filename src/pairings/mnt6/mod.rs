@@ -589,8 +589,8 @@ mod tests {
             0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55
         ];
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         let engine = super::MNT6Instance {
             x: x,
@@ -723,8 +723,8 @@ mod tests {
             0x3848,
         ];
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         // in this case w1 != 1
 

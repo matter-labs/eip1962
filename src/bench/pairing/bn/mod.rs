@@ -109,8 +109,8 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     // println!("x = {}", x);
     // println!("x = {:x}", x);
 
-    assert!(p.check_on_curve());
-    assert!(q.check_on_curve());
+    assert!(p.is_on_curve());
+    assert!(q.is_on_curve());
 
     let mut minus_one_over_2 = Fp::one(&base_field);
     minus_one_over_2.negate();

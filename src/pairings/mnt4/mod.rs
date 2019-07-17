@@ -576,8 +576,8 @@ mod tests {
         let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
         let q = CurvePoint::point_from_xy(&curve_twist, q_x, q_y);
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         let engine = super::MNT4Instance {
             x: biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794944", 10).unwrap()),
@@ -708,10 +708,10 @@ mod tests {
         q1.double();
         q1.normalize();
 
-        assert!(p0.check_on_curve());
-        assert!(p1.check_on_curve());
-        assert!(q0.check_on_curve());
-        assert!(q1.check_on_curve());
+        assert!(p0.is_on_curve());
+        assert!(p1.is_on_curve());
+        assert!(q0.is_on_curve());
+        assert!(q1.is_on_curve());
 
         let engine = super::MNT4Instance {
             x: biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470400", 10).unwrap()),

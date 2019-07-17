@@ -491,8 +491,8 @@ mod tests {
         // println!("x = {}", x);
         // println!("x = {:x}", x);
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         let bls12_engine = super::Bls12Instance {
             x: vec![0xd201000000010000],
@@ -582,8 +582,8 @@ mod tests {
         let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
         let q = CurvePoint::point_from_xy(&twist, q_x, q_y);
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         let bls12_engine = super::Bls12Instance {
             x: vec![0x8508c00000000001],

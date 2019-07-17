@@ -99,8 +99,8 @@ fn bench_mnt4_pairing(b: &mut Bencher) {
         0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55
     ];
 
-    assert!(p.check_on_curve());
-    assert!(q.check_on_curve());
+    assert!(p.is_on_curve());
+    assert!(q.is_on_curve());
 
     let engine = MNT4Instance {
         x: biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794944", 10).unwrap()),

@@ -105,8 +105,8 @@ fn bench_mnt6_pairing(b: &mut Bencher) {
         0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55
     ];
 
-    assert!(p.check_on_curve());
-    assert!(q.check_on_curve());
+    assert!(p.is_on_curve());
+    assert!(q.is_on_curve());
 
     let engine = MNT6Instance {
         x: x,
@@ -232,8 +232,8 @@ fn bench_cp6_as_mnt6_pairing(b: &mut Bencher) {
         0x3848,
     ];
 
-    assert!(p.check_on_curve());
-    assert!(q.check_on_curve());
+    assert!(p.is_on_curve());
+    assert!(q.is_on_curve());
 
     let engine = MNT6Instance {
         x: x,

@@ -9,13 +9,17 @@ fuzz_target!(|data: &[u8]| {
     let cpp = eth_pairings_cpp::run(&data);
     if native.is_err() {
         if !cpp.is_err() {
-            panic!("Native result returned error, while C++ returned {}", hex::encode(&cpp.unwrap()))
+            let c = cpp.unwrap();
+            println!("Input = {}", hex::encode(&data));
+            println!("Native result returned error, while C++ returned {}", hex::encode(&c));
+            panic!("Native result returned error, while C++ returned {}", hex::encode(&c));
         }
-        assert!(cpp.is_err());
     } else {
         let n = native.expect("result");
         let c = cpp.expect("cpp result");
         if n != c {
+            println!("Input = {}", hex::encode(&data));
+            println!("Native result = {}, C++ result = {}", hex::encode(&n), hex::encode(&c));
             panic!("Native result = {}, C++ result = {}", hex::encode(&n), hex::encode(&c));
         }
     }

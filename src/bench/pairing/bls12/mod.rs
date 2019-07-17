@@ -102,8 +102,8 @@ fn bench_bls12_381_pairing(b: &mut Bencher) {
     // println!("x = {}", x);
     // println!("x = {:x}", x);
 
-    assert!(p.check_on_curve());
-    assert!(q.check_on_curve());
+    assert!(p.is_on_curve());
+    assert!(q.is_on_curve());
 
     let bls12_engine = Bls12Instance {
         x: vec![0xd201000000010000],

@@ -598,8 +598,8 @@ mod tests {
         // println!("x = {}", x);
         // println!("x = {:x}", x);
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         let mut minus_one_over_2 = Fp::one(&base_field);
         minus_one_over_2.negate();
@@ -714,8 +714,8 @@ mod tests {
         let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
         let q = CurvePoint::point_from_xy(&twist, q_x, q_y);
 
-        assert!(p.check_on_curve());
-        assert!(q.check_on_curve());
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
 
         let mut minus_one_over_2 = Fp::one(&base_field);
         minus_one_over_2.negate();

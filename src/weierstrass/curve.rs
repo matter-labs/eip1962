@@ -72,7 +72,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         }
     }
 
-    pub fn check_on_curve(&self) -> bool {
+    pub fn is_on_curve(&self) -> bool {
         let mut rhs = self.y.clone();
         rhs.square();
 

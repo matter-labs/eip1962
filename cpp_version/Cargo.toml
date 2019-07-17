@@ -1,0 +1,16 @@
+[package]
+name = "eth_pairings_cpp"
+version = "0.1.0"
+authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
+edition = "2018"
+description = "EIP1962 reference implementation in C++"
+homepage = "https://github.com/matter-labs/eip1962"
+license = "Apache-2.0"
+build = "build.rs"
+
+[dev-dependencies]
+hex = "0.3.2"
+
+[build-dependencies]
+cc = { version = "1.0", features = ["parallel"] }
+#bindgen = "0.50"

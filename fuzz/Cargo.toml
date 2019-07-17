@@ -8,8 +8,15 @@ publish = false
 [package.metadata]
 cargo-fuzz = true
 
+[dependencies]
+hex = "*"
+
 [dependencies.eth_pairings]
 path = ".."
+
+[dependencies.eth_pairings_cpp]
+path = "../cpp_version"
+
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
 
@@ -20,6 +27,10 @@ members = ["."]
 [[bin]]
 name = "fuzz_target_api"
 path = "fuzz_targets/fuzz_target_api.rs"
+
+[[bin]]
+name = "fuzz_target_compare"
+path = "fuzz_targets/fuzz_target_compare.rs"
 
 [[bin]]
 name = "fuzz_target_gas"

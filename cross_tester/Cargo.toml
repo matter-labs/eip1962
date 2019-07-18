@@ -1,0 +1,23 @@
+
+[package]
+name = "eth_pairings_cross_tester"
+version = "0.0.1"
+authors = ["Automatically generated"]
+publish = false
+
+[package.metadata]
+cross_tester = true
+
+[dependencies]
+hex = "*"
+csv = "1"
+
+[dependencies.eth_pairings]
+path = ".."
+
+[dependencies.eth_pairings_cpp]
+path = "../cpp_version"
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]

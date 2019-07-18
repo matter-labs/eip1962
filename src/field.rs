@@ -146,7 +146,10 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
 fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u64>, Vec<u64>, Vec<u64>, u64)), ()> {
     let bitlength = modulus.bits();
 
-    let num_limbs = (bitlength / 64) + 1;
+    let mut num_limbs = (bitlength / 64) + 1;
+    if num_limbs < 4 {
+        num_limbs = 4;
+    }
 
     if num_limbs > 16 {
         return Err(());

@@ -48,7 +48,9 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
 
         let fp_params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(order_repr, a, b, &fp_params);
+        let curve = WeierstrassCurve::new(order_repr, a, b, &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (mut p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
@@ -70,9 +72,13 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
+        println!("Modulus = {}", field.modulus());
+
         let fp_params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params);
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;;
 
         let (p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
@@ -93,7 +99,9 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
 
         let fp_params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params);
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;;
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;

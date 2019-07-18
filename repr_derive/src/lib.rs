@@ -332,7 +332,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 modulus: &#repr
             )
             {
-                if &*self > modulus {
+                if &*self >= modulus {
                     self.sub_noborrow(&modulus);
                 }
             }

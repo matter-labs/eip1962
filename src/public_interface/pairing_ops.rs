@@ -101,7 +101,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params);
+        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
 
         // Now we need to expect:
@@ -185,7 +187,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let a_fp2 = Fp2::zero(&extension_2);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
+        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_BLS12_X_BIT_LENGTH)?;
         let x = biguint_to_u64_vec(x);
@@ -272,7 +276,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params);
+        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
 
         // Now we need to expect:
@@ -357,7 +363,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let a_fp2 = Fp2::zero(&extension_2);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
+        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (u, rest) = decode_scalar_with_bit_limit(&rest, MAX_BN_U_BIT_LENGTH)?;
         let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get U sign encoding")?;
@@ -451,7 +459,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params);
+        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         // Now we need to expect:
         // - non-residue for Fp3
@@ -506,7 +516,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         b_fp3.mul_by_fp(&b_fp);
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp3, b_fp3, &fp3_params);
+        let g2_curve = WeierstrassCurve::new(order_repr, a_fp3, b_fp3, &fp3_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
         let x = biguint_to_u64_vec(x);
@@ -605,7 +617,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params);
+        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         // Now we need to expect:
         // - non-residue for Fp2
@@ -660,7 +674,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         b_fp2.mul_by_fp(&b_fp);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params);
+        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
         let x = biguint_to_u64_vec(x);

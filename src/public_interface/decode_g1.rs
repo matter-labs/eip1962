@@ -102,14 +102,8 @@ pub(crate) fn decode_g1_point_from_xy<
         curve: &'a WeierstrassCurve<'a, C>
     ) -> Result<(CurvePoint<'a, C>, &'a [u8]), ApiError>
 {
-    let (x_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to get X")?;
-    let x = Fp::from_be_bytes(curve.params.params(), x_encoding, true).map_err(|_| {
-        ApiError::InputError("Failed to parse X".to_owned())
-    })?;
-    let (y_encoding, rest) = split(rest, field_byte_len, "Input is not long enough to get Y")?;
-    let y = Fp::from_be_bytes(curve.params.params(), y_encoding, true).map_err(|_| {
-        ApiError::InputError("Failed to parse Y".to_owned())
-    })?;
+    let (x, rest) = decode_fp(&bytes, field_byte_len, curve.params.params())?;
+    let (y, rest) = decode_fp(&rest, field_byte_len, curve.params.params())?;
     
     let p: CurvePoint<'a, C> = CurvePoint::point_from_xy(&curve, x, y);
     

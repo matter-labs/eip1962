@@ -544,8 +544,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("60760244141852568949126569781626075788424196370144486719385562369396875346601926534016838", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("363732850702582978263902770815145784459747722357071843971107674179038674942891694705904306", 10).unwrap().to_bytes_be();
@@ -664,8 +664,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("23803503838482697364219212396100314255266282256287758532210460958670711284501374254909249084643549104668878996224193897061976788052185662569738774028756446662400954817676947337090686257134874703224133183061214213216866019444443", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("21091012152938225813050540665280291929032924333518476279110711148670464794818544820522390295209715531901248676888544060590943737249563733104806697968779796610374994498702698840169538725164956072726942500665132927942037078135054", 10).unwrap().to_bytes_be();

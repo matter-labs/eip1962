@@ -70,7 +70,7 @@ mod tests {
             a_coeff, 
             b_coeff,
             &params
-        );
+        ).unwrap();
 
         let mut two = one.clone();
         two.double();
@@ -169,7 +169,7 @@ mod tests {
             a_coeff, 
             b_coeff,
             &params
-        );
+        ).unwrap();
 
         let mut two = one.clone();
         two.double();
@@ -177,7 +177,8 @@ mod tests {
         let point = CurvePoint::point_from_xy(
             &curve, 
             one, 
-            two);
+            two
+        );
 
         let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
             let mut bytes = vec![0u8; 32];
@@ -251,7 +252,7 @@ mod tests {
             a_coeff, 
             b_coeff,
             &params
-        );
+        ).unwrap();
 
         let mut two = one.clone();
         two.double();

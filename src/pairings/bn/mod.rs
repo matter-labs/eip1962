@@ -561,8 +561,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -684,8 +684,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();

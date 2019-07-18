@@ -547,8 +547,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params).unwrap();
 
         let p_x = BigUint::from_str_radix("336685752883082228109289846353937104185698209371404178342968838739115829740084426881123453", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("402596290139780989709332707716568920777622032073762749862342374583908837063963736098549800", 10).unwrap().to_bytes_be();
@@ -663,8 +663,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params);
+        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params).unwrap();
 
         let p_x = BigUint::from_str_radix("5511163824921585887915590525772884263960974614921003940645351443740084257508990841338974915037175497689287870585840954231884082785026301437744745393958283053278991955159266640440849940136976927372133743626748847559939620888818486853646", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("7913123550914612057135582061699117755797758113868200992327595317370485234417808273674357776714522052694559358668442301647906991623400754234679697332299689255516547752391831738454121261248793568285885897998257357202903170202349380518443", 10).unwrap().to_bytes_be();

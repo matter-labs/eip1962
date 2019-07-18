@@ -32,8 +32,8 @@ fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters) -> (Vec<
 
     let mut a_encoded = pad_for_len_be(curve.a_twist_0.to_bytes_be(), modulus_length);
     a_encoded.extend(pad_for_len_be(curve.a_twist_1.to_bytes_be(), modulus_length));
-    let mut b_encoded = pad_for_len_be(curve.a_twist_0.to_bytes_be(), modulus_length);
-    b_encoded.extend(pad_for_len_be(curve.a_twist_1.to_bytes_be(), modulus_length));
+    let mut b_encoded = pad_for_len_be(curve.b_twist_0.to_bytes_be(), modulus_length);
+    b_encoded.extend(pad_for_len_be(curve.b_twist_1.to_bytes_be(), modulus_length));
 
     // now we make two random scalars and do scalar multiplications in G1 and G2 to get pairs that should
     // at the end of the day pair to identity element

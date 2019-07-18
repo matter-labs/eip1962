@@ -41,7 +41,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(order_repr, a, b, &fp2_params);
+        let curve = WeierstrassCurve::new(order_repr, a, b, &fp2_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (mut p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
@@ -66,7 +68,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params);
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
@@ -88,7 +92,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params);
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -134,7 +140,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(order_repr, a, b, &fp3_params);
+        let curve = WeierstrassCurve::new(order_repr, a, b, &fp3_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (mut p_0, rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
         let (p_1, _rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
@@ -158,7 +166,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params);
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params).map_err(|_| {
+            ApiError::InputError("Curve shape is not supported".to_owned())
+        })?;
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
         let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
@@ -180,7 +190,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params);
+        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params).map_err(|_| {
+            ApiError::InputError("Curve share is not supported".to_owned())
+        })?;
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;

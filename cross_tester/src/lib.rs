@@ -5,11 +5,12 @@ extern crate eth_pairings_cpp;
 extern crate hex;
 
 mod run_on_csv;
+mod run_on_fuzzer_inputs;
 
 fn run(data: &[u8]) {
+    println!("Input = {}", hex::encode(&data));
     let native = eth_pairings::public_interface::API::run(&data);
     let cpp = eth_pairings_cpp::run(&data);
-    println!("Input = {}", hex::encode(&data));
     if native.is_err() {
         if !cpp.is_err() {
             let n = native.err();

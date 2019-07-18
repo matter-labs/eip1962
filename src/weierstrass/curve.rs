@@ -28,18 +28,25 @@ impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
         a: C::BaseFieldElement, 
         b: C::BaseFieldElement,
         params: &'a C
-    ) -> Self {
+    ) -> Result<Self, ()> {
         let mut curve_type = CurveType::Generic;
         if a.is_zero() {
+            if b.is_zero() {
+                return Err(());
+            }
             curve_type = CurveType::AIsZero;
         }
-        Self {
+        if b.is_zero() {
+            return Err(());
+        }
+
+        Ok(Self {
             a: a,
             b: b,
             curve_type: curve_type,
             subgroup_order_repr: subgroup_order,
             params: params
-        }
+        })
     }
 }
 
@@ -73,6 +80,12 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
     }
 
     pub fn is_on_curve(&self) -> bool {
+        if self.is_zero() {
+            return true;
+        }
+        
+        debug_assert!(self.is_normalized());
+
         let mut rhs = self.y.clone();
         rhs.square();
 
@@ -94,6 +107,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         x: C::BaseFieldElement, 
         y: C::BaseFieldElement
     ) -> CurvePoint<'a, C> {
+        if x.is_zero() && y.is_zero() {
+            return Self::zero(curve);
+        }
+
         CurvePoint {
             curve: curve,
             x: x,
@@ -227,9 +244,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             // If we're adding -a and a together, self.z becomes zero as H becomes zero.
 
             if u1 == u2 {
-                self.x = C::BaseFieldElement::zero(self.curve.params.params());
-                self.y = C::BaseFieldElement::one(self.curve.params.params());
-                self.z = C::BaseFieldElement::zero(self.curve.params.params());
+                *self = Self::zero(self.curve);
+                // self.x = C::BaseFieldElement::zero(self.curve.params.params());
+                // self.y = C::BaseFieldElement::one(self.curve.params.params());
+                // self.z = C::BaseFieldElement::zero(self.curve.params.params());
                 return;
             }
 
@@ -285,9 +303,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         }
 
         if self.is_zero() {
-            self.x = other.x.clone();
-            self.y = other.y.clone();
-            self.z = other.z.clone();
+            *self = other.clone();
+            // self.x = other.x.clone();
+            // self.y = other.y.clone();
+            // self.z = other.z.clone();
             return;
         }
 
@@ -364,6 +383,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             self.z.square();
             self.z.sub_assign(&z1z1);
             self.z.sub_assign(&hh);
+
+            if self.z.is_zero() {
+                *self = Self::zero(self.curve);
+            }
         }
     }
 

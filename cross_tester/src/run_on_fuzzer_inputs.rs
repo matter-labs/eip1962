@@ -26,6 +26,8 @@ fn read_inputs(dir: &str, ext: &str) -> Vec<Vec<u8>> {
             }
         }
         let mut buffer = Vec::new();
+        let file_name = path.file_name().unwrap().to_str().unwrap().to_owned();
+        println!("Executing from {}", file_name);
         let mut f = File::open(path).expect("must open file");
         f.read_to_end(&mut buffer).expect("must read bytes from file");
         results.push(buffer);

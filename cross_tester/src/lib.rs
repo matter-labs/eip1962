@@ -11,26 +11,25 @@ fn run(data: &[u8]) {
     println!("Input = {}", hex::encode(&data));
     let native = eth_pairings::public_interface::API::run(&data);
     let cpp = eth_pairings_cpp::run(&data);
-    if native.is_err() {
-        if !cpp.is_err() {
-            let n = native.err();
-            let c = cpp.unwrap();
-            println!("Native result returned error {:?}, while C++ returned {}", n, hex::encode(&c));
-            panic!("Native result returned error {:?}, while C++ returned {}", n, hex::encode(&c));
-        }
-    } else {
-        let n = native.expect("result");
-        if cpp.is_err() {
-            let c = cpp.err();
+    match (native, cpp) {
+        (Ok(n), Ok(c)) => {
+            if n != c {
+                println!("Native result = {}, C++ result = {}", hex::encode(&n), hex::encode(&c));
+                panic!("Native result = {}, C++ result = {}", hex::encode(&n), hex::encode(&c));
+            } else {
+                println!("Native and C++ results coincide on {}", hex::encode(&n));
+            }
+        },
+        (Err(n), Err(c)) => {
+            println!("Native and C++ results coincide on error: {:?}, {:?}", n, c);
+        },
+        (Ok(n), Err(c)) => {
             println!("Native result = {}, while C++ returned error {:?}", hex::encode(&n), c);
             panic!("Native result = {}, while C++ returned error {:?}", hex::encode(&n), c);
-        }
-        let c = cpp.expect("cpp result");
-        if n != c {
-            println!("Native result = {}, C++ result = {}", hex::encode(&n), hex::encode(&c));
-            panic!("Native result = {}, C++ result = {}", hex::encode(&n), hex::encode(&c));
-        } else {
-            println!("Native and C++ results coincide on {}", hex::encode(&n));
+        },
+        (Err(n), Ok(c)) => {
+                        println!("Native result returned error {:?}, while C++ returned {}", n, hex::encode(&c));
+            panic!("Native result returned error {:?}, while C++ returned {}", n, hex::encode(&c));
         }
     }
 }

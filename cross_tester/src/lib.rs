@@ -53,7 +53,7 @@ fn cross_check_on_input() {
 
 #[test]
 fn cross_check_on_hongg_input() {
-    let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.00000003402ccb03.ADDR.0000000000000000.fuzz";
+    let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.000000141a4bf637.ADDR.0000000000000000.fuzz";
     use std::time::Instant;
     use std::io::Read;
     use std::fs::File;

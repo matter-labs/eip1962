@@ -72,8 +72,6 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         let (a, b, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &field)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
-        println!("Modulus = {}", field.modulus());
-
         let fp_params = CurveOverFpParameters::new(&field);
 
         let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params).map_err(|_| {

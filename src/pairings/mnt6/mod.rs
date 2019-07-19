@@ -70,7 +70,7 @@ impl<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp3<'a, FE, F>>
     > MNT6Instance<'a, FE, F, CB, CTW> {
-    fn miller_loop<'b, I>(&self, i: I) -> Fp6<'a, FE, F>
+    fn miller_loop<'b, I>(&self, i: I) -> Result<Fp6<'a, FE, F>, ()>
     where 'a: 'b,
         I: IntoIterator<
             Item = &'b (&'b CurvePoint<'a, CB>, 
@@ -79,10 +79,10 @@ impl<
     {
         let mut f = Fp6::one(self.fp6_extension);
         for (p, q) in i.into_iter() {
-            f.mul_assign(&self.ate_pairing_loop(p, q));
+            f.mul_assign(&self.ate_pairing_loop(p, q)?);
         }
 
-        f
+        Ok(f)
     }
 
     fn precompute_g1(&self, g1_point: &CurvePoint<'a, CB>) -> PrecomputedG1<'a, FE, F> {
@@ -260,7 +260,7 @@ impl<
     }
 
 
-    fn precompute_g2(&self, g2_point: &CurvePoint<'a, CTW>, twist_inv: &Fp3<'a, FE, F>) -> PrecomputedG2<'a, FE, F> {
+    fn precompute_g2(&self, g2_point: &CurvePoint<'a, CTW>, twist_inv: &Fp3<'a, FE, F>) -> Result<PrecomputedG2<'a, FE, F>, ()> {
         // not asserting normalization, it will be asserted in the loop
         // precompute addition and doubling coefficients
         let mut x_over_twist = g2_point.x.clone();
@@ -296,7 +296,7 @@ impl<
         }
 
         if self.x_is_negative {
-            let rz_inv = r.z.inverse().unwrap();
+            let rz_inv = r.z.inverse().ok_or(())?;
             let mut rz2_inv = rz_inv.clone();
             rz2_inv.square();
             let mut rz3_inv = rz_inv.clone();
@@ -317,21 +317,21 @@ impl<
             g2_p.addition_coefficients.push(coeff);
         }
 
-        g2_p
+        Ok(g2_p)
     }
 
     fn ate_pairing_loop(
         &self, 
         point: &CurvePoint<'a, CB>, 
         twist_point: &CurvePoint<'a, CTW> 
-    ) -> Fp6<'a, FE, F> {
+    ) -> Result<Fp6<'a, FE, F>, ()> {
         debug_assert!(point.is_normalized());
         debug_assert!(twist_point.is_normalized());
 
-        let twist_inv = self.twist.inverse().unwrap();
+        let twist_inv = self.twist.inverse().ok_or(())?;
 
         let p = self.precompute_g1(&point);
-        let q = self.precompute_g2(&twist_point, &twist_inv);
+        let q = self.precompute_g2(&twist_point, &twist_inv)?;
         let mut l1_coeff = Fp3::zero(&self.fp3_extension);
         l1_coeff.c0 = p.x.clone();
         l1_coeff.sub_assign(&q.x_over_twist);
@@ -408,10 +408,10 @@ impl<
             g_rnegr_at_p.c1 = t1;
 
             f.mul_assign(&g_rnegr_at_p);
-            f = f.inverse().unwrap();
+            f = f.inverse().ok_or(())?;
         }
 
-        f
+        Ok(f)
     }
 
     fn final_exponentiation(&self, f: &Fp6<'a, FE, F>) -> Option<Fp6<'a, FE, F>> {
@@ -419,7 +419,7 @@ impl<
         if value_inv.is_none() {
             return None;
         }
-        let value_inv = value_inv.unwrap();
+        let value_inv = value_inv.expect("is some");
         let value_to_first_chunk = self.final_exponentiation_part_one(f, &value_inv);
         let value_inv_to_first_chunk = self.final_exponentiation_part_one(&value_inv, f);
         
@@ -483,6 +483,11 @@ impl<
                 pairs.push((p, q));
             }
             let loop_result = self.miller_loop(&pairs[..]);
+            if loop_result.is_err() {
+                return None;
+            }
+
+            let loop_result = loop_result.expect("is some");
 
             self.final_exponentiation(&loop_result)
         }   

@@ -44,7 +44,10 @@ fn cross_check_on_honggfuzz() {
     let ext = "fuzz";
     let inputs = read_inputs(path, ext);
     println!("Running on {} crash inputs", inputs.len());
-    for input in inputs.iter() {
+    for (i, input) in inputs.iter().enumerate() {
+        if i % 1000 == 0 {
+            println!("Made {} iterations", i);
+        }
         run(&input[..]);
     }
 }
@@ -57,7 +60,10 @@ fn cross_check_on_libfuzzer() {
     let ext = "";
     let inputs = read_inputs(path, ext);
     println!("Running on {} crash inputs", inputs.len());
-    for input in inputs.iter() {
+    for (i, input) in inputs.iter().enumerate() {
+        if i % 1000 == 0 {
+            println!("Made {} iterations", i);
+        }
         run(&input[..]);
     }
 }

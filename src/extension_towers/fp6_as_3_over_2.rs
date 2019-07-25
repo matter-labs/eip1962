@@ -52,29 +52,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp6<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
-    // pub fn zero(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
-    //     let zero = Fp2::zero(extension_field.field);
-        
-    //     Self {
-    //         c0: zero.clone(),
-    //         c1: zero.clone(),
-    //         c2: zero,
-    //         extension_field: extension_field
-    //     }
-    // }
-
-    // pub fn one(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
-    //     let zero = Fp2::zero(extension_field.field);
-    //     let one = Fp2::one(extension_field.field);
-        
-    //     Self {
-    //         c0: one,
-    //         c1: zero.clone(),
-    //         c2: zero,
-    //         extension_field: extension_field
-    //     }
-    // }
-
     pub fn mul_by_1(&mut self, c1: &Fp2<'a, E, F>) {
         let mut b_b = self.c1.clone();
         b_b.mul_assign(c1);

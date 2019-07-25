@@ -496,7 +496,7 @@ mod tests {
     use crate::extension_towers::fp2::{Fp2, Extension2};
     use crate::extension_towers::fp4_as_2_over_2::{Extension2Over2};
     use num_traits::Num;
-    use crate::weierstrass::{Group, CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
+    use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::pairings::{PairingEngine};
 
@@ -514,9 +514,6 @@ mod tests {
 
         let mut fp2_non_residue = Fp2::zero(&extension_2); // non-residue is 13 + 0*u + 0*u^2
         fp2_non_residue.c0 = fp_non_residue;
-
-        let f_c1 = [Fp::zero(&base_field), Fp::zero(&base_field), Fp::zero(&base_field),
-                    Fp::zero(&base_field)];
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
         extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");

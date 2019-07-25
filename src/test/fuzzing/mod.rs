@@ -34,11 +34,11 @@ fn run_on_input() {
 
 #[test]
 fn run_on_hongg_input() {
-    let filename = "SIGABRT.EXC_CRASH.PC.00007fff7543a2c6.STACK.00000001515711ae.ADDR.0000000000000000.fuzz";
+    let filename = "SIGABRT.PC.7ffff6e56e97.STACK.f05e16524.CODE.-6.ADDR.(nil).INSTR.mov____0x108(%rsp),%rcx.fuzz";
     use std::time::Instant;
     use std::io::Read;
     use std::fs::File;
-    let mut file = File::open(&format!("honggfuzz/hfuzz_workspace/fuzz_target_compare/{}", filename)).expect("must open");
+    let mut file = File::open(&format!("../eip1962_fuzzing/honggfuzz/hfuzz_workspace/fuzz_target_compare/{}", filename)).expect("must open");
     let mut input_data = vec![];
     file.read_to_end(&mut input_data).expect("must read");
     assert!(input_data.len() != 0);
@@ -52,14 +52,14 @@ fn run_on_hongg_input() {
         if gas_estimate.is_ok() {
             println!("Gas estimate was {}", gas_estimate.unwrap());
         } else {
-            println!("Gas estimate failed");
+            println!("Gas estimate failed with error {}", gas_estimate.err().unwrap());
         }
     } else {
         println!("Api call was ok in {} micros", elapsed);
         if gas_estimate.is_ok() {
             println!("Gas estimate was {}", gas_estimate.unwrap());
         } else {
-            println!("Gas estimate failed");
+            println!("Gas estimate failed with error {}", gas_estimate.err().unwrap());
         }
         println!("Result = {}", hex::encode(&result.unwrap()));
     }

@@ -28,6 +28,7 @@ use crate::field::biguint_to_u64_vec;
 use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
 use crate::fp::Fp;
+use crate::num_traits::Zero;
 
 use super::decode_g1::*;
 use super::decode_utils::*;
@@ -192,6 +193,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         })?;
 
         let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_BLS12_X_BIT_LENGTH)?;
+        if x.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
         let x = biguint_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_BLS12_X_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
@@ -233,6 +237,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
             g1_points.push(g1);
             g2_points.push(g2);
+        }
+
+        if rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
         let engine = Bls12Instance {
@@ -368,6 +376,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         })?;
 
         let (u, rest) = decode_scalar_with_bit_limit(&rest, MAX_BN_U_BIT_LENGTH)?;
+        if u.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
         let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get U sign encoding")?;
         let u_is_negative = match u_sign[0] {
             SIGN_PLUS => false,
@@ -417,6 +428,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             g2_points.push(g2);
         }
 
+        if rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
+
         let engine = BnInstance {
             u: biguint_to_u64_vec(u),
             six_u_plus_2: six_u_plus_two,
@@ -454,9 +469,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
-        if !a_fp.is_zero() {
-            return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
-        }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
         let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
@@ -521,6 +533,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         })?;
 
         let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
+        if x.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
         let x = biguint_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
@@ -535,7 +550,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         };
 
         let (exp_w0, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
+        if exp_w0.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
+
         let (exp_w1, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
+        if exp_w1.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
 
         let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
         let exp_w0_is_negative = match exp_w0_sign[0] {
@@ -575,6 +597,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             g2_points.push(g2);
         }
 
+        if rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
+
         let engine = MNT6Instance {
             x: x,
             x_is_negative: x_is_negative,
@@ -612,9 +638,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
-        if !a_fp.is_zero() {
-            return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
-        }
         let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
         let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
@@ -679,6 +702,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         })?;
 
         let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
+        if x.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
         let x = biguint_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
@@ -694,7 +720,13 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         };
 
         let (exp_w0, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
+        if exp_w0.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
         let (exp_w1, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
+        if exp_w1.is_zero() {
+            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+        }
 
         let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
         let exp_w0_is_negative = match exp_w0_sign[0] {
@@ -732,6 +764,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
             g1_points.push(g1);
             g2_points.push(g2);
+        }
+
+        if rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
         let engine = MNT4Instance {

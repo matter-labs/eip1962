@@ -45,27 +45,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp4<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp4<'a, E, F> {
-    // pub fn zero(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
-    //     let zero = Fp2::zero(extension_field.field);
-        
-    //     Self {
-    //         c0: zero.clone(),
-    //         c1: zero,
-    //         extension_field: extension_field
-    //     }
-    // }
-
-    // pub fn one(extension_field: &'a Extension2Over2<'a, E, F>) -> Self {
-    //     let zero = Fp2::zero(extension_field.field);
-    //     let one = Fp2::one(extension_field.field);
-        
-    //     Self {
-    //         c0: one,
-    //         c1: zero,
-    //         extension_field: extension_field
-    //     }
-    // }
-
     pub fn cyclotomic_exp<S: AsRef<[u64]>>(&self, exp: S) -> Self {
         let mut res = Self::one(self.extension_field);
         let mut self_inverse = self.clone();
@@ -324,8 +303,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         use crate::field::biguint_to_u64_vec;
         use crate::constants::ONE_BIGUINT;
         use crate::constants::FOUR_BIGUINT;
-
-        // let one = BigUint::from(1u64);
     
         // NON_REDISUE**(((q^0) - 1) / 4)
         let non_residue = self.field.non_residue.clone();

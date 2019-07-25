@@ -53,7 +53,11 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         })?;
 
         let (mut p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
-        let (p_1, _rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
+        let (p_1, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
+
+        if rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
 
         if !p_0.is_on_curve() {
             return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
@@ -79,7 +83,11 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         })?;;
 
         let (p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
-        let (scalar, _rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
+        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
+
+        if rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
 
         if !p_0.is_on_curve() {
             return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
@@ -127,6 +135,10 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
             pairs.push((p, scalar));
             // acc.add_assign(&p.mul(&scalar));
             global_rest = local_rest;
+        }
+
+        if global_rest.len() != 0 {
+            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
         let result = peppinger(pairs);

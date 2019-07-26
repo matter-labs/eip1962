@@ -34,7 +34,7 @@ fn run_on_input() {
 
 #[test]
 fn run_on_hongg_input() {
-    let filename = "SIGABRT.PC.7ffff6e56e97.STACK.f05e16524.CODE.-6.ADDR.(nil).INSTR.mov____0x108(%rsp),%rcx.fuzz";
+    let filename = "SIGABRT.PC.7ffff6e56e97.STACK.1b8e87e9e5.CODE.-6.ADDR.(nil).INSTR.mov____0x108(%rsp),%rcx.fuzz";
     use std::time::Instant;
     use std::io::Read;
     use std::fs::File;

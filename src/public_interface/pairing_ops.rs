@@ -239,7 +239,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             g2_points.push(g2);
         }
 
-        if rest.len() != 0 {
+        if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
@@ -428,7 +428,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             g2_points.push(g2);
         }
 
-        if rest.len() != 0 {
+        if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
@@ -597,7 +597,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             g2_points.push(g2);
         }
 
-        if rest.len() != 0 {
+        if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
@@ -766,7 +766,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             g2_points.push(g2);
         }
 
-        if rest.len() != 0 {
+        if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 

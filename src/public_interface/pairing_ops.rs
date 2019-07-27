@@ -235,12 +235,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
             }
 
-            g1_points.push(g1);
-            g2_points.push(g2);
+            if !g1.is_zero() && !g2.is_zero() {
+                g1_points.push(g1);
+                g2_points.push(g2);
+            }
         }
 
         if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
+
+        debug_assert!(g1_points.len() == g2_points.len());
+        if g1_points.len() == 0 {
+            return Ok(vec![1u8]);
         }
 
         let engine = Bls12Instance {
@@ -424,12 +431,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
             }
 
-            g1_points.push(g1);
-            g2_points.push(g2);
+            if !g1.is_zero() && !g2.is_zero() {
+                g1_points.push(g1);
+                g2_points.push(g2);
+            }
         }
 
         if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
+
+        debug_assert!(g1_points.len() == g2_points.len());
+        if g1_points.len() == 0 {
+            return Ok(vec![1u8]);
         }
 
         let engine = BnInstance {
@@ -593,12 +607,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
             }
 
-            g1_points.push(g1);
-            g2_points.push(g2);
+            if !g1.is_zero() && !g2.is_zero() {
+                g1_points.push(g1);
+                g2_points.push(g2);
+            }
         }
 
         if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
+
+        debug_assert!(g1_points.len() == g2_points.len());
+        if g1_points.len() == 0 {
+            return Ok(vec![1u8]);
         }
 
         let engine = MNT6Instance {
@@ -762,12 +783,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
             }
 
-            g1_points.push(g1);
-            g2_points.push(g2);
+            if !g1.is_zero() && !g2.is_zero() {
+                g1_points.push(g1);
+                g2_points.push(g2);
+            }
         }
 
         if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+        }
+
+        debug_assert!(g1_points.len() == g2_points.len());
+        if g1_points.len() == 0 {
+            return Ok(vec![1u8]);
         }
 
         let engine = MNT4Instance {

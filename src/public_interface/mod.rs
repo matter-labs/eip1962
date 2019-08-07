@@ -10,7 +10,7 @@ mod g1_ops;
 mod g2_ops;
 mod pairing_ops;
 
-mod sane_limits;
+pub mod sane_limits;
 pub mod constants;
 
 pub use pairing_ops::{PairingApi, PublicPairingApi};

@@ -256,13 +256,16 @@ pub(crate) fn get_base_field_params(bytes: &[u8]) -> Result<((BigUint, usize), &
 }
 
 pub(crate) fn num_limbs_for_modulus(modulus: &BigUint) -> Result<usize, ApiError> {
-    let mut modulus_limbs = (modulus.bits() / 64) + 1;
-    if modulus_limbs > 16 {
-        return Err(ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())));
-    }
-    if modulus_limbs < 4 {
-        modulus_limbs = 4;
-    }
+    use crate::field::calculate_num_limbs;
+
+    let modulus_limbs = calculate_num_limbs(&modulus).map_err(|_| ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())) )?;
+    // let mut modulus_limbs = (modulus.bits() / 64) + 1;
+    // if modulus_limbs > 16 {
+    //     return Err(ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())));
+    // }
+    // if modulus_limbs < 4 {
+    //     modulus_limbs = 4;
+    // }
 
     Ok(modulus_limbs)
 }

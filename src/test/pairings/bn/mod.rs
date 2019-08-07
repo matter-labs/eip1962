@@ -6,9 +6,16 @@ use num_bigint::BigUint;
 use crate::test::parsers::*;
 use super::call_pairing_engine;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters, pairs: usize) -> Vec<u8> {
-    assert!(pairs >= 2);
-    assert!(pairs % 2 == 0);
+fn apply_sign(value: (BigUint, bool), modulus: &BigUint) -> BigUint {
+    let (val, is_positive) = value;
+    if !is_positive {
+        return modulus.clone() - val;
+    } else {
+        return val;
+    }
+}
+
+pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters) -> Vec<u8> {
     // - Curve type
     // - Lengths of modulus (in bytes)
     // - Field modulus
@@ -26,12 +33,15 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     let modulus = curve.q;
     let modulus_length = modulus.clone().to_bytes_be().len();
 
-    let curve_type = vec![BLS12];
+    let curve_type = vec![BN];
     let modulus_len_encoded = vec![modulus_length as u8];
     let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
 
-    let a_encoded = pad_for_len_be(curve.a.to_bytes_be(), modulus_length);
-    let b_encoded = pad_for_len_be(curve.b.to_bytes_be(), modulus_length);
+    let a_encoded = apply_sign(curve.a, &modulus);
+    let a_encoded = pad_for_len_be(a_encoded.to_bytes_be(), modulus_length);
+
+    let b_encoded = apply_sign(curve.b, &modulus);
+    let b_encoded = pad_for_len_be(b_encoded.to_bytes_be(), modulus_length);
 
     let fp2_nonres_encoded = {
         let (mut nonres, is_positive) = curve.non_residue;
@@ -86,7 +96,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     let g2_y_0 = curve.g2_y_0;
     let g2_y_1 = curve.g2_y_1;
 
-    let num_pairs = vec![pairs as u8];
+    let num_pairs = vec![2u8];
 
     let mut g1_encodings = vec![];
     let mut g2_encodings = vec![];
@@ -98,9 +108,8 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
         g2_generator_encoding.extend(pad_for_len_be(g2_y_0.to_bytes_be(), modulus_length));
         g2_generator_encoding.extend(pad_for_len_be(g2_y_1.to_bytes_be(), modulus_length));
 
-        for _ in 0..pairs {
-            g2_encodings.push(g2_generator_encoding.clone());
-        }
+        g2_encodings.push(g2_generator_encoding.clone());
+        g2_encodings.push(g2_generator_encoding.clone());
     }
 
     // for multiplications we use the public API itself - just construct the corresponding G1
@@ -112,50 +121,48 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
     {
-        for _ in 0..(pairs/2) {
-            // - Multiplication API signature
-            // - Lengths of modulus (in bytes)
-            // - Field modulus
-            // - Curve A
-            // - Curve B
-            // - Length of a scalar field (curve order) (in bytes)
-            // - Curve order
-            // - X
-            // - Y
-            // - Scalar
-            
-            let random_scalar_bytes: Vec<u8> = (0..group_size_length).map(|_| rng.gen()).collect();
-            let random_scalar = BigUint::from_bytes_be(&random_scalar_bytes[..]);
-            let random_scalar = random_scalar % &group_size;
+        // - Multiplication API signature
+        // - Lengths of modulus (in bytes)
+        // - Field modulus
+        // - Curve A
+        // - Curve B
+        // - Length of a scalar field (curve order) (in bytes)
+        // - Curve order
+        // - X
+        // - Y
+        // - Scalar
+        
+        let random_scalar_bytes: Vec<u8> = (0..group_size_length).map(|_| rng.gen()).collect();
+        let random_scalar = BigUint::from_bytes_be(&random_scalar_bytes[..]);
+        let random_scalar = random_scalar % &group_size;
 
-            let negated_random_scalar = group_size.clone() - &random_scalar;
+        let negated_random_scalar = group_size.clone() - &random_scalar;
 
-            let mut common_api_bytes = vec![];
-            common_api_bytes.extend_from_slice(&modulus_len_encoded[..]);
-            common_api_bytes.extend_from_slice(&modulus_encoded[..]);
-            common_api_bytes.extend_from_slice(&a_encoded[..]);
-            common_api_bytes.extend_from_slice(&b_encoded[..]);
-            common_api_bytes.extend_from_slice(&group_len_encoded[..]);
-            common_api_bytes.extend_from_slice(&group_size_encoded[..]);
+        let mut common_api_bytes = vec![];
+        common_api_bytes.extend_from_slice(&modulus_len_encoded[..]);
+        common_api_bytes.extend_from_slice(&modulus_encoded[..]);
+        common_api_bytes.extend_from_slice(&a_encoded[..]);
+        common_api_bytes.extend_from_slice(&b_encoded[..]);
+        common_api_bytes.extend_from_slice(&group_len_encoded[..]);
+        common_api_bytes.extend_from_slice(&group_size_encoded[..]);
 
-            let mut mul_calldata = common_api_bytes.clone();
-            mul_calldata.extend_from_slice(&g1_x[..]);
-            mul_calldata.extend_from_slice(&g1_y[..]);
-            mul_calldata.extend(pad_for_len_be(random_scalar.to_bytes_be(), group_size_length));
+        let mut mul_calldata = common_api_bytes.clone();
+        mul_calldata.extend_from_slice(&g1_x[..]);
+        mul_calldata.extend_from_slice(&g1_y[..]);
+        mul_calldata.extend(pad_for_len_be(random_scalar.to_bytes_be(), group_size_length));
 
-            let first_g1_encoded = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+        let first_g1_encoded = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
 
-            g1_encodings.push(first_g1_encoded);
+        g1_encodings.push(first_g1_encoded);
 
-            let mut mul_calldata = common_api_bytes.clone();
-            mul_calldata.extend_from_slice(&g1_x[..]);
-            mul_calldata.extend_from_slice(&g1_y[..]);
-            mul_calldata.extend(pad_for_len_be(negated_random_scalar.to_bytes_be(), group_size_length));
+        let mut mul_calldata = common_api_bytes.clone();
+        mul_calldata.extend_from_slice(&g1_x[..]);
+        mul_calldata.extend_from_slice(&g1_y[..]);
+        mul_calldata.extend(pad_for_len_be(negated_random_scalar.to_bytes_be(), group_size_length));
 
-            let second_g1_encoded = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+        let second_g1_encoded = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
 
-            g1_encodings.push(second_g1_encoded);
-        }
+        g1_encodings.push(second_g1_encoded);
     }
 
     let mut calldata = vec![];
@@ -193,11 +200,11 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
 // }
 
 #[test]
-fn test_bls12_pairings_from_vectors() {
-    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+fn test_bn_pairings_from_vectors() {
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
     for (curve, _) in curves.into_iter() {
-        let calldata = assemble_single_curve_params(curve, 2);
+        let calldata = assemble_single_curve_params(curve);
         let result = call_pairing_engine(&calldata[..]);
         assert!(result.is_ok());
 
@@ -214,13 +221,13 @@ use csv::{Writer};
 
 #[test]
 fn dump_pairing_vectors() {
-    let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
+    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    let mut writer = Writer::from_path("src/test/test_vectors/bls12/pairing.csv").expect("must open a test file");
+    let mut writer = Writer::from_path("src/test/test_vectors/bn/pairing.csv").expect("must open a test file");
     writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2);
+        let calldata = assemble_single_curve_params(curve.clone());
         input_data.extend(calldata);
         let expected_result = vec![1u8];
         writer.write_record(&[
@@ -235,17 +242,17 @@ fn dump_pairing_vectors() {
 fn dump_fuzzing_vectors() {
     use std::io::Write;
     use std::fs::File;
-    let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
+    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
     
     // let mut writer = Writer::from_path("src/test/test_vectors/bls12/pairing.csv").expect("must open a test file");
     // writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2);
+        let calldata = assemble_single_curve_params(curve.clone());
         input_data.extend(calldata);
         let filename = hex::encode(&input_data);
-        let mut f = File::create(&format!("src/test/test_vectors/bls12/fuzzing_corpus/{}", &filename[0..40])).unwrap();
+        let mut f = File::create(&format!("src/test/test_vectors/bn/fuzzing_corpus/{}", &filename[0..40])).unwrap();
         f.write_all(&mut input_data[..]).expect("must write");
     }
 }

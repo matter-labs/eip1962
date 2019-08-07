@@ -5,6 +5,7 @@ extern crate serde;
 extern crate serde_json;
 
 use serde::{Deserialize, Deserializer};
+use serde::de::DeserializeOwned;
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonBls12PairingCurveParameters {
@@ -37,6 +38,75 @@ pub(crate) struct JsonBls12PairingCurveParameters {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "B")]
     pub b: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_0")]
+    pub a_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_1")]
+    pub a_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_0")]
+    pub b_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_1")]
+    pub b_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g1_x: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g1_y: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_1: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_1: BigUint,
+
+    #[serde(rename = "g1_scalar_mult_test_vectors")]
+    pub g1_mul_vectors: Vec<JsonG1PointScalarMultiplicationPair>,
+
+    #[serde(rename = "g2_scalar_mult_test_vectors")]
+    pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
+}
+
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct JsonBnPairingCurveParameters {
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub non_residue: (BigUint, bool),
+
+    #[serde(rename = "is_D_type")]
+    #[serde(deserialize_with = "bool_from_string")]
+    pub is_d_type: bool,
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub quadratic_non_residue_0: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub quadratic_non_residue_1: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub x: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub q: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub r: BigUint,
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    #[serde(rename = "A")]
+    pub a: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    #[serde(rename = "B")]
+    pub b: (BigUint, bool),
 
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "A_twist_0")]
@@ -239,7 +309,7 @@ fn strip_0x_and_pad(string: &str) -> String {
     std::string::String::from_utf8(string).unwrap()
 }
 
-pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<(JsonBls12PairingCurveParameters, String)> {
+pub(crate) fn read_dir_and_grab_curves<T: DeserializeOwned>(dir_path: &str) -> Vec<(T, String)> {
     use std::io::Read;
     use std::fs::{self};
     use std::path::Path;
@@ -267,7 +337,7 @@ pub(crate) fn read_dir_and_grab_curves(dir_path: &str) -> Vec<(JsonBls12PairingC
         let file_name = path.file_name().unwrap().to_str().unwrap().to_owned();
         let mut f = File::open(path).expect("must open file");
         f.read_to_end(&mut buffer).expect("must read bytes from file");
-        let c: JsonBls12PairingCurveParameters = serde_json::from_slice(&buffer[..]).expect("must deserialize");
+        let c: T = serde_json::from_slice(&buffer[..]).expect("must deserialize");
         results.push((c, file_name));
     }
     

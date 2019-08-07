@@ -84,9 +84,9 @@ impl GasMeter {
             OPERATION_G2_ADD | OPERATION_G2_MUL | OPERATION_G2_MULTIEXP => {
                 Self::meter_in_extension(operation, &rest)
             },
-            // OPERATION_PAIRING => {
-            //     PublicPairingApi::pair(&rest)
-            // },
+            OPERATION_PAIRING => {
+                Ok(1_000_000u64)
+            },
             _ => {
                 Err(ApiError::InputError("Unknown operation type".to_owned()))
             }

@@ -101,7 +101,7 @@ pub(crate) fn assemble_single_points_addition_pair(
 
 #[test]
 fn test_g1_mul_from_vectors() {
-    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     for (curve, _) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
@@ -131,7 +131,7 @@ use csv::{Writer};
 
 #[test]
 fn dump_g1_mul_vectors() {
-    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     let mut writer = Writer::from_path("src/test/test_vectors/bls12/g1_mul.csv").expect("must open a test file");
     writer.write_record(&["input", "result"]).expect("must write header");

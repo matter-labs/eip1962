@@ -6,3 +6,4 @@ pub(crate) mod parsers;
 
 mod fields;
 mod fuzzing;
+mod gas_meter;

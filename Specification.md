@@ -217,7 +217,7 @@ Algorithm:
 - there are two purposes to require `main_subgroup_order` to be included into the ABI:
   - Upfront estimation of the worst-case scenario for a difficulty of the multiplication and multiexponentiation operations
   - One should not enforce point being in a correct subgroup for correctness of operations and if caller expects to process user's inputs he should make such check as a separate call. Nevertheless, this check is MANDATORY for pairing operations
-- create weierstrass curve instance based on `main_subgroup_order`, `A`, `B` and `base_field_modulus`
+- create weierstrass curve instance based on `main_subgroup_order`, `A`, `B` and `base_field_modulus` parameters
 - later should follow operation-specific parameters, depending on curve
   
 This list is a naive algorithm. Real implementation will merge e.g. reading of `A`, range check and parsing it as a representation of some form of the field element in one operation.
@@ -240,6 +240,8 @@ Signature of public function is just `Operation(byte_array)` (one public functio
 
 Operations on a "twist" are defined and expected to be used for pairing friendly curves. E.G. original protocol of BLS aggregated signatures requires multiplication in G2, as well as some SNARK verification equations.
 
+To save space only common ABI part for G2 is described, with specific part being similar to G1 part.
+
 Important! `take(N)` operation comsumes(!) first `N` bytes from the byte array
 
 Algorithm:
@@ -259,7 +261,9 @@ Algorithm:
 - ensure that length of the byte array is `> modulus_length*extension_degree`, otherwise return error
 - `take(modulus_length*extension_degree)` and parse it as `extension_degree` densely packed BigEndian encodings of unsigned integers that are coefficient of an element in extension field. Coefficients follow from smallest degree: if element is represented as a polynomial `c0 + c1*x + c2*x^2` then coefficients are parsed as `c0`, `c1`, `c2` one after another. That is an `A` coefficient for a curve twist in the Weierstrass form
 - ensure that each of `c*` coefficients is `< base_field_modulus`, otherwise return error
-- ensure that length of the byte array is `> modulus_length*extension_degree` and perform similar checks for `B` coefficient
+- ensure that length of the byte array is `> modulus_length*extension_degree`
+- perform similar checks for `B` coefficient
+- ensure that `B > 0`, otherwise return error
 - `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `subgroup_order_length` for encoding of length of the next value
 - ensure that `subgroup_order_length > 0`, otherwise return error
 - ensure that length of the byte array is `> subgroup_order_length`, otherwise return error
@@ -268,7 +272,7 @@ Algorithm:
 - there are two purposes to require `main_subgroup_order` to be included into the ABI:
   - Upfront estimation of the worst-case scenario for a difficulty of the multiplication and multiexponentiation operations
   - One should not enforce point being in a correct subgroup for correctness of operations and if caller expects to process user's inputs he should make such check as a separate call. Nevertheless, this check is MANDATORY for pairing operations
-- create weierstrass curve instance based on `main_subgroup_order`, `A`, `B` and `base_field_modulus`
+- create weierstrass curve instance based on `main_subgroup_order`, `A`, `B`, `base_field_modulus` and `extension_degree` parameters 
 - later should follow operation-specific parameters, depending on curve
 
 Operations in G2 are the same as for G1 with a difference only in encoding of point coordinates now being in the extension of the base field.

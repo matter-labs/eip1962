@@ -189,7 +189,7 @@ ABI consists of two parts: one defines a base field and a curve, with another is
 
 Signature of public function is just `Operation(byte_array)` (one public function), so just a pointer to the array of bytes is passes to the function.
 
-#### **Common** ABI and parsing checks for G1 operations
+#### Common ABI and parsing checks for G1 operations
 
 Important! `take(N)` operation comsumes(!) first `N` bytes from the byte array
 
@@ -226,7 +226,7 @@ Arithmetic is made using some fixed-length representation of a field element. Th
 
 To put some sane limit of the length of the arithmetics modulus `M` must be `< 1024` bits in length, so it's representable as `[u64; 16]` array
 
-#### Specific ABI part for **addition in G1**
+#### Specific ABI part for addition in G1
 
 At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
 
@@ -247,7 +247,7 @@ At this point one knows `modulus_length` and `base_field_modulus`, so now one ca
 - perform an addition depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero) `P_res = P0 + P1`
 - operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity (this is an expected result of the addition operation in Jacobian coordinates for `P` and `-P`), otherwise inverse `P_res.z` and perform normalization
 
-#### Specific ABI part for **multiplication in G1**
+#### Specific ABI part for multiplication in G1
 
 At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
 
@@ -265,7 +265,7 @@ At this point one knows `modulus_length` and `base_field_modulus`, so now one ca
 
 Possible variations: explicitly encode length of the BigEndian byte representation of scalar (difficult for gas estimations), or use same level of granularity for any scalar that is an integer number of limbs. In this case one would also want to change common ABI part to allow zero byte padding of a main subgroup order
 
-#### Specific ABI part for **multiexponentiation in G1**
+#### Specific ABI part for multiexponentiation in G1
 
 At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
 
@@ -292,7 +292,7 @@ ABI consists of two parts: one defines a base field and a curve, with another is
 
 Signature of public function is just `Operation(byte_array)` (one public function), so just a pointer to the array of bytes is passes to the function.
 
-#### **Common** ABI and parsing checks for G2 operations
+#### Common ABI and parsing checks for G2 operations
 
 Operations on a "twist" are defined and expected to be used for pairing friendly curves. E.G. original protocol of BLS aggregated signatures requires multiplication in G2, as well as some SNARK verification equations.
 
@@ -340,7 +340,7 @@ ABI consists of two parts: one defines a base field and a curve, with another th
 
 Signature of public function is just `Operation(byte_array)` (one public function), so just a pointer to the array of bytes is passes to the function.
 
-#### **Common** ABI and parsing checks for pairing operation
+#### Common ABI and parsing checks for pairing operation
 
 Due to difference in properties and required parameters for different families of the curves first one has to parse curve type:
 
@@ -358,7 +358,7 @@ For now encoding for generic Ate pairing for `k=6` extension is not assigned.
 - ensure that length of the byte array is `> CURVE_TYPE_LENGTH`, otherwise return error
 - `take(CURVE_TYPE_LENGTH)` and parse it as unsigned integer `curve_type` for encoding of the curve type. Check that curve type is known an follow the part that is curve specific
 
-#### ABI for pairing operations on **BLS12 curves**
+#### ABI for pairing operations on BLS12 curves
 
 Important constants:
 |Name | Value |
@@ -399,7 +399,7 @@ While BLS12 curve has
 
 Reader may note that we never got coefficients `A_fp2` and `B_fp2` for curve twist. Depending on a twist type (`M` or `D`) `B_fp2` = `B*non_residue_for_fp6` or `B_fp2` = `B/non_residue_for_fp6` respectively
 
-#### ABI for **other curve families**
+#### ABI for other curve families
 
 To be extended
 

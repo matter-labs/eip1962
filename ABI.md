@@ -105,14 +105,14 @@ The operands are described below for each operation. They follow the same schema
 
 |Value              |Length                                   |                                                          |
 |-------------------|-----------------------------------------|----------------------------------------------------------|
-|lhs                |`extension_degree*field_length` bytes    |First point's coordinates in the extension field          |
-|rhs                |`extension_degree*field_length` bytes    |Second point's X and Y coordinates in the extension field |
+|lhs                |`2*extension_degree*field_length` bytes    |First point's coordinates in the extension field          |
+|rhs                |`2*extension_degree*field_length` bytes    |Second point's X and Y coordinates in the extension field |
 
 ### OPERATION_G2_MUL operands
 
 |Value              |Length                                   |                                                         |
 |-------------------|-----------------------------------------|---------------------------------------------------------|
-|lhs                |`extension_degree*field_length` bytes    |First point's coordinates in the extension field         |
+|lhs                |`2*extension_degree*field_length` bytes    |First point's coordinates in the extension field         |
 |rhs                |`group_order_length` bytes|Sсalar multiplication factor                                            |
 
 ### OPERATION_G2_MULTIEXP operands
@@ -122,7 +122,7 @@ The multiexponentiation operation can take arbitrary number of operands. Each of
 |Value              |Length                                   |                                                         |
 |-------------------|-----------------------------------------|---------------------------------------------------------|
 |num_pairs          |1 byte                    | number of (point, scalar) pairs for multiexponentiation 
-|point              |`extension_degree*field_length` bytes    |Point's coordinates in the extension field               |
+|point              |`2*extension_degree*field_length` bytes    |Point's coordinates in the extension field               |
 |scalar             |`group_order_length` bytes|Sсalar order of exponentiation                                          |
 
 ## op_data for Pairing operations

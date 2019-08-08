@@ -226,6 +226,62 @@ Arithmetic is made using some fixed-length representation of a field element. Th
 
 To put some sane limit of the length of the arithmetics modulus `M` must be `< 1024` bits in length, so it's representable as `[u64; 16]` array
 
+#### Specific ABI part for **addition in G1**
+
+At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
+
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
+- ensure that `P0.x < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
+- ensure that `P0.y < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P1`
+- ensure that `P1.x < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P1`
+- ensure that `P1.y < base_field_modulus`, otherwise return error
+- at this point curve is well-defined, along with arithmetic on it
+- check that `is_on_curve(P0)` and `is_on_curve(P1)`, otherwise return error
+- perform an addition depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero) `P_res = P0 + P1`
+- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity (this is an expected result of the addition operation in Jacobian coordinates for `P` and `-P`), otherwise inverse `P_res.z` and perform normalization
+
+#### Specific ABI part for **multiplication in G1**
+
+At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
+
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
+- ensure that `P0.x < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `> modulus_length`, otherwise return error
+- `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
+- ensure that `P0.y < base_field_modulus`, otherwise return error
+- ensure that length of the byte array is `>= subgroup_order_length`, otherwise return error
+- `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer that is an `scalar` for multiplication operation
+- ensure that `scalar <= main_subgroup_order`, otherwise return error. Scalar can be equal to the group order for usefull operations for caller
+- perform a multiplication depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero) `P_res = scalar*P0`
+- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity, otherwise inverse `P_res.z` and perform normalization
+
+Possible variations: explicitly encode length of the BigEndian byte representation of scalar (difficult for gas estimations), or use same level of granularity for any scalar that is an integer number of limbs. In this case one would also want to change common ABI part to allow zero byte padding of a main subgroup order
+
+#### Specific ABI part for **multiexponentiation in G1**
+
+At this point one knows `modulus_length` and `base_field_modulus`, so now one can parse point for an addition operation
+
+- `take(BYTES_FOR_LENGTH_ENCODING)` to get `expected_number_pairs`
+- calculate expected byte length of one `(point, scalar)` pair as `expected_pair_len = 2*modulus_length + subgroup_order_length`
+- ensure that length of the byte array is `== expected_number_pairs*expected_pair_len`, otherwise return error
+- in a loop:
+  - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `x` of the point `P0`
+  - ensure that `P0.x < base_field_modulus`, otherwise return error
+  - `take(modulus_length)` and parse it as BigEndian encoding of an unsigned integer that is an `y` of the point `P0`
+  - ensure that `P0.y < base_field_modulus`, otherwise return error
+  - `take(subgroup_order_length)` and parse it as BigEndian encoding of an unsigned integer that is an `scalar` for multiplication operation
+  - ensure that `scalar <= main_subgroup_order`, otherwise return error
+- perform a miltiexponentiation depending on a form of the Weierstrass curve (`A == 0` or `A != 0`, `B` is always non-zero), output `P_res`
+- operations are most likely to be performed in Jacobial coordinates, so perform normalization into affine coordinates. This require to make inversion of `P_res.z`. If `P_res.z == 0` return point of infinity, otherwise inverse `P_res.z` and perform normalization
+
 #### Notes for G1 ABI:
 
 For purposes of caller's convenience it may be reasonable to have some granularity for lengths of encodings of various element. For example, make encodings multiples of 8 bytes (64 bits) to roughtly correspond to limb bits on x64 machine
@@ -276,7 +332,7 @@ Algorithm:
 - create weierstrass curve instance based on `main_subgroup_order`, `A`, `B`, `base_field_modulus` and `extension_degree` parameters 
 - later should follow operation-specific parameters, depending on curve
 
-Operations in G2 are the same as for G1 with a difference only in encoding of point coordinates now being in the extension of the base field.
+Operations in G2 are the same as for G1 with a difference only in encoding of point coordinates now being in the extension of the base field (`modulus_length*extension_degree`).
 
 ### ABI and parsing checks for pairing operation
 

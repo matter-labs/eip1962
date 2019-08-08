@@ -2,17 +2,17 @@
 
 ## Supported operations
 
-EIP-1962 includes multiple elliptic curve operations. All operations will be performed on separate precompiled contracts. The mapping precompiles (listed on the left) to the addresses at which the precompile resides is defined as follows:
+The precompile provides multiple elliptic curve operations. The full set of operations is defined as follows:
 
 |Operation            |Code|
 |---------------------|----|
-|OPERATION_G1_ADD     |0x09|
-|OPERATION_G1_MUL     |0x0A|
-|OPERATION_G1_MULTIEXP|0x0B|
-|OPERATION_G2_ADD     |0x0C|
-|OPERATION_G2_MUL     |0x0D|
-|OPERATION_G2_MULTIEXP|0x0E|
-|OPERATION_PAIRING    |0x0F|
+|OPERATION_G1_ADD     |0x01|
+|OPERATION_G1_MUL     |0x02|
+|OPERATION_G1_MULTIEXP|0x03|
+|OPERATION_G2_ADD     |0x04|
+|OPERATION_G2_MUL     |0x05|
+|OPERATION_G2_MULTIEXP|0x06|
+|OPERATION_PAIRING    |0x07|
 
 `OPERATION_G1_ADD`, `OPERATION_G1_MUL` and `OPERATION_G1_MULTIEXP` are operations of additon, multiplication and multiexponentiation for G1 elements of any curve in the Weierstrass form with `b != 0`.
 
@@ -31,10 +31,10 @@ Call data must be a correctly encoded ABI data string of two elements:
 
 |Value  |Type       |Length  |
 |-------|-----------|--------|
+|op_code|uint8      |1 byte  |
 |op_data|bytes_array|variable|
-|operands|bytes_array|variable|
 
-The data is passed to the corresponding operation handler (see details below).
+The first byte of the input specifies the type of the operation. The remaining data is passed to the corresponding operation handler (see details below).
 
 All numbers are passed in **big endian** encoding.
 
@@ -105,14 +105,14 @@ The operands are described below for each operation. They follow the same schema
 
 |Value              |Length                                   |                                                          |
 |-------------------|-----------------------------------------|----------------------------------------------------------|
-|lhs                |`2*extension_degree*field_length` bytes    |First point's coordinates in the extension field          |
-|rhs                |`2*extension_degree*field_length` bytes    |Second point's X and Y coordinates in the extension field |
+|lhs                |`extension_degree*field_length` bytes    |First point's coordinates in the extension field          |
+|rhs                |`extension_degree*field_length` bytes    |Second point's X and Y coordinates in the extension field |
 
 ### OPERATION_G2_MUL operands
 
 |Value              |Length                                   |                                                         |
 |-------------------|-----------------------------------------|---------------------------------------------------------|
-|lhs                |`2*extension_degree*field_length` bytes    |First point's coordinates in the extension field         |
+|lhs                |`extension_degree*field_length` bytes    |First point's coordinates in the extension field         |
 |rhs                |`group_order_length` bytes|Sсalar multiplication factor                                            |
 
 ### OPERATION_G2_MULTIEXP operands
@@ -122,7 +122,7 @@ The multiexponentiation operation can take arbitrary number of operands. Each of
 |Value              |Length                                   |                                                         |
 |-------------------|-----------------------------------------|---------------------------------------------------------|
 |num_pairs          |1 byte                    | number of (point, scalar) pairs for multiexponentiation 
-|point              |`2*extension_degree*field_length` bytes    |Point's coordinates in the extension field               |
+|point              |`extension_degree*field_length` bytes    |Point's coordinates in the extension field               |
 |scalar             |`group_order_length` bytes|Sсalar order of exponentiation                                          |
 
 ## op_data for Pairing operations

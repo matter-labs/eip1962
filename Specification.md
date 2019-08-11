@@ -170,11 +170,12 @@ The input is passed to the corresponding function of the operation called.
 
 G1 additions, multiplications and multiexponentiations are defined for any curve in the Weierstrass form with `b != 0`. Operations in G2 are performed over the curve defined over some extension field. There are only two such extensions supported: degree 2 and degree 3.
 
-```
-pub const EXTENSION_DEGREE_ENCODING_LENGTH: usize = 1;
-pub const EXTENSION_DEGREE_2: u8 = 0x02;
-pub const EXTENSION_DEGREE_3: u8 = 0x03;
-```
+Important constants:
+|Name | Value |
+|------|------|
+|EXTENSION_DEGREE_ENCODING_LENGTH| 1 |
+|EXTENSION_DEGREE_2| 0x02 |
+|EXTENSION_DEGREE_3| 0x03 |
 
 Pairing operation is defined only for the following families of curves:
 - BN
@@ -217,7 +218,6 @@ Algorithm:
 - there are two purposes to require `main_subgroup_order` to be included into the ABI:
   - Upfront estimation of the worst-case scenario for a difficulty of the multiplication and multiexponentiation operations
   - One should not enforce point being in a correct subgroup for correctness of operations and if caller expects to process user's inputs he should make such check as a separate call. Nevertheless, this check is MANDATORY for pairing operations
-- create weierstrass curve instance based on `main_subgroup_order`, `A`, `B` and `base_field_modulus` parameters
 - later should follow operation-specific parameters, depending on curve
   
 This list is a naive algorithm. Real implementation will merge e.g. reading of `A`, range check and parsing it as a representation of some form of the field element in one operation.
@@ -329,7 +329,6 @@ Algorithm:
 - there are two purposes to require `main_subgroup_order` to be included into the ABI:
   - Upfront estimation of the worst-case scenario for a difficulty of the multiplication and multiexponentiation operations
   - One should not enforce point being in a correct subgroup for correctness of operations and if caller expects to process user's inputs he should make such check as a separate call. Nevertheless, this check is MANDATORY for pairing operations
-- create weierstrass curve instance based on `main_subgroup_order`, `A`, `B`, `base_field_modulus` and `extension_degree` parameters 
 - later should follow operation-specific parameters, depending on curve
 
 Operations in G2 are the same as for G1 with a difference only in encoding of point coordinates now being in the extension of the base field (`modulus_length*extension_degree`).
@@ -374,16 +373,14 @@ Note that BLS12 is a family of curves that are parametrized by a single scalar `
 
 - parse `modulus_length`, `base_field_modulus`, `main_subgroup_order` and `A` and `B` coefficients following the G1 ABI
 - check that `A==0` (true for BLS12 curves)
-- create weierstrass G1 curve instance based on `main_subgroup_order`, `A`, `B` and `base_field_modulus` parameters
 - parse `non_residue_for_fp2` (that is an element of the base field) that is used to construct `Fp2` extension following the logic described for G2 ABI. Check that it's non-square, otherwise return error
 - parse `non_residue_for_fp6` (that is an element of `Fp2`) that is used to construct `Fp6` extension following the logic described in G2 ABI for parsing `Fp2` elements. Check that it's non-cube in `Fp2`, otherwise return error
 - ensure that length of the byte array is `> TWIST_TYPE_LENGTH`, otherwise return error
 - `take(TWIST_TYPE_LENGTH)` and parse it as unsigned integer `twist_type` for encoding of the curve twist type. Check that twist type is either `M` or `D`, otherwise return error
-- create weierstrass G2 curve instance based on `main_subgroup_order`, `A`, `B`, `base_field_modulus`, `non_residue_for_fp2`, `non_residue_for_fp6` and `twist_type` parameters
 - ensure that length of the byte array is `> BYTES_FOR_LENGTH_ENCODING`, otherwise return error
 - `take(BYTES_FOR_LENGTH_ENCODING)` and parse it as unsigned integer `x_length` for encoding of length of the next value
 - ensure that length of the byte array is `> x_length`, otherwise return error
-- `take(x_length)` and parse it as unsigned integer `x`. Empirical testing will put a bound on the sane limits for `x`, that is to be determined
+- `take(x_length)` and parse it as unsigned integer `x`. Empirical testing will put a bound on the sane limits for `x`, that is to be determined. It is unsigned `x` so it should be `> 0`, otherwise return error
 - ensure that length of the byte array is `> SIGN_ENCODING_LENGTH`, otherwise return error
 - `take(SIGN_ENCODING_LENGTH)` and parse it as unsigned integer `x_sign` for encoding of the sign of `x`. Check that it's either `SIGN_PLUS` or `SIGN_MINUS`
 - ensure that length of the byte array is `> BYTES_FOR_LENGTH_ENCODING`, otherwise return error

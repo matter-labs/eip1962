@@ -94,7 +94,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
     let g2_y_0 = curve.g2_y_0;
     let g2_y_1 = curve.g2_y_1;
 
-    let num_pairs = vec![2u8];
+    let num_pairs = vec![pairs as u8];
 
     let mut g1_encodings = vec![];
     let mut g2_encodings = vec![];

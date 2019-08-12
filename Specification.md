@@ -171,11 +171,12 @@ The input is passed to the corresponding function of the operation called.
 G1 additions, multiplications and multiexponentiations are defined for any curve in the Weierstrass form with `b != 0`. Operations in G2 are performed over the curve defined over some extension field. There are only two such extensions supported: degree 2 and degree 3.
 
 Important constants:
-|Name | Value |
-|------|------|
-|EXTENSION_DEGREE_ENCODING_LENGTH| 1 |
-|EXTENSION_DEGREE_2| 0x02 |
-|EXTENSION_DEGREE_3| 0x03 |
+
+|Name                            |Value |
+|--------------------------------|------|
+|EXTENSION_DEGREE_ENCODING_LENGTH|  1   |
+|EXTENSION_DEGREE_2              | 0x02 |
+|EXTENSION_DEGREE_3              | 0x03 |
 
 Pairing operation is defined only for the following families of curves:
 - BN

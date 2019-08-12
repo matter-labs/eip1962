@@ -113,6 +113,7 @@ fn process_curve(curve: JsonBls12PairingCurveParameters) -> Vec<Bls12Report> {
 }
 
 #[test]
+#[ignore]
 fn test_bench_bls12_pairings() {
     let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
     let curves = vec![curves[0].clone()];

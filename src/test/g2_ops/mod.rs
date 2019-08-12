@@ -1,4 +1,5 @@
-mod bls12;
+pub(crate) mod bls12;
+pub(crate) mod bn;
 
 use crate::public_interface::{G2Api, PublicG2Api};
 use crate::errors::ApiError;

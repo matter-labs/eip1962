@@ -359,3 +359,12 @@ pub(crate) fn pad_for_len_be(input: Vec<u8>, len: usize) -> Vec<u8> {
 pub(crate) fn prepend_0x(input: &str) -> String {
     format!("0x{}", input)
 }
+
+pub(crate) fn apply_sign(value: (BigUint, bool), modulus: &BigUint) -> BigUint {
+    let (val, is_positive) = value;
+    if !is_positive {
+        return modulus.clone() - val;
+    } else {
+        return val;
+    }
+}

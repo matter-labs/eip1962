@@ -1,12 +1,16 @@
 use crate::public_interface::constants::*;
-use crate::public_interface::{PublicG1Api, G1Api};
+use crate::public_interface::{PublicG1Api, G1Api, PublicG2Api, G2Api};
 
 use num_bigint::BigUint;
 
 use crate::test::parsers::*;
 use super::call_pairing_engine;
 
+use crate::test::g1_ops;
+use crate::test::g2_ops;
+
 pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters, pairs: usize) -> Vec<u8> {
+    let curve_clone = curve.clone();
     assert!(pairs >= 2);
     assert!(pairs % 2 == 0);
     // - Curve type
@@ -91,17 +95,15 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     let mut g1_encodings = vec![];
     let mut g2_encodings = vec![];
 
-    {
+    let g2_generator_encoding = {
         let mut g2_generator_encoding = vec![];
         g2_generator_encoding.extend(pad_for_len_be(g2_x_0.to_bytes_be(), modulus_length));
         g2_generator_encoding.extend(pad_for_len_be(g2_x_1.to_bytes_be(), modulus_length));
         g2_generator_encoding.extend(pad_for_len_be(g2_y_0.to_bytes_be(), modulus_length));
         g2_generator_encoding.extend(pad_for_len_be(g2_y_1.to_bytes_be(), modulus_length));
 
-        for _ in 0..pairs {
-            g2_encodings.push(g2_generator_encoding.clone());
-        }
-    }
+        g2_generator_encoding
+    };
 
     // for multiplications we use the public API itself - just construct the corresponding G1
     // multiplication API. Leave G2 as generators for now
@@ -112,6 +114,14 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
     {
+        fn make_random_scalar<R: Rng>(rng: &mut R, group_size_length: usize, group_size: &BigUint) -> BigUint {
+            let random_scalar_bytes: Vec<u8> = (0..group_size_length).map(|_| rng.gen()).collect();
+            let random_scalar = BigUint::from_bytes_be(&random_scalar_bytes[..]);
+            let random_scalar = random_scalar % group_size;
+
+            random_scalar
+        }
+
         for _ in 0..(pairs/2) {
             // - Multiplication API signature
             // - Lengths of modulus (in bytes)
@@ -124,37 +134,57 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
             // - Y
             // - Scalar
             
-            let random_scalar_bytes: Vec<u8> = (0..group_size_length).map(|_| rng.gen()).collect();
-            let random_scalar = BigUint::from_bytes_be(&random_scalar_bytes[..]);
-            let random_scalar = random_scalar % &group_size;
+            let r1 = make_random_scalar(rng, group_size_length, &group_size);
+            let r2 = make_random_scalar(rng, group_size_length, &group_size);
+            let r3 = (r1.clone() * &r2) % &group_size;
+            let r3 = group_size.clone() - r3;
 
-            let negated_random_scalar = group_size.clone() - &random_scalar;
+            // pair (g1^r1, g2^r2)*(g1^(-r1*r2), g2)
+            let (g1_common_bytes, _, _) = g1_ops::bls12::assemble_single_curve_params(curve_clone.clone());
+            let (g2_common_bytes, _, _) = g2_ops::bls12::assemble_single_curve_params(curve_clone.clone());
 
-            let mut common_api_bytes = vec![];
-            common_api_bytes.extend_from_slice(&modulus_len_encoded[..]);
-            common_api_bytes.extend_from_slice(&modulus_encoded[..]);
-            common_api_bytes.extend_from_slice(&a_encoded[..]);
-            common_api_bytes.extend_from_slice(&b_encoded[..]);
-            common_api_bytes.extend_from_slice(&group_len_encoded[..]);
-            common_api_bytes.extend_from_slice(&group_size_encoded[..]);
+            let g1_encoded_0 = {
+                let mut mul_calldata = vec![];
+                mul_calldata.extend(g1_common_bytes.clone());
+                mul_calldata.extend_from_slice(&g1_x[..]);
+                mul_calldata.extend_from_slice(&g1_y[..]);
+                mul_calldata.extend(pad_for_len_be(r1.to_bytes_be(), group_size_length));
 
-            let mut mul_calldata = common_api_bytes.clone();
-            mul_calldata.extend_from_slice(&g1_x[..]);
-            mul_calldata.extend_from_slice(&g1_y[..]);
-            mul_calldata.extend(pad_for_len_be(random_scalar.to_bytes_be(), group_size_length));
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
 
-            let first_g1_encoded = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                g1
+            };
 
-            g1_encodings.push(first_g1_encoded);
+            let g2_encoded_0 = {
+                let mut mul_calldata = vec![];
+                mul_calldata.extend(g2_common_bytes.clone());
+                mul_calldata.extend(g2_generator_encoding.clone());
+                mul_calldata.extend(pad_for_len_be(r2.to_bytes_be(), group_size_length));
 
-            let mut mul_calldata = common_api_bytes.clone();
-            mul_calldata.extend_from_slice(&g1_x[..]);
-            mul_calldata.extend_from_slice(&g1_y[..]);
-            mul_calldata.extend(pad_for_len_be(negated_random_scalar.to_bytes_be(), group_size_length));
+                let g2 = PublicG2Api::mul_point(&mul_calldata[..]).expect("must multiply");
 
-            let second_g1_encoded = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                g2
+            };
 
-            g1_encodings.push(second_g1_encoded);
+            let g1_encoded_1 = {
+                let mut mul_calldata = vec![];
+                mul_calldata.extend(g1_common_bytes.clone());
+                mul_calldata.extend_from_slice(&g1_x[..]);
+                mul_calldata.extend_from_slice(&g1_y[..]);
+                mul_calldata.extend(pad_for_len_be(r3.to_bytes_be(), group_size_length));
+
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+
+                g1
+            };
+
+            let g2_encoded_1 = g2_generator_encoding.clone();
+
+            g1_encodings.push(g1_encoded_0);
+            g1_encodings.push(g1_encoded_1);
+
+            g2_encodings.push(g2_encoded_0);
+            g2_encodings.push(g2_encoded_1);
         }
     }
 

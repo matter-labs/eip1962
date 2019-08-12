@@ -295,6 +295,7 @@ impl<
             }
         }
 
+        // https://eprint.iacr.org/2013/722.pdf Algorithm 1
         if self.u_is_negative {
             r.negate();
         }
@@ -357,6 +358,8 @@ impl<
             }
         }
 
+        // Another part of this (G2 -> -G2) is handled in the preparation of coeffs
+        // https://eprint.iacr.org/2013/722.pdf Algorithm 1
         if self.u_is_negative {
             f.conjugate();
         }
@@ -404,15 +407,12 @@ impl<
 
                 let mut fu = r.clone();
                 self.exp_by_x(&mut fu);
-                // exp_by_x(&mut fu, x);
 
                 let mut fu2 = fu.clone();
                 self.exp_by_x(&mut fu2);
-                // exp_by_x(&mut fu2, x);
 
                 let mut fu3 = fu2.clone();
                 self.exp_by_x(&mut fu3);
-                // exp_by_x(&mut fu3, x);
 
                 let mut y3 = fu.clone();
                 y3.frobenius_map(1);

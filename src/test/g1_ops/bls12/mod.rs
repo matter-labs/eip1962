@@ -74,7 +74,7 @@ pub(crate) fn assemble_single_point_scalar_pair(
 pub(crate) fn assemble_single_points_addition_pair(
     pair: JsonG1PointScalarMultiplicationPair,
     modulus_len: usize,
-    group_len: usize,
+    _group_len: usize,
 ) -> (Vec<u8>, Vec<u8>) {
     // - X1,
     // - Y1,
@@ -93,8 +93,8 @@ pub(crate) fn assemble_single_points_addition_pair(
     let result_y_encoded = pad_for_len_be(pair.result_y.to_bytes_be(), modulus_len);
 
     let mut result = vec![];
-    calldata.extend(result_x_encoded.into_iter());
-    calldata.extend(result_y_encoded.into_iter());
+    result.extend(result_x_encoded.into_iter());
+    result.extend(result_y_encoded.into_iter());
 
     (calldata, result)
 }

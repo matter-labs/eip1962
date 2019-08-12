@@ -396,10 +396,20 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         };
 
         use crate::constants::*;
-        let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) + &*TWO_BIGUINT;
+        // we need only absolute value of 6u+2, so manually handle negative and positive U
+        let six_u_plus_two = if u_is_negative {
+            let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) - &*TWO_BIGUINT;
+
+            six_u_plus_two
+        } else {
+            let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) + &*TWO_BIGUINT;
+
+            six_u_plus_two
+        };
+
         let six_u_plus_two = biguint_to_u64_vec(six_u_plus_two);
         if calculate_hamming_weight(&six_u_plus_two) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
-            return Err(ApiError::InputError("6*U + 2 has too large hamming weight".to_owned()));
+            return Err(ApiError::InputError("|6*U + 2| has too large hamming weight".to_owned()));
         }
 
         let p_minus_one_over_2 = (modulus.clone() - &*ONE_BIGUINT) >> 1;

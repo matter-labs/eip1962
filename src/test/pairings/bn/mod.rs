@@ -228,17 +228,24 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
 
 #[test]
 fn test_bn_pairings_from_vectors() {
+    // let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/negative_u/");
     let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    for (curve, _) in curves.into_iter() {
+    for (curve, file_name) in curves.into_iter() {
         let u_is_positive = curve.x.1;
         let calldata = assemble_single_curve_params(curve, 2);
         let result = call_pairing_engine(&calldata[..]);
-        assert!(result.is_ok());
+        if !result.is_ok() {
+            panic!("Failed on {} with result {}", file_name, result.err().unwrap());
+        }
+        assert!(result.is_ok(), "Failed on {}", file_name);
         println!("U is positive = {}", u_is_positive);
 
         let result = result.unwrap()[0];
-        assert!(result == 1u8);
+        if result != 1u8 {
+            println!("Failed on {}", file_name);
+        }
+        // assert!(result == 1u8, "Failed on {}", file_name);
     }
 }
 

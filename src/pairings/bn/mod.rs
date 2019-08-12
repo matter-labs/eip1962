@@ -385,6 +385,7 @@ impl<
 
         // f1 = r.conjugate() = f^(p^6)
         let mut f1 = f.clone();
+        // f1.conjugate();
         f1.frobenius_map(6);
 
         match f.inverse() {

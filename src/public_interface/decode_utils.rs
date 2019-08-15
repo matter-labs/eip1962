@@ -291,7 +291,7 @@ pub(crate) fn decode_scalar_with_bit_limit<
     let max_length_for_bits = (bit_limit + 7) / 8;
     let length = length_encoding[0] as usize;
     if length > max_length_for_bits {
-        return Err(ApiError::InputError(format!("Scalar is too larget for bit length, file {}, line {}", file!(), line!())));
+        return Err(ApiError::InputError(format!("Scalar is too large for bit length, file {}, line {}", file!(), line!())));
     }
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
     let x = BigUint::from_bytes_be(&be_encoding);

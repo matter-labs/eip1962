@@ -13,11 +13,13 @@ use rand::{Rng, thread_rng};
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
 
+extern crate pbr;
+
 #[test]
 fn run_monte_carlo() {
     let mut rng = thread_rng();
-    const SAMPLES: usize = 10;
-    // const SAMPLES: usize = 1_000_000;
+    // const SAMPLES: usize = 10;
+    const SAMPLES: usize = 1_000_000;
 
     let curve_rng = Uniform::new_inclusive(BLS12, BN);
 
@@ -35,8 +37,13 @@ fn run_monte_carlo() {
     let bls12_curves_rng = Uniform::new(0, bls12_curves.len());
     let bn_curves_rng = Uniform::new(0, bn_curves.len());
 
+    use pbr::ProgressBar;
+
+    let mut pb = ProgressBar::new(SAMPLES as u64);
+
     for _ in 0..SAMPLES {
         let curve_type = curve_rng.sample(&mut rng);
+        pb.inc();
         match curve_type {
             BLS12 => {
                 let x_bits = x_bits_rng.sample(&mut rng);
@@ -70,4 +77,6 @@ fn run_monte_carlo() {
             }
         }
     }
+
+    pb.finish_print("done");
 }

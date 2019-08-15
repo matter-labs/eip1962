@@ -75,7 +75,8 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
     let mut reports = vec![];
     
     let new_x = make_x_bit_length_and_hamming_weight(bits, hamming);
-    for x_is_negative in vec![false, true] {
+    for x_is_negative in vec![true] {
+    // for x_is_negative in vec![false, true] {
         let mut new_curve = curve.clone();
         new_curve.x = (new_x.clone(), x_is_negative);
         let (_six_u_plus_two, six_u_plus_two_bit_length, six_u_plus_two_hamming) = six_u_plus_two(&new_x, !x_is_negative);

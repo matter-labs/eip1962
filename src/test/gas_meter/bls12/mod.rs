@@ -86,7 +86,8 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
     let mut reports = vec![];
     
     let new_x = make_x_bit_length_and_hamming_weight(bits, hamming);
-    for x_is_negative in vec![false, true] {
+    // for x_is_negative in vec![false, true] {
+    for x_is_negative in vec![true] {
         let mut new_curve = curve.clone();
         new_curve.x = (new_x.clone(), x_is_negative);
         let limbs = calculate_num_limbs(&new_curve.q).expect("must work");

@@ -227,12 +227,28 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
 
             global_rest = rest;
-            if !g1.is_on_curve() || !g2.is_on_curve() {
-                return Err(ApiError::InputError("G1 or G2 point is not on curve".to_owned()));
+            if !g1.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
+                }
             }
 
-            if !g1.check_correct_subgroup() || !g2.check_correct_subgroup() {
-                return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if !g2.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
+                }
+            }
+
+            if !g1.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
+            }
+
+            if !g2.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
             }
 
             if !g1.is_zero() && !g2.is_zero() {
@@ -433,12 +449,28 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
 
             global_rest = rest;
-            if !g1.is_on_curve() || !g2.is_on_curve() {
-                return Err(ApiError::InputError("G1 or G2 point is not on curve".to_owned()));
+            if !g1.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
+                }
             }
 
-            if !g1.check_correct_subgroup() || !g2.check_correct_subgroup() {
-                return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if !g2.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
+                }
+            }
+
+            if !g1.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
+            }
+
+            if !g2.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
             }
 
             if !g1.is_zero() && !g2.is_zero() {
@@ -609,12 +641,28 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             let (g2, rest) = decode_g2_point_from_xy_in_fp3(&rest, modulus_len, &g2_curve)?;
 
             global_rest = rest;
-            if !g1.is_on_curve() || !g2.is_on_curve() {
-                return Err(ApiError::InputError("G1 or G2 point is not on curve".to_owned()));
+            if !g1.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
+                }
             }
 
-            if !g1.check_correct_subgroup() || !g2.check_correct_subgroup() {
-                return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if !g2.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
+                }
+            }
+
+            if !g1.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
+            }
+
+            if !g2.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
             }
 
             if !g1.is_zero() && !g2.is_zero() {
@@ -785,12 +833,28 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
 
             global_rest = rest;
-            if !g1.is_on_curve() || !g2.is_on_curve() {
-                return Err(ApiError::InputError("G1 or G2 point is not on curve".to_owned()));
+            if !g1.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
+                }
             }
 
-            if !g1.check_correct_subgroup() || !g2.check_correct_subgroup() {
-                return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if !g2.is_on_curve() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
+                }
+            }
+
+            if !g1.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
+            }
+
+            if !g2.check_correct_subgroup() {
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
             }
 
             if !g1.is_zero() && !g2.is_zero() {

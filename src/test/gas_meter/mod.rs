@@ -1,5 +1,8 @@
 pub(crate) mod bls12;
 pub(crate) mod bn;
+pub(crate) mod mnt4;
+pub(crate) mod mnt6;
+
 mod monte_carlo;
 
 use crate::field::biguint_to_u64_vec;

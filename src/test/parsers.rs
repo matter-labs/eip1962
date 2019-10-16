@@ -144,6 +144,148 @@ pub(crate) struct JsonBnPairingCurveParameters {
     pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
 }
 
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct JsonMnt4PairingCurveParameters {
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub non_residue: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub x: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub exp_w0: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub exp_w1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub q: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub r: BigUint,
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    #[serde(rename = "A")]
+    pub a: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    #[serde(rename = "B")]
+    pub b: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_0")]
+    pub a_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_1")]
+    pub a_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_0")]
+    pub b_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_1")]
+    pub b_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g1_x: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g1_y: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_1: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_1: BigUint,
+
+    #[serde(rename = "g1_scalar_mult_test_vectors")]
+    pub g1_mul_vectors: Vec<JsonG1PointScalarMultiplicationPair>,
+
+    #[serde(rename = "g2_scalar_mult_test_vectors")]
+    pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
+}
+
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct JsonMnt6PairingCurveParameters {
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub non_residue: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub x: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    pub exp_w0: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub exp_w1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub q: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub r: BigUint,
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    #[serde(rename = "A")]
+    pub a: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
+    #[serde(rename = "B")]
+    pub b: (BigUint, bool),
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_0")]
+    pub a_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_1")]
+    pub a_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "A_twist_2")]
+    pub a_twist_2: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_0")]
+    pub b_twist_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_1")]
+    pub b_twist_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "B_twist_2")]
+    pub b_twist_2: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g1_x: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g1_y: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_1: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_x_2: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_0: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_1: BigUint,
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    pub g2_y_2: BigUint,
+
+    #[serde(rename = "g1_scalar_mult_test_vectors")]
+    pub g1_mul_vectors: Vec<JsonG1PointScalarMultiplicationPair>,
+
+    #[serde(rename = "g2_scalar_mult_test_vectors")]
+    pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonG1PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]

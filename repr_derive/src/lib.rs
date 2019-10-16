@@ -12,9 +12,6 @@ extern crate num_bigint;
 extern crate num_integer;
 extern crate num_traits;
 
-// use num_bigint::BigUint;
-// use num_integer::Integer;
-// use num_traits::{One, ToPrimitive, Zero};
 use quote::TokenStreamExt;
 use std::str::FromStr;
 
@@ -67,10 +64,10 @@ fn fetch_wrapped_ident(body: &syn::Data) -> Option<syn::Ident> {
 /// Fetch an attribute string from the derived struct.
 fn fetch_attr(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
     for attr in attrs {
-        if let Some(meta) = attr.interpret_meta() {
+        if let Ok(meta) = attr.parse_meta() {
             match meta {
                 syn::Meta::NameValue(nv) => {
-                    if nv.ident.to_string() == name {
+                    if nv.path.is_ident(name) {
                         match nv.lit {
                             syn::Lit::Str(ref s) => return Some(s.value()),
                             _ => {

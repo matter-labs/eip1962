@@ -27,7 +27,7 @@ pub(crate) struct WindowExpBase<F: FieldElement> {
 }
 
 impl<F: FieldElement> WindowExpBase<F> {
-    pub fn new(base: &F, one: F, window: usize, num_scalars: usize) -> Self {
+    pub fn new(base: &F, one: F, window: usize, _num_scalars: usize) -> Self {
         let recommended_window_size = window; // TODO
         let recommended_size_accounding_for_scalars = recommended_window_size;
 

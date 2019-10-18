@@ -441,9 +441,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         use crate::field::biguint_to_u64_vec;
         use crate::constants::ONE_BIGUINT;
         use crate::constants::SIX_BIGUINT;
-
-        // let one = BigUint::from(1u64);
-        // let six = BigUint::from(6u64);
     
         // Fq2(u + 1)**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);
@@ -458,7 +455,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
             let power = q_power.clone() - &*ONE_BIGUINT;
             let (power, rem) = power.div_rem(&*SIX_BIGUINT);
             if !rem.is_zero() {
-                return Err(());
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(());
+                }
             }
             powers.push(biguint_to_u64_vec(power));
         }
@@ -468,7 +467,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
             let power = q_power.clone() - &*ONE_BIGUINT;
             let (power, rem) = power.div_rem(&*SIX_BIGUINT);
             if !rem.is_zero() {
-                return Err(());
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(());
+                }
             }
             powers.push(biguint_to_u64_vec(power));
         }
@@ -478,7 +479,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
             let power = q_power.clone() - &*ONE_BIGUINT;
             let (power, rem) = power.div_rem(&*SIX_BIGUINT);
             if !rem.is_zero() {
-                return Err(());
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(());
+                }
             }
             powers.push(biguint_to_u64_vec(power));
         }

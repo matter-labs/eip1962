@@ -1,5 +1,6 @@
 use crate::public_interface::constants::*;
 use crate::public_interface::{PublicG1Api, G1Api, PublicG2Api, G2Api};
+use crate::errors::ApiError;
 
 use num_bigint::BigUint;
 
@@ -9,7 +10,7 @@ use super::call_pairing_engine;
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters, pairs: usize) -> Vec<u8> {
+pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError>  {
     let curve_clone = curve.clone();
     assert!(pairs >= 2);
     assert!(pairs % 2 == 0);
@@ -150,7 +151,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
                 mul_calldata.extend_from_slice(&g1_y[..]);
                 mul_calldata.extend(pad_for_len_be(r1.to_bytes_be(), group_size_length));
 
-                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..])?;
 
                 g1
             };
@@ -161,7 +162,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
                 mul_calldata.extend(g2_generator_encoding.clone());
                 mul_calldata.extend(pad_for_len_be(r2.to_bytes_be(), group_size_length));
 
-                let g2 = PublicG2Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g2 = PublicG2Api::mul_point(&mul_calldata[..])?;
 
                 g2
             };
@@ -173,7 +174,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
                 mul_calldata.extend_from_slice(&g1_y[..]);
                 mul_calldata.extend(pad_for_len_be(r3.to_bytes_be(), group_size_length));
 
-                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..])?;
 
                 g1
             };
@@ -209,7 +210,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
         calldata.extend(g2.into_iter());
     }
 
-    calldata
+    Ok(calldata)
 }
 
 // #[test]
@@ -227,7 +228,7 @@ fn test_bls12_pairings_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     for (curve, _) in curves.into_iter() {
-        let calldata = assemble_single_curve_params(curve, 2);
+        let calldata = assemble_single_curve_params(curve, 2).unwrap();
         let result = call_pairing_engine(&calldata[..]);
         assert!(result.is_ok());
 
@@ -250,7 +251,7 @@ fn dump_pairing_vectors() {
     writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2);
+        let calldata = assemble_single_curve_params(curve.clone(), 2).unwrap();
         input_data.extend(calldata);
         let expected_result = vec![1u8];
         writer.write_record(&[
@@ -272,7 +273,7 @@ fn dump_fuzzing_vectors() {
     // writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2);
+        let calldata = assemble_single_curve_params(curve.clone(), 2).unwrap();
         input_data.extend(calldata);
         let filename = hex::encode(&input_data);
         let mut f = File::create(&format!("src/test/test_vectors/bls12/fuzzing_corpus/{}", &filename[0..40])).unwrap();

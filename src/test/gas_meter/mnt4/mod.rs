@@ -3,6 +3,7 @@ use crate::field::biguint_to_u64_vec;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::decode_utils::*;
 
 use crate::test::parsers::*;
 use crate::test::pairings::mnt4::*;
@@ -102,8 +103,10 @@ pub(crate) fn process_for_curve_and_bit_sizes(
     let mut reports = vec![];
     
     let new_x = make_x_bit_length_and_hamming_weight(bits, hamming);
+    // println!("New x = {} for {} bits and {} hamming", new_x, bits, hamming);
     let new_w0 = make_x_bit_length_and_hamming_weight(w_0_bits, w_0_hamming);
     let new_w1 = make_x_bit_length_and_hamming_weight(w_1_bits, w_1_hamming);
+    // println!("New w1 = {} for {} bits and {} hamming", new_w1, w_1_bits, w_1_hamming);
     let exp_w0_is_negative = true;
     for x_is_negative in vec![true] {
     // for x_is_negative in vec![false, true] {
@@ -112,9 +115,13 @@ pub(crate) fn process_for_curve_and_bit_sizes(
         new_curve.exp_w0 = (new_w0.clone(), exp_w0_is_negative);
         new_curve.exp_w1 = new_w1.clone();
         let limbs = calculate_num_limbs(&new_curve.q).expect("must work");
-        let group_order_limbs = calculate_num_limbs(&new_curve.r).expect("must work");
+        let group_order_limbs = num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        if calldata.is_err() {
+            continue
+        };
+        let calldata = calldata.unwrap();
         input_data.extend(calldata);
         let now = Instant::now();
         let res = API::run(&input_data);
@@ -137,7 +144,8 @@ pub(crate) fn process_for_curve_and_bit_sizes(
 
             reports.push(report);
         } else {
-            println!("{:?}", res.err().unwrap());
+            println!("MNT4 error {:?}", res.err().unwrap());
+            // println!("Data = {}", hex::encode(&input_data));
         }
     }
 

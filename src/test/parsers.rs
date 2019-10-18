@@ -503,7 +503,12 @@ pub(crate) fn prepend_0x(input: &str) -> String {
 }
 
 pub(crate) fn apply_sign(value: (BigUint, bool), modulus: &BigUint) -> BigUint {
+    use crate::num_traits::Zero;
+    
     let (val, is_positive) = value;
+    if val.is_zero() {
+        return val;
+    }
     if !is_positive {
         return modulus.clone() - val;
     } else {

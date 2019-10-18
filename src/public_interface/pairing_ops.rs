@@ -121,7 +121,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
             if !is_not_a_square {
-                return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
+                }
             }
         }
 
@@ -136,7 +138,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, modulus.clone(), 6u64);
             if !is_not_a_6th_root {
-                return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
+                }
             }
         }
 
@@ -192,7 +196,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
-        let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_BLS12_X_BIT_LENGTH)?;
+        let (x, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_BLS12_X_BIT_LENGTH)?;
         if x.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
@@ -327,7 +331,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
             if !is_not_a_square {
-                return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
+                }
             }
         }
 
@@ -342,7 +348,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, modulus.clone(), 6u64);
             if !is_not_a_6th_root {
-                return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
+                }
             }
         }
 
@@ -398,7 +406,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
-        let (u, rest) = decode_scalar_with_bit_limit(&rest, MAX_BN_U_BIT_LENGTH)?;
+        let (u, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_BN_U_BIT_LENGTH)?;
         if u.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
@@ -548,7 +556,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_root = is_non_nth_root(&fp_non_residue, modulus.clone(), 6u64);
             if !is_not_a_root {
-                return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
+                }
             }
         }
 
@@ -588,9 +598,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
-        let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
+        let (x, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
         if x.is_zero() {
-            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+            return Err(ApiError::InputError("Ate loop count parameters can not be zero".to_owned()));
         }
         let x = biguint_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
@@ -605,14 +615,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        let (exp_w0, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
+        let (exp_w0, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
         if exp_w0.is_zero() {
-            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+            return Err(ApiError::InputError("Final exp w0 loop count parameters can not be zero".to_owned()));
         }
 
-        let (exp_w1, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
+        let (exp_w1, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
         if exp_w1.is_zero() {
-            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+            return Err(ApiError::InputError("Final exp w1 loop count parameters can not be zero".to_owned()));
         }
 
         let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
@@ -740,7 +750,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_root = is_non_nth_root(&fp_non_residue, modulus.clone(), 4u64);
             if !is_not_a_root {
-                return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
+                }
             }
         }
 
@@ -780,9 +792,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
-        let (x, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
+        let (x, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
         if x.is_zero() {
-            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+            return Err(ApiError::InputError("Ate pairing loop count parameters can not be zero".to_owned()));
         }
         let x = biguint_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
@@ -798,13 +810,13 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        let (exp_w0, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
+        let (exp_w0, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
         if exp_w0.is_zero() {
-            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+            return Err(ApiError::InputError("Final exp w0 loop count parameters can not be zero".to_owned()));
         }
-        let (exp_w1, rest) = decode_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
+        let (exp_w1, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH)?;
         if exp_w1.is_zero() {
-            return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
+            return Err(ApiError::InputError("Final exp w1 loop count parameters can not be zero".to_owned()));
         }
 
         let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;

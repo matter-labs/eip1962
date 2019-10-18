@@ -345,8 +345,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         use crate::field::biguint_to_u64_vec;
         use crate::constants::ONE_BIGUINT;
         use crate::constants::THREE_BIGUINT;
-        // let one = BigUint::from(1u64);
-        // let three = BigUint::from(3u64);
     
         // NON_RESIDUE**(((q^0) - 1) / 3)
         let non_residue = self.non_residue.clone();
@@ -357,7 +355,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         let power = q_power.clone() - &*ONE_BIGUINT;
         let (power, rem) = power.div_rem(&*THREE_BIGUINT);
         if !rem.is_zero() {
-            return Err(());
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(());
+            }
         }
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
@@ -366,7 +366,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         let power = q_power.clone() - &*ONE_BIGUINT;
         let (power, rem) = power.div_rem(&*THREE_BIGUINT);
         if !rem.is_zero() {
-            return Err(());
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(());
+            }
         }
         let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 

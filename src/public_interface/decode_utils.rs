@@ -259,19 +259,12 @@ pub(crate) fn num_limbs_for_modulus(modulus: &BigUint) -> Result<usize, ApiError
     use crate::field::calculate_num_limbs;
 
     let modulus_limbs = calculate_num_limbs(&modulus).map_err(|_| ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())) )?;
-    // let mut modulus_limbs = (modulus.bits() / 64) + 1;
-    // if modulus_limbs > 16 {
-    //     return Err(ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())));
-    // }
-    // if modulus_limbs < 4 {
-    //     modulus_limbs = 4;
-    // }
 
     Ok(modulus_limbs)
 }
 
 pub(crate) fn num_units_for_group_order(order: &BigUint) -> Result<usize, ApiError> {
-    let limbs = (order.bits() / 63) + 1;
+    let limbs = (order.bits() + 63) / 64;
     if limbs > 16 {
         return Err(ApiError::InputError(format!("Group order is too large, file {}, line {}", file!(), line!())));
     }
@@ -279,7 +272,7 @@ pub(crate) fn num_units_for_group_order(order: &BigUint) -> Result<usize, ApiErr
     Ok(limbs)
 }
 
-pub(crate) fn decode_scalar_with_bit_limit<
+pub(crate) fn decode_loop_parameter_scalar_with_bit_limit<
     'a
     >
     (
@@ -290,6 +283,9 @@ pub(crate) fn decode_scalar_with_bit_limit<
     let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
     let max_length_for_bits = (bit_limit + 7) / 8;
     let length = length_encoding[0] as usize;
+    if length == 0 {
+        return Err(ApiError::InputError(format!("Loop parameter scalar has zero length, file {}, line {}", file!(), line!())));
+    }
     if length > max_length_for_bits {
         return Err(ApiError::InputError(format!("Scalar is too large for bit length, file {}, line {}", file!(), line!())));
     }

@@ -313,7 +313,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         let power = q_power.clone() - &*ONE_BIGUINT;
         let (power, rem) = power.div_rem(&*FOUR_BIGUINT);
         if !rem.is_zero() {
-            return Err(());
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(());
+            }
         }
         let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
 
@@ -322,7 +324,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         let power = q_power.clone() - &*ONE_BIGUINT;
         let (power, rem) = power.div_rem(&*FOUR_BIGUINT);
         if !rem.is_zero() {
-            return Err(());
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(());
+            }
         }
         let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
 

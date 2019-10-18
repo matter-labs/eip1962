@@ -3,9 +3,10 @@ use crate::field::biguint_to_u64_vec;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::decode_utils::*;
 
 use crate::test::parsers::*;
-use crate::test::pairings::mnt4::*;
+use crate::test::pairings::mnt6::*;
 
 use super::*;
 
@@ -88,7 +89,7 @@ impl Mnt6ReportWriter {
 }
 
 pub(crate) fn process_for_curve_and_bit_sizes(
-    curve: JsonMnt4PairingCurveParameters, 
+    curve: JsonMnt6PairingCurveParameters, 
     bits: usize, 
     hamming: usize, 
     w_0_bits: usize,
@@ -112,9 +113,13 @@ pub(crate) fn process_for_curve_and_bit_sizes(
         new_curve.exp_w0 = (new_w0.clone(), exp_w0_is_negative);
         new_curve.exp_w1 = new_w1.clone();
         let limbs = calculate_num_limbs(&new_curve.q).expect("must work");
-        let group_order_limbs = calculate_num_limbs(&new_curve.r).expect("must work");
+        let group_order_limbs = num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        if calldata.is_err() {
+            continue
+        };
+        let calldata = calldata.unwrap();
         input_data.extend(calldata);
         let now = Instant::now();
         let res = API::run(&input_data);
@@ -137,7 +142,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(
 
             reports.push(report);
         } else {
-            println!("{:?}", res.err().unwrap());
+            println!("MNT6 error {:?}", res.err().unwrap());
         }
     }
 

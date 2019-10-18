@@ -1,5 +1,6 @@
 use crate::public_interface::constants::*;
 use crate::public_interface::{PublicG1Api, G1Api, PublicG2Api, G2Api};
+use crate::errors::ApiError;
 
 use num_bigint::BigUint;
 
@@ -9,7 +10,7 @@ use super::call_pairing_engine;
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters, pairs: usize) -> Vec<u8> {
+pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
     assert!(pairs >= 2);
     assert!(pairs % 2 == 0);
@@ -52,15 +53,18 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
     let (x_decoded, x_is_positive) = curve.x;
     let x_sign = if x_is_positive { vec![0u8] } else { vec![1u8] };
     let x_encoded = x_decoded.to_bytes_be();
+    assert!(x_encoded.len() > 0);
     let x_length = vec![x_encoded.len() as u8];
 
     let (exp_w0_decoded, exp_w0_is_positive) = curve.exp_w0;
     let exp_w0_sign = if exp_w0_is_positive { vec![0u8] } else { vec![1u8] };
     let exp_w0_encoded = exp_w0_decoded.to_bytes_be();
+    assert!(exp_w0_encoded.len() > 0);
     let exp_w0_length = vec![exp_w0_encoded.len() as u8];
 
     let exp_w1_decoded = curve.exp_w1;
     let exp_w1_encoded = exp_w1_decoded.to_bytes_be();
+    assert!(exp_w1_encoded.len() > 0);
     let exp_w1_length = vec![exp_w1_encoded.len() as u8];
 
     // now we make two random scalars and do scalar multiplications in G1 and G2 to get pairs that should
@@ -149,7 +153,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
                 mul_calldata.extend_from_slice(&g1_y[..]);
                 mul_calldata.extend(pad_for_len_be(r1.to_bytes_be(), group_size_length));
 
-                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..])?;
 
                 g1
             };
@@ -160,7 +164,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
                 mul_calldata.extend(g2_generator_encoding.clone());
                 mul_calldata.extend(pad_for_len_be(r2.to_bytes_be(), group_size_length));
 
-                let g2 = PublicG2Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g2 = PublicG2Api::mul_point(&mul_calldata[..])?;
 
                 g2
             };
@@ -172,7 +176,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
                 mul_calldata.extend_from_slice(&g1_y[..]);
                 mul_calldata.extend(pad_for_len_be(r3.to_bytes_be(), group_size_length));
 
-                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..])?;
 
                 g1
             };
@@ -210,7 +214,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
         calldata.extend(g2.into_iter());
     }
 
-    calldata
+    Ok(calldata)
 }
 
 // #[test]

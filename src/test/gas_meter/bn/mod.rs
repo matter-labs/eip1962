@@ -3,6 +3,7 @@ use crate::field::biguint_to_u64_vec;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::decode_utils::*;
 
 use crate::test::parsers::*;
 use crate::test::pairings::bn::*;
@@ -14,6 +15,7 @@ pub(crate) struct BnReport {
     six_u_plus_two_hamming: usize,
     modulus_limbs: usize,
     num_pairs: usize,
+    group_limbs: usize,
     x_is_negative: bool,
     x_bit_length: usize,
     x_hamming_weight: usize,
@@ -36,6 +38,7 @@ impl BnReportWriter {
         writer.write_record(&["six_u_plus_two_bit_length", 
                             "six_u_plus_two_hamming",
                             "modulus_limbs", 
+                            "group_limbs",
                             "num_pairs", 
                             "x_is_negative", 
                             "x_bit_length", 
@@ -59,6 +62,7 @@ impl BnReportWriter {
             report.six_u_plus_two_bit_length.to_string(),
             report.six_u_plus_two_hamming.to_string(),
             report.modulus_limbs.to_string(),
+            report.group_limbs.to_string(),
             report.num_pairs.to_string(),
             x_is_negative.to_owned(),
             report.x_bit_length.to_string(),
@@ -81,8 +85,15 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
         new_curve.x = (new_x.clone(), x_is_negative);
         let (_six_u_plus_two, six_u_plus_two_bit_length, six_u_plus_two_hamming) = six_u_plus_two(&new_x, !x_is_negative);
         let limbs = calculate_num_limbs(&new_curve.q).expect("must work");
+        let group_order_limbs = num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        if calldata.is_err() {
+            // panic!("Bn curve encoding error = {}", calldata.err().unwrap());
+            // println!("Bn curve encoding error = {}", calldata.err().unwrap());
+            continue
+        };
+        let calldata = calldata.unwrap();
         input_data.extend(calldata);
         let now = Instant::now();
         let res = API::run(&input_data);
@@ -93,6 +104,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
                 six_u_plus_two_hamming: six_u_plus_two_hamming,
                 modulus_limbs: limbs,
                 num_pairs: num_pairs,
+                group_limbs: group_order_limbs,
                 x_is_negative: x_is_negative,
                 x_bit_length: bits,
                 x_hamming_weight: hamming,
@@ -101,7 +113,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
 
             reports.push(report);
         } else {
-            println!("{:?}", res.err().unwrap());
+            println!("BN error {:?}", res.err().unwrap());
         }
     }
 

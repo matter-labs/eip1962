@@ -53,10 +53,14 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         }
 
         if !p_0.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
         if !p_1.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
 
         p_0.add_assign(&p_1);
@@ -84,7 +88,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         }
 
         if !p_0.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
 
         let p = p_0.mul(&scalar);
@@ -122,7 +128,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
             if !p.is_on_curve() {
-                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                }
             }
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
             pairs.push((p, scalar));
@@ -164,10 +172,14 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         }
 
         if !p_0.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
         if !p_1.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
         p_0.add_assign(&p_1);
 
@@ -194,7 +206,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         }
 
         if !p_0.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
 
         let p = p_0.mul(&scalar);
@@ -211,7 +225,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
         let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params).map_err(|_| {
-            ApiError::InputError("Curve share is not supported".to_owned())
+            ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
@@ -232,7 +246,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp3(global_rest, modulus_len, &curve)?;
             if !p.is_on_curve() {
-                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                }
             }
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
             pairs.push((p, scalar));

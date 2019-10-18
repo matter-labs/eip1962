@@ -3,6 +3,7 @@ use crate::field::biguint_to_u64_vec;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::decode_utils::*;
 
 use crate::test::parsers::*;
 use crate::test::pairings::bls12::*;
@@ -13,6 +14,7 @@ pub(crate) struct Bls12Report {
     x_bit_length: usize,
     x_hamming_weight: usize,
     modulus_limbs: usize,
+    group_limbs: usize,
     num_pairs: usize,
     x_is_negative: bool,
     run_microseconds: u64,
@@ -27,7 +29,15 @@ use std::fs::File;
 fn write_reports<P: AsRef<Path>>(reports: Vec<Bls12Report>, path: P) {
     assert!(reports.len() != 0);
     let mut writer = Writer::from_path(path).expect("must open a test file");
-    writer.write_record(&["x_bit_length", "x_hamming_weight", "modulus_limbs", "num_pairs", "x_is_negative", "run_microseconds"]).expect("must write header");
+    writer.write_record(&[
+        "x_bit_length", 
+        "x_hamming_weight", 
+        "modulus_limbs", 
+        "group_limbs",
+        "num_pairs", 
+        "x_is_negative", 
+        "run_microseconds"
+    ]).expect("must write header");
     for report in reports.into_iter() {
         let x_is_negative = if report.x_is_negative {
             "1"
@@ -38,6 +48,7 @@ fn write_reports<P: AsRef<Path>>(reports: Vec<Bls12Report>, path: P) {
             report.x_bit_length.to_string(),
             report.x_hamming_weight.to_string(),
             report.modulus_limbs.to_string(),
+            report.group_limbs.to_string(),
             report.num_pairs.to_string(),
             x_is_negative.to_owned(),
             report.run_microseconds.to_string()
@@ -54,7 +65,15 @@ pub(crate) struct Bls12ReportWriter {
 impl Bls12ReportWriter {
     pub(crate) fn new_for_path<P: AsRef<Path>>(path: P) -> Self {
         let mut writer = Writer::from_path(path).expect("must open a test file");
-        writer.write_record(&["x_bit_length", "x_hamming_weight", "modulus_limbs", "num_pairs", "x_is_negative", "run_microseconds"]).expect("must write header");
+        writer.write_record(&[
+            "x_bit_length", 
+            "x_hamming_weight", 
+            "modulus_limbs", 
+            "group_limbs",
+            "num_pairs", 
+            "x_is_negative", 
+            "run_microseconds"
+        ]).expect("must write header");
         writer.flush().expect("must finalize writing");
 
         Self {
@@ -72,6 +91,7 @@ impl Bls12ReportWriter {
             report.x_bit_length.to_string(),
             report.x_hamming_weight.to_string(),
             report.modulus_limbs.to_string(),
+            report.group_limbs.to_string(),
             report.num_pairs.to_string(),
             x_is_negative.to_owned(),
             report.run_microseconds.to_string()
@@ -91,8 +111,13 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
         let mut new_curve = curve.clone();
         new_curve.x = (new_x.clone(), x_is_negative);
         let limbs = calculate_num_limbs(&new_curve.q).expect("must work");
+        let group_order_limbs = num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        if calldata.is_err() {
+            continue
+        };
+        let calldata = calldata.unwrap();
         input_data.extend(calldata);
         let now = Instant::now();
         let res = API::run(&input_data);
@@ -102,6 +127,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
                 x_bit_length: bits,
                 x_hamming_weight: hamming,
                 modulus_limbs: limbs,
+                group_limbs: group_order_limbs,
                 num_pairs: num_pairs,
                 x_is_negative: x_is_negative,
                 run_microseconds: elapsed.as_micros() as u64,
@@ -109,7 +135,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
 
             reports.push(report);
         } else {
-            println!("{:?}", res.err().unwrap());
+            println!("BLS12 error {:?}", res.err().unwrap());
         }
     }
 

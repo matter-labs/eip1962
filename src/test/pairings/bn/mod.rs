@@ -1,5 +1,6 @@
 use crate::public_interface::constants::*;
 use crate::public_interface::{PublicG1Api, G1Api, PublicG2Api, G2Api};
+use crate::errors::ApiError;
 
 use num_bigint::BigUint;
 
@@ -9,7 +10,7 @@ use super::call_pairing_engine;
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, pairs: usize) -> Vec<u8> {
+pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
     assert!(pairs >= 2);
     assert!(pairs % 2 == 0);
@@ -36,9 +37,11 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
     let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
 
     let a_encoded = apply_sign(curve.a, &modulus);
+    assert!(a_encoded < modulus);
     let a_encoded = pad_for_len_be(a_encoded.to_bytes_be(), modulus_length);
 
     let b_encoded = apply_sign(curve.b, &modulus);
+    assert!(b_encoded < modulus);
     let b_encoded = pad_for_len_be(b_encoded.to_bytes_be(), modulus_length);
 
     let fp2_nonres_encoded = {
@@ -154,7 +157,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
                 mul_calldata.extend_from_slice(&g1_y[..]);
                 mul_calldata.extend(pad_for_len_be(r1.to_bytes_be(), group_size_length));
 
-                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..])?;
 
                 g1
             };
@@ -165,7 +168,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
                 mul_calldata.extend(g2_generator_encoding.clone());
                 mul_calldata.extend(pad_for_len_be(r2.to_bytes_be(), group_size_length));
 
-                let g2 = PublicG2Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g2 = PublicG2Api::mul_point(&mul_calldata[..])?;
 
                 g2
             };
@@ -177,7 +180,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
                 mul_calldata.extend_from_slice(&g1_y[..]);
                 mul_calldata.extend(pad_for_len_be(r3.to_bytes_be(), group_size_length));
 
-                let g1 = PublicG1Api::mul_point(&mul_calldata[..]).expect("must multiply");
+                let g1 = PublicG1Api::mul_point(&mul_calldata[..])?;
 
                 g1
             };
@@ -213,7 +216,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
         calldata.extend(g2.into_iter());
     }
 
-    calldata
+    Ok(calldata)
 }
 
 // #[test]
@@ -233,7 +236,7 @@ fn test_bn_pairings_from_vectors() {
     assert!(curves.len() != 0);
     for (curve, file_name) in curves.into_iter() {
         let u_is_positive = curve.x.1;
-        let calldata = assemble_single_curve_params(curve, 2);
+        let calldata = assemble_single_curve_params(curve, 2).unwrap();
         let result = call_pairing_engine(&calldata[..]);
         if !result.is_ok() {
             println!("Failed on {} with result {}", file_name, result.err().unwrap());
@@ -264,7 +267,7 @@ fn dump_pairing_vectors() {
     writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2);
+        let calldata = assemble_single_curve_params(curve.clone(), 2).unwrap();
         input_data.extend(calldata);
         let expected_result = vec![1u8];
         writer.write_record(&[
@@ -286,7 +289,7 @@ fn dump_fuzzing_vectors() {
     // writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2);
+        let calldata = assemble_single_curve_params(curve.clone(), 2).unwrap();
         input_data.extend(calldata);
         let filename = hex::encode(&input_data);
         let mut f = File::create(&format!("src/test/test_vectors/bn/fuzzing_corpus/{}", &filename[0..40])).unwrap();

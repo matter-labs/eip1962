@@ -60,10 +60,14 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         }
 
         if !p_0.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
         if !p_1.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
 
         p_0.add_assign(&p_1);
@@ -90,7 +94,9 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         }
 
         if !p_0.is_on_curve() {
-            return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+            }
         }
 
         let p = p_0.mul(&scalar);
@@ -121,8 +127,6 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
             return Err(ApiError::InputError("Input length is invalid for number of pairs".to_owned()));
         }
 
-        // let mut acc = CurvePoint::zero(&curve);
-
         let mut global_rest = rest;
         let mut pairs = vec![];
 
@@ -130,10 +134,11 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
             let (p, local_rest) = decode_g1_point_from_xy(global_rest, modulus_len, &curve)?;
             let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
             if !p.is_on_curve() {
-                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                if !std::option_env!("GAS_METERING").is_some() {
+                    return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                }
             }
             pairs.push((p, scalar));
-            // acc.add_assign(&p.mul(&scalar));
             global_rest = local_rest;
         }
 

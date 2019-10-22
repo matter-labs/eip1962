@@ -40,6 +40,7 @@ impl Mnt4ReportWriter {
         let mut writer = Writer::from_path(path).expect("must open a test file");
         writer.write_record(&[
                             "modulus_limbs", 
+                            "group_limbs",
                             "num_pairs", 
                             "x_is_negative", 
                             "x_bit_length", 
@@ -73,6 +74,7 @@ impl Mnt4ReportWriter {
 
         self.writer.write_record(&[
             report.modulus_limbs.to_string(),
+            report.group_order_limbs.to_string(),
             report.num_pairs.to_string(),
             x_is_negative.to_owned(),
             report.x_bit_length.to_string(),
@@ -85,6 +87,8 @@ impl Mnt4ReportWriter {
             report.run_microseconds.to_string(),
             ]
         ).expect("must write a record");
+
+        self.writer.flush().expect("must write to disk");
     } 
 }
 

@@ -26,11 +26,11 @@ fn run_pseudo_curves_monte_carlo() {
     use rand_xorshift::XorShiftRng;
 
     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    const SAMPLES: usize = 30_000;
+    const SAMPLES: usize = 55_000;
     // const SAMPLES: usize = 1_000_000;
 
-    // let curve_rng = Uniform::new_inclusive(BLS12, MNT6);
-    let curve_rng = Uniform::new_inclusive(BN, BN);
+    let curve_rng = Uniform::new_inclusive(BLS12, MNT6);
+    // let curve_rng = Uniform::new_inclusive(BN, BN);
 
     let mut bls12_writer = bls12::Bls12ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bls12/monte_carlo_f_exp_{}.csv", SAMPLES));
     let mut bn_writer = bn::BnReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bn/monte_carlo_f_exp_{}.csv", SAMPLES));

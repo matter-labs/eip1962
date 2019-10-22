@@ -2,5 +2,5 @@
 **/*.rs.bk
 Cargo.lock
 .vscode
-# src/test/gas_meter/**/*.csv
+src/test/gas_meter/**/*.csv
 src/test/gas_meter/**/.ipynb_checkpoints/

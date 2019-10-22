@@ -70,6 +70,8 @@ impl BnReportWriter {
             report.run_microseconds.to_string()
             ]
         ).expect("must write a record");
+
+        self.writer.flush().expect("must write to disk");
     } 
 }
 

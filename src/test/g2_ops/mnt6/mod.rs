@@ -58,8 +58,8 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
     (calldata, modulus_length, group_size_length)
 }
 
-fn assemble_single_point_scalar_pair(
-    pair: JsonG2PointScalarMultiplicationPair,
+pub(crate) fn assemble_single_point_scalar_pair(
+    pair: JsonG2Ext3PointScalarMultiplicationPair,
     modulus_len: usize,
     group_len: usize,
 ) -> (Vec<u8>, Vec<u8>) {
@@ -73,8 +73,10 @@ fn assemble_single_point_scalar_pair(
     // first determine the length of the modulus
     let mut x_encoded = pad_for_len_be(pair.base_x_0.to_bytes_be(), modulus_len);
     x_encoded.extend(pad_for_len_be(pair.base_x_1.to_bytes_be(), modulus_len));
+    x_encoded.extend(pad_for_len_be(pair.base_x_2.to_bytes_be(), modulus_len));
     let mut y_encoded = pad_for_len_be(pair.base_y_0.to_bytes_be(), modulus_len);
     y_encoded.extend(pad_for_len_be(pair.base_y_1.to_bytes_be(), modulus_len));
+    y_encoded.extend(pad_for_len_be(pair.base_y_2.to_bytes_be(), modulus_len));
 
     let scalar_encoded = pad_for_len_be(pair.scalar.to_bytes_be(), group_len);
 
@@ -85,8 +87,10 @@ fn assemble_single_point_scalar_pair(
 
     let mut result_x_encoded = pad_for_len_be(pair.result_x_0.to_bytes_be(), modulus_len);
     result_x_encoded.extend(pad_for_len_be(pair.result_x_1.to_bytes_be(), modulus_len));
+    result_x_encoded.extend(pad_for_len_be(pair.result_x_2.to_bytes_be(), modulus_len));
     let mut result_y_encoded = pad_for_len_be(pair.result_y_0.to_bytes_be(), modulus_len);
     result_y_encoded.extend(pad_for_len_be(pair.result_y_1.to_bytes_be(), modulus_len));
+    result_y_encoded.extend(pad_for_len_be(pair.result_y_2.to_bytes_be(), modulus_len));
 
     let mut result = vec![];
     result.extend(result_x_encoded.into_iter());

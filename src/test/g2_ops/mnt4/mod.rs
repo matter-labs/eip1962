@@ -56,7 +56,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters
     (calldata, modulus_length, group_size_length)
 }
 
-fn assemble_single_point_scalar_pair(
+pub(crate) fn assemble_single_point_scalar_pair(
     pair: JsonG2PointScalarMultiplicationPair,
     modulus_len: usize,
     group_len: usize,

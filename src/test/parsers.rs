@@ -283,7 +283,7 @@ pub(crate) struct JsonMnt6PairingCurveParameters {
     pub g1_mul_vectors: Vec<JsonG1PointScalarMultiplicationPair>,
 
     #[serde(rename = "g2_scalar_mult_test_vectors")]
-    pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
+    pub g2_mul_vectors: Vec<JsonG2Ext3PointScalarMultiplicationPair>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -346,6 +346,62 @@ pub(crate) struct JsonG2PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]
     #[serde(rename = "h_y_1")]
     pub result_y_1: BigUint,
+}
+
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct JsonG2Ext3PointScalarMultiplicationPair {
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "a")]
+    pub scalar: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "g_x_0")]
+    pub base_x_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "g_x_1")]
+    pub base_x_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "g_x_2")]
+    pub base_x_2: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "g_y_0")]
+    pub base_y_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "g_y_1")]
+    pub base_y_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "g_y_2")]
+    pub base_y_2: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "h_x_0")]
+    pub result_x_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "h_x_1")]
+    pub result_x_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "h_x_2")]
+    pub result_x_2: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "h_y_0")]
+    pub result_y_0: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "h_y_1")]
+    pub result_y_1: BigUint,
+
+    #[serde(deserialize_with = "biguint_from_hex_string")]
+    #[serde(rename = "h_y_2")]
+    pub result_y_2: BigUint,
 }
 
 fn bool_from_string<'de, D>(deserializer: D) -> Result<bool, D::Error>

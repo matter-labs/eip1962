@@ -124,7 +124,7 @@ pub(crate) fn decode_scalar_representation<
     let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
     let scalar = BigUint::from_bytes_be(&encoding);
     if &scalar >= order {
-        return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())));
+        return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
     }
     let mut repr = biguint_to_u64_vec(scalar);
     if repr.len() < order_repr.len() {

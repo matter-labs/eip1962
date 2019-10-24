@@ -2,6 +2,7 @@ pub(crate) mod bls12;
 pub(crate) mod bn;
 pub(crate) mod mnt4;
 pub(crate) mod mnt6;
+pub(crate) mod arithmetic_ops;
 
 mod monte_carlo;
 

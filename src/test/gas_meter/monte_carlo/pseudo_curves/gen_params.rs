@@ -233,3 +233,434 @@ pub(crate) fn random_mnt6_params<R: Rng>(limbs: usize, group_size_limbs: usize, 
 
     params
 }
+
+pub(crate) fn random_mul_params_a_non_zero_ext3<R: Rng>(
+    limbs: usize, 
+    group_size_limbs: usize, 
+    num_mul_points: usize, 
+    rng: &mut R
+) -> (JsonMnt6PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2Ext3PointScalarMultiplicationPair) {
+    let one = BigUint::from(1u64);
+
+    let mut modulus_bytes = vec![0u8; limbs*8];
+
+    rng.try_fill_bytes(&mut modulus_bytes).unwrap();
+
+    let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
+    if modulus.bits() == limbs*64 {
+        modulus >>= 1;
+    }
+    if modulus.is_even() {
+        modulus -= &one;
+    }
+
+    let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
+    group_size -= &one;
+
+    // it's almost the worst case
+    let mut mul_scalar = group_size.clone();
+    mul_scalar -= &one;
+
+    let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
+        scalar: mul_scalar.clone(),
+        base_x: random_field_element(&modulus, rng),
+        base_y: random_field_element(&modulus, rng),
+        result_x: BigUint::from(0u64),
+        result_y: BigUint::from(0u64),
+    };
+
+    let g2_worst_case_mul_pair = JsonG2Ext3PointScalarMultiplicationPair {
+        scalar: mul_scalar,
+        base_x_0: random_field_element(&modulus, rng),
+        base_x_1: random_field_element(&modulus, rng),
+        base_x_2: random_field_element(&modulus, rng),
+        base_y_0: random_field_element(&modulus, rng),
+        base_y_1: random_field_element(&modulus, rng),
+        base_y_2: random_field_element(&modulus, rng),
+        result_x_0: BigUint::from(0u64),
+        result_x_1: BigUint::from(0u64),
+        result_x_2: BigUint::from(0u64),
+        result_y_0: BigUint::from(0u64),
+        result_y_1: BigUint::from(0u64),
+        result_y_2: BigUint::from(0u64),
+    };
+
+    let mut g1_multiexp_data = vec![];
+    let mut g2_multiexp_data = vec![];
+
+    for _ in 0..num_mul_points {
+        let g1 = JsonG1PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x: random_field_element(&modulus, rng),
+            base_y: random_field_element(&modulus, rng),
+            result_x: BigUint::from(0u64),
+            result_y: BigUint::from(0u64),
+        };
+
+        let g2 = JsonG2Ext3PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x_0: random_field_element(&modulus, rng),
+            base_x_1: random_field_element(&modulus, rng),
+            base_x_2: random_field_element(&modulus, rng),
+            base_y_0: random_field_element(&modulus, rng),
+            base_y_1: random_field_element(&modulus, rng),
+            base_y_2: random_field_element(&modulus, rng),
+            result_x_0: BigUint::from(0u64),
+            result_x_1: BigUint::from(0u64),
+            result_x_2: BigUint::from(0u64),
+            result_y_0: BigUint::from(0u64),
+            result_y_1: BigUint::from(0u64),
+            result_y_2: BigUint::from(0u64),
+        };
+
+        g1_multiexp_data.push(g1);
+        g2_multiexp_data.push(g2);
+    }
+
+    let params = JsonMnt6PairingCurveParameters {
+        non_residue: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        x: (BigUint::from(0u64), false),
+        exp_w0: (BigUint::from(0u64), false),
+        exp_w1: BigUint::from(0u64),
+        q: modulus.clone(),
+        r: group_size,
+        a: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        b: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        a_twist_0: random_field_element(&modulus, rng),
+        a_twist_1: random_field_element(&modulus, rng),
+        a_twist_2: random_field_element(&modulus, rng),
+        b_twist_0: random_field_element(&modulus, rng),
+        b_twist_1: random_field_element(&modulus, rng),
+        b_twist_2: random_field_element(&modulus, rng),
+        g1_x: random_field_element(&modulus, rng),
+        g1_y: random_field_element(&modulus, rng),
+        g2_x_0: random_field_element(&modulus, rng),
+        g2_x_1: random_field_element(&modulus, rng),
+        g2_x_2: random_field_element(&modulus, rng),
+        g2_y_0: random_field_element(&modulus, rng),
+        g2_y_1: random_field_element(&modulus, rng),
+        g2_y_2: random_field_element(&modulus, rng),
+        g1_mul_vectors: g1_multiexp_data,
+        g2_mul_vectors: g2_multiexp_data,
+    };
+
+    (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
+}
+
+
+pub(crate) fn random_mul_params_a_is_zero_ext3<R: Rng>(
+    limbs: usize, 
+    group_size_limbs: usize, 
+    num_mul_points: usize, 
+    rng: &mut R
+) -> (JsonMnt6PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2Ext3PointScalarMultiplicationPair) {
+    let one = BigUint::from(1u64);
+
+    let mut modulus_bytes = vec![0u8; limbs*8];
+
+    rng.try_fill_bytes(&mut modulus_bytes).unwrap();
+
+    let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
+    if modulus.bits() == limbs*64 {
+        modulus >>= 1;
+    }
+    if modulus.is_even() {
+        modulus -= &one;
+    }
+
+    let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
+    group_size -= &one;
+
+    // it's almost the worst case
+    let mut mul_scalar = group_size.clone();
+    mul_scalar -= &one;
+
+    let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
+        scalar: mul_scalar.clone(),
+        base_x: random_field_element(&modulus, rng),
+        base_y: random_field_element(&modulus, rng),
+        result_x: BigUint::from(0u64),
+        result_y: BigUint::from(0u64),
+    };
+
+    let g2_worst_case_mul_pair = JsonG2Ext3PointScalarMultiplicationPair {
+        scalar: mul_scalar,
+        base_x_0: random_field_element(&modulus, rng),
+        base_x_1: random_field_element(&modulus, rng),
+        base_x_2: random_field_element(&modulus, rng),
+        base_y_0: random_field_element(&modulus, rng),
+        base_y_1: random_field_element(&modulus, rng),
+        base_y_2: random_field_element(&modulus, rng),
+        result_x_0: BigUint::from(0u64),
+        result_x_1: BigUint::from(0u64),
+        result_x_2: BigUint::from(0u64),
+        result_y_0: BigUint::from(0u64),
+        result_y_1: BigUint::from(0u64),
+        result_y_2: BigUint::from(0u64),
+    };
+
+    let mut g1_multiexp_data = vec![];
+    let mut g2_multiexp_data = vec![];
+
+    for _ in 0..num_mul_points {
+        let g1 = JsonG1PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x: random_field_element(&modulus, rng),
+            base_y: random_field_element(&modulus, rng),
+            result_x: BigUint::from(0u64),
+            result_y: BigUint::from(0u64),
+        };
+
+        let g2 = JsonG2Ext3PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x_0: random_field_element(&modulus, rng),
+            base_x_1: random_field_element(&modulus, rng),
+            base_x_2: random_field_element(&modulus, rng),
+            base_y_0: random_field_element(&modulus, rng),
+            base_y_1: random_field_element(&modulus, rng),
+            base_y_2: random_field_element(&modulus, rng),
+            result_x_0: BigUint::from(0u64),
+            result_x_1: BigUint::from(0u64),
+            result_x_2: BigUint::from(0u64),
+            result_y_0: BigUint::from(0u64),
+            result_y_1: BigUint::from(0u64),
+            result_y_2: BigUint::from(0u64),
+        };
+
+        g1_multiexp_data.push(g1);
+        g2_multiexp_data.push(g2);
+    }
+
+    let params = JsonMnt6PairingCurveParameters {
+        non_residue: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        x: (BigUint::from(0u64), false),
+        exp_w0: (BigUint::from(0u64), false),
+        exp_w1: BigUint::from(0u64),
+        q: modulus.clone(),
+        r: group_size,
+        a: (BigUint::from(0u64), false),
+        b: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        a_twist_0: BigUint::from(0u64),
+        a_twist_1: BigUint::from(0u64),
+        a_twist_2: BigUint::from(0u64),
+        b_twist_0: random_field_element(&modulus, rng),
+        b_twist_1: random_field_element(&modulus, rng),
+        b_twist_2: random_field_element(&modulus, rng),
+        g1_x: random_field_element(&modulus, rng),
+        g1_y: random_field_element(&modulus, rng),
+        g2_x_0: random_field_element(&modulus, rng),
+        g2_x_1: random_field_element(&modulus, rng),
+        g2_x_2: random_field_element(&modulus, rng),
+        g2_y_0: random_field_element(&modulus, rng),
+        g2_y_1: random_field_element(&modulus, rng),
+        g2_y_2: random_field_element(&modulus, rng),
+        g1_mul_vectors: g1_multiexp_data,
+        g2_mul_vectors: g2_multiexp_data,
+    };
+
+    (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
+}
+
+
+pub(crate) fn random_mul_params_a_non_zero_ext2<R: Rng>(
+    limbs: usize, 
+    group_size_limbs: usize, 
+    num_mul_points: usize, 
+    rng: &mut R
+) -> (JsonMnt4PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2PointScalarMultiplicationPair) {
+    let one = BigUint::from(1u64);
+
+    let mut modulus_bytes = vec![0u8; limbs*8];
+
+    rng.try_fill_bytes(&mut modulus_bytes).unwrap();
+
+    let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
+    if modulus.bits() == limbs*64 {
+        modulus >>= 1;
+    }
+    if modulus.is_even() {
+        modulus -= &one;
+    }
+
+    let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
+    group_size -= &one;
+
+    // it's almost the worst case
+    let mut mul_scalar = group_size.clone();
+    mul_scalar -= &one;
+
+    let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
+        scalar: mul_scalar.clone(),
+        base_x: random_field_element(&modulus, rng),
+        base_y: random_field_element(&modulus, rng),
+        result_x: BigUint::from(0u64),
+        result_y: BigUint::from(0u64),
+    };
+
+    let g2_worst_case_mul_pair = JsonG2PointScalarMultiplicationPair {
+        scalar: mul_scalar,
+        base_x_0: random_field_element(&modulus, rng),
+        base_x_1: random_field_element(&modulus, rng),
+        base_y_0: random_field_element(&modulus, rng),
+        base_y_1: random_field_element(&modulus, rng),
+        result_x_0: BigUint::from(0u64),
+        result_x_1: BigUint::from(0u64),
+        result_y_0: BigUint::from(0u64),
+        result_y_1: BigUint::from(0u64),
+    };
+
+    let mut g1_multiexp_data = vec![];
+    let mut g2_multiexp_data = vec![];
+
+    for _ in 0..num_mul_points {
+        let g1 = JsonG1PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x: random_field_element(&modulus, rng),
+            base_y: random_field_element(&modulus, rng),
+            result_x: BigUint::from(0u64),
+            result_y: BigUint::from(0u64),
+        };
+
+        let g2 = JsonG2PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x_0: random_field_element(&modulus, rng),
+            base_x_1: random_field_element(&modulus, rng),
+            base_y_0: random_field_element(&modulus, rng),
+            base_y_1: random_field_element(&modulus, rng),
+            result_x_0: BigUint::from(0u64),
+            result_x_1: BigUint::from(0u64),
+            result_y_0: BigUint::from(0u64),
+            result_y_1: BigUint::from(0u64),
+        };
+
+        g1_multiexp_data.push(g1);
+        g2_multiexp_data.push(g2);
+    }
+
+    let params = JsonMnt4PairingCurveParameters {
+        non_residue: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        x: (BigUint::from(0u64), false),
+        exp_w0: (BigUint::from(0u64), false),
+        exp_w1: BigUint::from(0u64),
+        q: modulus.clone(),
+        r: group_size,
+        a: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        b: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        a_twist_0: random_field_element(&modulus, rng),
+        a_twist_1: random_field_element(&modulus, rng),
+        b_twist_0: random_field_element(&modulus, rng),
+        b_twist_1: random_field_element(&modulus, rng),
+        g1_x: random_field_element(&modulus, rng),
+        g1_y: random_field_element(&modulus, rng),
+        g2_x_0: random_field_element(&modulus, rng),
+        g2_x_1: random_field_element(&modulus, rng),
+        g2_y_0: random_field_element(&modulus, rng),
+        g2_y_1: random_field_element(&modulus, rng),
+        g1_mul_vectors: g1_multiexp_data,
+        g2_mul_vectors: g2_multiexp_data,
+    };
+
+    (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
+}
+
+
+pub(crate) fn random_mul_params_a_is_zero_ext2<R: Rng>(
+    limbs: usize, 
+    group_size_limbs: usize, 
+    num_mul_points: usize, 
+    rng: &mut R
+) -> (JsonMnt4PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2PointScalarMultiplicationPair) {
+    let one = BigUint::from(1u64);
+
+    let mut modulus_bytes = vec![0u8; limbs*8];
+
+    rng.try_fill_bytes(&mut modulus_bytes).unwrap();
+
+    let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
+    if modulus.bits() == limbs*64 {
+        modulus >>= 1;
+    }
+    if modulus.is_even() {
+        modulus -= &one;
+    }
+
+    let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
+    group_size -= &one;
+
+    // it's almost the worst case
+    let mut mul_scalar = group_size.clone();
+    mul_scalar -= &one;
+
+    let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
+        scalar: mul_scalar.clone(),
+        base_x: random_field_element(&modulus, rng),
+        base_y: random_field_element(&modulus, rng),
+        result_x: BigUint::from(0u64),
+        result_y: BigUint::from(0u64),
+    };
+
+    let g2_worst_case_mul_pair = JsonG2PointScalarMultiplicationPair {
+        scalar: mul_scalar,
+        base_x_0: random_field_element(&modulus, rng),
+        base_x_1: random_field_element(&modulus, rng),
+        base_y_0: random_field_element(&modulus, rng),
+        base_y_1: random_field_element(&modulus, rng),
+        result_x_0: BigUint::from(0u64),
+        result_x_1: BigUint::from(0u64),
+        result_y_0: BigUint::from(0u64),
+        result_y_1: BigUint::from(0u64),
+    };
+
+    let mut g1_multiexp_data = vec![];
+    let mut g2_multiexp_data = vec![];
+
+    for _ in 0..num_mul_points {
+        let g1 = JsonG1PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x: random_field_element(&modulus, rng),
+            base_y: random_field_element(&modulus, rng),
+            result_x: BigUint::from(0u64),
+            result_y: BigUint::from(0u64),
+        };
+
+        let g2 = JsonG2PointScalarMultiplicationPair {
+            scalar: random_field_element(&group_size, rng),
+            base_x_0: random_field_element(&modulus, rng),
+            base_x_1: random_field_element(&modulus, rng),
+            base_y_0: random_field_element(&modulus, rng),
+            base_y_1: random_field_element(&modulus, rng),
+            result_x_0: BigUint::from(0u64),
+            result_x_1: BigUint::from(0u64),
+            result_y_0: BigUint::from(0u64),
+            result_y_1: BigUint::from(0u64),
+        };
+
+        g1_multiexp_data.push(g1);
+        g2_multiexp_data.push(g2);
+    }
+
+    let params = JsonMnt4PairingCurveParameters {
+        non_residue: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        x: (BigUint::from(0u64), false),
+        exp_w0: (BigUint::from(0u64), false),
+        exp_w1: BigUint::from(0u64),
+        q: modulus.clone(),
+        r: group_size,
+        a: (BigUint::from(0u64), false),
+        b: (random_field_element(&modulus, rng), rng.gen_bool(0.5)),
+        a_twist_0: BigUint::from(0u64),
+        a_twist_1: BigUint::from(0u64),
+        b_twist_0: random_field_element(&modulus, rng),
+        b_twist_1: random_field_element(&modulus, rng),
+        g1_x: random_field_element(&modulus, rng),
+        g1_y: random_field_element(&modulus, rng),
+        g2_x_0: random_field_element(&modulus, rng),
+        g2_x_1: random_field_element(&modulus, rng),
+        g2_y_0: random_field_element(&modulus, rng),
+        g2_y_1: random_field_element(&modulus, rng),
+        g1_mul_vectors: g1_multiexp_data,
+        g2_mul_vectors: g2_multiexp_data,
+    };
+
+    (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
+}

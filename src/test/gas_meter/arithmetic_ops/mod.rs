@@ -165,7 +165,7 @@ pub(crate) fn process_for_ext2(
         input_data.extend(p1);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -178,7 +178,7 @@ pub(crate) fn process_for_ext2(
         input_data.extend(p);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -187,13 +187,14 @@ pub(crate) fn process_for_ext2(
     let multiexp_timing_g1 = {
         let mut input_data = vec![OPERATION_G1_MULTIEXP];
         input_data.extend(common_g1_data.clone());
+        input_data.extend(vec![curve.g1_mul_vectors.len() as u8]);
         for pair in curve.g1_mul_vectors.into_iter(){
             let (p, _) = g1_mnt4::assemble_single_point_scalar_pair(pair, modulus_length, group_length);
             input_data.extend(p);
         }
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -208,7 +209,7 @@ pub(crate) fn process_for_ext2(
         input_data.extend(p1);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -221,22 +222,23 @@ pub(crate) fn process_for_ext2(
         input_data.extend(p);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
     };
 
     let multiexp_timing_g2 = {
-        let mut input_data = vec![OPERATION_G1_MULTIEXP];
+        let mut input_data = vec![OPERATION_G2_MULTIEXP];
         input_data.extend(common_g2_data.clone());
+        input_data.extend(vec![curve.g2_mul_vectors.len() as u8]);
         for pair in curve.g2_mul_vectors.into_iter(){
             let (p, _) = g2_mnt4::assemble_single_point_scalar_pair(pair, modulus_length, group_length);
             input_data.extend(p);
         }
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -309,7 +311,7 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p1);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -322,7 +324,7 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -331,13 +333,14 @@ pub(crate) fn process_for_ext3(
     let multiexp_timing_g1 = {
         let mut input_data = vec![OPERATION_G1_MULTIEXP];
         input_data.extend(common_g1_data.clone());
+        input_data.extend(vec![curve.g1_mul_vectors.len() as u8]);
         for pair in curve.g1_mul_vectors.into_iter(){
             let (p, _) = g1_mnt6::assemble_single_point_scalar_pair(pair, modulus_length, group_length);
             input_data.extend(p);
         }
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -352,7 +355,7 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p1);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -365,22 +368,23 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p);
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
     };
 
     let multiexp_timing_g2 = {
-        let mut input_data = vec![OPERATION_G1_MULTIEXP];
+        let mut input_data = vec![OPERATION_G2_MULTIEXP];
         input_data.extend(common_g2_data.clone());
+        input_data.extend(vec![curve.g2_mul_vectors.len() as u8]);
         for pair in curve.g2_mul_vectors.into_iter(){
             let (p, _) = g2_mnt6::assemble_single_point_scalar_pair(pair, modulus_length, group_length);
             input_data.extend(p);
         }
 
         let now = Instant::now();
-        let res = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed

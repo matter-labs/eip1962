@@ -15,7 +15,7 @@ use rand::{Rng, thread_rng};
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
 
-
+mod arithmetic_ops;
 mod gen_params;
 
 #[test]

@@ -12,7 +12,6 @@ use crate::traits::ZeroAndOne;
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp4_as_2_over_2::{Fp4, Extension2Over2};
 use num_traits::Num;
-use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp4_as_2_over_2};
 use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::pairings::mnt4::MNT4Instance;
@@ -63,8 +62,8 @@ fn bench_mnt4_pairing(b: &mut Bencher) {
     let fp_params = CurveOverFpParameters::new(&base_field);
     let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-    let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+    let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
 
     let p_x = BigUint::from_str_radix("60760244141852568949126569781626075788424196370144486719385562369396875346601926534016838", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("363732850702582978263902770815145784459747722357071843971107674179038674942891694705904306", 10).unwrap().to_bytes_be();

@@ -340,7 +340,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
     pub(crate) fn calculate_frobenius_coeffs(
         &mut self,
         modulus: BigUint,
-        // base: &WindowExpBase<Fp<'a, E, F>>
     ) -> Result<(), ()> {
         use crate::field::biguint_to_u64_vec;
         use crate::constants::ONE_BIGUINT;

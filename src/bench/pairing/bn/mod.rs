@@ -13,7 +13,6 @@ use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use num_traits::Num;
-use crate::pairings::{frobenius_calculator_fp2, frobenius_calculator_fp6_as_3_over_2, frobenius_calculator_fp12};
 use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
 use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::pairings::{PairingEngine, TwistType};
@@ -72,8 +71,8 @@ fn bench_bn254_pairing(b: &mut Bencher) {
     let fp_params = CurveOverFpParameters::new(&base_field);
     let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params);
-    let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params);
+    let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
+    let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
 
     let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();

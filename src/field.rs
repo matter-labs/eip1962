@@ -57,18 +57,19 @@ struct U1024(U1024Repr);
 /// operations (mainly precompiled Montgommery constants)
 
 use num_bigint::BigUint;
-use num_traits::{One, ToPrimitive, Zero};
+use num_traits::{One, ToPrimitive};
 
 use crate::representation::{ElementRepr};
+use crate::constants::*;
 
 /// Convert BigUint into a vector of 64-bit limbs.
 fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
-    let m = BigUint::one() << 64;
-    let mut ret = vec![];
+    let m = &*BIGUINT_TWO_IN_64;
+    let mut ret = Vec::with_capacity(limbs);
 
-    while v > BigUint::zero() {
-        ret.push((&v % &m).to_u64().expect("is guaranteed to fit"));
-        v = v >> 64;
+    while v > *ZERO_BIGUINT {
+        ret.push((&v % m).to_u64().expect("is guaranteed to fit"));
+        v >>= 64;
     }
 
     while ret.len() < limbs {
@@ -81,12 +82,12 @@ fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
 }
 
 pub fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
-    let m = BigUint::one() << 64;
-    let mut ret = vec![];
+    let m = &*BIGUINT_TWO_IN_64;
+    let mut ret = Vec::with_capacity((v.bits() / 64) + 1);
 
-    while v > BigUint::zero() {
-        ret.push((&v % &m).to_u64().expect("is guaranteed to fit"));
-        v = v >> 64;
+    while v > *ZERO_BIGUINT {
+        ret.push((&v % m).to_u64().expect("is guaranteed to fit"));
+        v >>= 64;
     }
 
     ret
@@ -182,8 +183,9 @@ fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u
 }
 
 pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField<R>, ()> {
+    use std::time::Instant;
     let ((bitlength, num_limbs), (modulus, r, r2, inv)) = calculate_field_dimension(modulus)?;
-    
+
     if R::NUM_LIMBS != num_limbs {
         return Err(());
     }

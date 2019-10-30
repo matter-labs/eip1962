@@ -26,6 +26,7 @@ pub(crate) fn create_fp2_extension<
         modulus: BigUint,
         field_byte_len: usize,
         base_field: &'a F,
+        need_frobenius: bool
     ) -> Result<(fp2::Extension2<'a, FE, F>, &'a [u8]), ApiError>
 {
     let (extension_degree, rest) = split(bytes, EXTENSION_DEGREE_ENCODING_LENGTH, "Input is not long enough to get extension degree")?;
@@ -48,9 +49,11 @@ pub(crate) fn create_fp2_extension<
     }
 
     let mut extension_2 = fp2::Extension2::new(fp_non_residue);
-    extension_2.calculate_frobenius_coeffs(modulus).map_err(|_| {
-        ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
-    })?;
+    if need_frobenius {
+        extension_2.calculate_frobenius_coeffs(modulus).map_err(|_| {
+            ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp2".to_owned())
+        })?;
+    }
     
     Ok((extension_2, rest))
 }
@@ -65,6 +68,7 @@ pub(crate) fn create_fp3_extension<
         modulus: BigUint,
         field_byte_len: usize,
         base_field: &'a F,
+        need_frobenius: bool
     ) -> Result<(fp3::Extension3<'a, FE, F>, &'a [u8]), ApiError>
 {
     let (extension_degree, rest) = split(bytes, EXTENSION_DEGREE_ENCODING_LENGTH, "Input is not long enough to get extension degree")?;
@@ -87,9 +91,11 @@ pub(crate) fn create_fp3_extension<
     }
 
     let mut extension_3 = fp3::Extension3::new(fp_non_residue);
-    extension_3.calculate_frobenius_coeffs(modulus).map_err(|_| {
-        ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
-    })?;
+    if need_frobenius {
+        extension_3.calculate_frobenius_coeffs(modulus).map_err(|_| {
+            ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
+        })?;
+    }
     
     Ok((extension_3, rest))
 }

@@ -15,14 +15,14 @@ use crate::test::g2_ops::mnt6 as g2_mnt6;
 use super::*;
 
 pub(crate) struct ArithmeticReport {
-    modulus_limbs: usize,
-    group_limbs: usize,
-    num_mul_pairs: usize,
-    a_is_zero: bool,
-    ext_degree: usize,
-    run_microseconds_add: u64,
-    run_microseconds_mul: u64,
-    run_microseconds_multiexp: u64,
+    pub modulus_limbs: usize,
+    pub group_limbs: usize,
+    pub num_mul_pairs: usize,
+    pub a_is_zero: bool,
+    pub ext_degree: usize,
+    pub run_microseconds_add: u64,
+    pub run_microseconds_mul: u64,
+    pub run_microseconds_multiexp: u64,
 }
 
 
@@ -311,7 +311,8 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p1);
 
         let now = Instant::now();
-        let _ = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data);
+        // let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed
@@ -357,6 +358,7 @@ pub(crate) fn process_for_ext3(
         let now = Instant::now();
         let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
+        println!("G2 Addition taken {:?} ms", elapsed);
 
         elapsed
     };

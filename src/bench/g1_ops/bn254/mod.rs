@@ -34,7 +34,7 @@ fn bench_doubling_bn254(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -66,7 +66,7 @@ fn bench_addition_bn254(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -101,7 +101,7 @@ fn bench_multiplication_bn254(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -139,7 +139,7 @@ fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -177,7 +177,7 @@ fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -233,7 +233,7 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
         a_fp2, 
         b_fp2,
         &fp2_params
-    );
+    ).unwrap();
 
     let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
     let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
@@ -410,7 +410,7 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -457,7 +457,7 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
         a_coeff, 
         b_coeff,
         &params
-    );
+    ).unwrap();
 
     let mut two = one.clone();
     two.double();
@@ -530,7 +530,7 @@ fn bench_peppinger_bn254_g2(b: &mut Bencher) {
         a_fp2, 
         b_fp2,
         &fp2_params
-    );
+    ).unwrap();
 
     let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
     let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();

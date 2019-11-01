@@ -183,7 +183,6 @@ fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u
 }
 
 pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField<R>, ()> {
-    use std::time::Instant;
     let ((bitlength, num_limbs), (modulus, r, r2, inv)) = calculate_field_dimension(modulus)?;
 
     if R::NUM_LIMBS != num_limbs {

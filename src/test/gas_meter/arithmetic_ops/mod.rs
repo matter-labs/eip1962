@@ -358,7 +358,6 @@ pub(crate) fn process_for_ext3(
         let now = Instant::now();
         let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
-        println!("G2 Addition taken {:?} ms", elapsed);
 
         elapsed
     };

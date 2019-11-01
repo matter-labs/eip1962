@@ -141,6 +141,18 @@ fn run_arithmetic_ops_pseudo_curves_monte_carlo() {
 fn run_single_curve_arithmetic_ops() {
     assert!(std::option_env!("GAS_METERING").is_some());
 
+    use std::fs::File;
+
+    use crate::public_interface::decode_utils::*;
+    use crate::test::parsers::*;
+    use crate::test::g1_ops::mnt4 as g1_mnt4;
+    use crate::test::g1_ops::mnt6 as g1_mnt6;
+
+    use crate::test::g2_ops::mnt4 as g2_mnt4;
+    use crate::test::g2_ops::mnt6 as g2_mnt6;
+    use crate::field::calculate_num_limbs;
+    use crate::test::gas_meter::arithmetic_ops::*;
+
     use rand::{SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -151,21 +163,49 @@ fn run_single_curve_arithmetic_ops() {
     let limbs_rng = Uniform::new_inclusive(4, 16);
     let group_limbs_rng = Uniform::new_inclusive(1, 16);
 
-    use pbr::ProgressBar;
-
-    let mut pb = ProgressBar::new(SAMPLES as u64);
     let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
     multiexp_len.reverse();
 
     let num_limbs = limbs_rng.sample(&mut rng);
     let num_group_limbs = group_limbs_rng.sample(&mut rng);
-    let (mut curve_ext3, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext3(num_limbs, num_group_limbs, 128, &mut rng);
+    let (mut curve_ext3, g1_worst_case_pair, g2_worst_case_pair) = gen_params::random_mul_params_a_non_zero_ext3(num_limbs, num_group_limbs, 128, &mut rng);
     let mut curve_ext3_a_zero = curve_ext3.clone();
     make_a_zero_ext3(&mut curve_ext3_a_zero);
-    for len in multiexp_len.iter() {
-        trim_multiexp_ext_3(&mut curve_ext3, *len);
-        let reports = arithmetic_ops::process_for_ext3(curve_ext3.clone(), g1_worst_case.clone(), g2_worst_case.clone());
-    }
-    
-    pb.finish_print("done");
+
+    let curve = curve_ext3;
+
+    use std::time::Instant;
+
+    let limbs = calculate_num_limbs(&curve.q).expect("must work");
+    let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+    let (common_g1_data, modulus_length, group_length) = g1_mnt6::assemble_single_curve_params(curve.clone());
+    let (common_g2_data, _, _) = g2_mnt6::assemble_single_curve_params(curve.clone());
+
+    let num_mul_pairs_g1 = curve.g1_mul_vectors.len();
+    let num_mul_pairs_g2 = curve.g2_mul_vectors.len();
+
+    assert!(num_mul_pairs_g1 >= 2);
+    assert!(num_mul_pairs_g2 >= 2);
+
+    let addition_timing_g2 = {
+        let mut input_data = vec![OPERATION_G2_ADD];
+        input_data.extend(common_g2_data.clone());
+        let p0 = encode_g2_point_ext3(( (curve.g2_x_0.clone(), curve.g2_x_1.clone(), curve.g2_x_2.clone()), (curve.g2_y_0.clone(), curve.g2_y_1.clone(), curve.g2_y_2.clone()) ), modulus_length);
+        let p1 = encode_g2_point_ext3(( (g2_worst_case_pair.base_x_0.clone(), g2_worst_case_pair.base_x_1.clone(), g2_worst_case_pair.base_x_2.clone()), (g2_worst_case_pair.base_y_0.clone(), g2_worst_case_pair.base_y_1.clone(), g2_worst_case_pair.base_y_2.clone()) ), modulus_length);
+        input_data.extend(p0);
+        input_data.extend(p1);
+
+        let now = Instant::now();
+        run(&input_data);
+        let elapsed = now.elapsed();
+
+        elapsed
+    };
+}
+
+fn run(bytes: &[u8]) {
+    use std::thread::sleep_ms;
+    sleep_ms(100);
+    let _ = API::run(&bytes).unwrap();
+    sleep_ms(100);
 }

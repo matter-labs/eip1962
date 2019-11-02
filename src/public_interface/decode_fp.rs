@@ -4,9 +4,28 @@ use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
 use crate::representation::ElementRepr;
 use crate::traits::ZeroAndOne;
+use crate::constants::MaxFieldUint;
+use crate::field::PrimeField;
 
 use crate::errors::ApiError;
-use super::decode_utils::split;
+use super::decode_utils::*;
+use crate::field::field_from_modulus;
+
+pub(crate) fn parse_base_field_from_encoding<
+    'a,
+    FE: ElementRepr,
+    >(encoding: &'a [u8]) -> Result<(PrimeField<FE>, usize, MaxFieldUint, &'a [u8]), ApiError>
+{
+    let ((modulus, modulus_len), rest) = get_base_field_params(&encoding)?;
+    let field = field_from_modulus::<FE>(&modulus).map_err(|_| {
+        ApiError::InputError("Failed to create prime field from modulus".to_owned())
+    })?;
+    if rest.len() < modulus_len {
+        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+    }
+
+    Ok((field, modulus_len, modulus, rest))
+}
 
 pub(crate) fn decode_fp<
     'a,

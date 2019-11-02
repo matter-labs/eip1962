@@ -1,5 +1,4 @@
-use crate::field::calculate_num_limbs;
-use crate::field::biguint_to_u64_vec;
+use crate::test::*;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
@@ -146,7 +145,7 @@ pub(crate) fn process_for_ext2(
     };
 
     let limbs = calculate_num_limbs(&curve.q).expect("must work");
-    let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+    let group_order_limbs = crate::test::num_units_for_group_order(&curve.r).expect("must work");
     let (common_g1_data, modulus_length, group_length) = g1_mnt4::assemble_single_curve_params(curve.clone());
     let (common_g2_data, _, _) = g2_mnt4::assemble_single_curve_params(curve.clone());
 
@@ -292,7 +291,7 @@ pub(crate) fn process_for_ext3(
     };
 
     let limbs = calculate_num_limbs(&curve.q).expect("must work");
-    let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+    let group_order_limbs = crate::test::num_units_for_group_order(&curve.r).expect("must work");
     let (common_g1_data, modulus_length, group_length) = g1_mnt6::assemble_single_curve_params(curve.clone());
     let (common_g2_data, _, _) = g2_mnt6::assemble_single_curve_params(curve.clone());
 

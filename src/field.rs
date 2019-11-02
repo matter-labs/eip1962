@@ -56,24 +56,29 @@ struct U1024(U1024Repr);
 /// and holds all the necessary information for further arithmetic
 /// operations (mainly precompiled Montgommery constants)
 
-use num_bigint::BigUint;
-use num_traits::{One, ToPrimitive};
-
 use crate::representation::{ElementRepr};
 use crate::constants::*;
 
 /// Convert BigUint into a vector of 64-bit limbs.
-fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
-    let m = &*BIGUINT_TWO_IN_64;
+pub(crate) fn slice_to_fixed_length_u64_vec<S: AsRef<[u64]>>(v: S, limbs: usize) -> Vec<u64> {
+    let as_ref = v.as_ref();
     let mut ret = Vec::with_capacity(limbs);
 
-    while v > *ZERO_BIGUINT {
-        ret.push((&v % m).to_u64().expect("is guaranteed to fit"));
-        v >>= 64;
+    let mut num_words = as_ref.len();
+    for v in as_ref.iter().rev() {
+        if *v == 0 {
+            num_words -= 1;
+        } else {
+            break;
+        }
     }
 
-    while ret.len() < limbs {
-        ret.push(0);
+    debug_assert!(num_words <= limbs);
+
+    ret.extend(&as_ref[0..num_words]);
+
+    if ret.len() < limbs {
+        ret.resize(limbs, 0u64);
     }
 
     assert!(ret.len() == limbs);
@@ -81,17 +86,64 @@ fn biguint_to_fixed_length_u64_vec(mut v: BigUint, limbs: usize) -> Vec<u64> {
     ret
 }
 
-pub fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
-    let m = &*BIGUINT_TWO_IN_64;
-    let mut ret = Vec::with_capacity((v.bits() / 64) + 1);
+/// Convert BigUint into a vector of 64-bit limbs.
+pub(crate) fn slice_to_u64_vec<S: AsRef<[u64]>>(v: S) -> Vec<u64> {
+    let as_ref = v.as_ref();
 
-    while v > *ZERO_BIGUINT {
-        ret.push((&v % m).to_u64().expect("is guaranteed to fit"));
-        v >>= 64;
+    let mut num_words = as_ref.len();
+    for v in as_ref.iter().rev() {
+        if *v == 0 {
+            num_words -= 1;
+        } else {
+            break;
+        }
     }
+
+    let mut ret = Vec::with_capacity(num_words);
+
+    ret.extend(&as_ref[0..num_words]);
 
     ret
 }
+
+// /// Convert BigUint into a vector of 64-bit limbs.
+// fn fsquared_to_fixed_length_u64_vec(v: &MaxFieldSquaredUint, limbs: usize) -> Vec<u64> {
+//     let mut ret = Vec::with_capacity(limbs);
+
+//     let num_words = num_words(&v);
+
+//     debug_assert!(num_words <= limbs);
+
+//     for i in 0..num_words {
+//         ret.push(v.as_ref()[i]);
+//     }
+
+//     if ret.len() < limbs {
+//         ret.resize(limbs, 0u64);
+//     }
+
+//     assert!(ret.len() == limbs);
+
+//     ret
+// }
+
+fn num_words(number: &MaxFieldSquaredUint) -> usize {
+    let bits = number.bits();
+
+    (bits + 63) / 64
+}
+
+// pub fn fsquared_to_u64_vec(v: &MaxFieldSquaredUint) -> Vec<u64> {
+//     let num_words = num_words(&v);
+
+//     let mut ret = Vec::with_capacity(num_words);
+
+//     for i in 0..num_words {
+//         ret.push(v.as_ref()[i]);
+//     }
+
+//     ret
+// }
 
 /// This trait represents an element of a field.
 pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
@@ -144,9 +196,7 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     }
 }
 
-pub(crate) fn calculate_num_limbs(modulus: &BigUint) -> Result<usize, ()> {
-    let bitlength = modulus.bits();
-
+pub(crate) fn calculate_num_limbs(bitlength: usize) -> Result<usize, ()> {
     let mut num_limbs = (bitlength / 64) + 1;
     if num_limbs < 4 {
         num_limbs = 4;
@@ -159,46 +209,50 @@ pub(crate) fn calculate_num_limbs(modulus: &BigUint) -> Result<usize, ()> {
     Ok(num_limbs)
 }
 
-fn calculate_field_dimension(modulus: BigUint) -> Result<((usize, usize), (Vec<u64>, Vec<u64>, Vec<u64>, u64)), ()> {
+pub fn field_from_modulus<R: ElementRepr>(modulus: &MaxFieldUint) -> Result<PrimeField<R>, ()> {
     let bitlength = modulus.bits();
-    let num_limbs = calculate_num_limbs(&modulus)?;
+    let num_limbs = calculate_num_limbs(bitlength)?;
 
-    // Compute R = 2**(64 * limbs) mod m
-    let r = (BigUint::one() << (num_limbs * 64)) % &modulus;
-    // Compute R^2 mod m
-    let r2 = biguint_to_fixed_length_u64_vec((&r * &r) % &modulus, num_limbs);
-
-    let r = biguint_to_fixed_length_u64_vec(r, num_limbs);
-    let modulus = biguint_to_fixed_length_u64_vec(modulus, num_limbs);
-
-    // Compute -m^-1 mod 2**64 by exponentiating by totient(2**64) - 1
-    let mut inv = 1u64;
-    for _ in 0..63 {
-        inv = inv.wrapping_mul(inv);
-        inv = inv.wrapping_mul(modulus[0]);
-    }
-    inv = inv.wrapping_neg();
-
-    Ok(((bitlength, num_limbs), (modulus, r, r2, inv)))
-}
-
-pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField<R>, ()> {
-    let ((bitlength, num_limbs), (modulus, r, r2, inv)) = calculate_field_dimension(modulus)?;
+    let modulus = MaxFieldSquaredUint::from(modulus.as_ref());
 
     if R::NUM_LIMBS != num_limbs {
         return Err(());
     }
 
+    let r = (MaxFieldSquaredUint::one() << (num_limbs * 64)) % modulus;
+    if num_words(&r) > R::NUM_LIMBS {
+        return Err(());
+    }
+
+    let r2 = (r * r) % modulus;
+    if num_words(&r2) > R::NUM_LIMBS {
+        return Err(());
+    }
+
+    let modulus_lowest_limb = modulus.as_ref()[0];
+
+    let mut inv = 1u64;
+    for _ in 0..63 {
+        inv = inv.wrapping_mul(inv);
+        inv = inv.wrapping_mul(modulus_lowest_limb);
+    }
+    inv = inv.wrapping_neg();
+
     let mut modulus_repr = R::default();
     let mut r_repr = R::default();
     let mut r2_repr = R::default();
-    for (i, ((m_el, r_el), r2_el)) in modulus.into_iter()
-                                    .zip(r.into_iter())
-                                    .zip(r2.into_iter())
+
+    let modulus_ref = modulus.as_ref();
+    let r_ref = r.as_ref();
+    let r2_ref = r2.as_ref();
+
+    for (i, ((m_el, r_el), r2_el)) in modulus_repr.as_mut().iter_mut()
+                                    .zip(r_repr.as_mut().iter_mut())
+                                    .zip(r2_repr.as_mut().iter_mut())
                                     .enumerate() {
-        modulus_repr.as_mut()[i] = m_el;
-        r_repr.as_mut()[i] = r_el;
-        r2_repr.as_mut()[i] = r2_el;
+        *m_el = modulus_ref[i];
+        *r_el = r_ref[i];
+        *r2_el = r2_ref[i];
     }
 
     let concrete = PrimeField {
@@ -213,11 +267,12 @@ pub fn field_from_modulus<R: ElementRepr>(modulus: BigUint) -> Result<PrimeField
     Ok(concrete)
 }
 
+#[cfg(test)]
+pub(crate) fn new_field<R: ElementRepr>(modulus: &str, radix: usize) -> Result<PrimeField<R>, ()> {
+    use num_bigint::BigUint;
+    use num_traits::*;
+    let modulus = BigUint::from_str_radix(modulus, radix as u32).unwrap();
+    let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
-pub(crate) fn new_field<R: ElementRepr>(modulus: &str, radix: u32) -> Result<PrimeField<R>, ()> {
-    use num_traits::Num;
-    let modulus = BigUint::from_str_radix(&modulus, radix).unwrap();
-
-    field_from_modulus::<R>(modulus)
+    field_from_modulus(&modulus)
 }
-

@@ -24,11 +24,11 @@ use crate::pairings::mnt4::{MNT4Instance};
 use crate::pairings::mnt6::{MNT6Instance};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
-use crate::field::biguint_to_u64_vec;
+use crate::field::{slice_to_u64_vec};
 use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
 use crate::fp::Fp;
-use crate::num_traits::Zero;
+use crate::constants::*;
 
 use super::decode_g1::*;
 use super::decode_utils::*;
@@ -36,9 +36,6 @@ use super::decode_fp::*;
 use super::decode_g2::*;
 use super::constants::*;
 use super::sane_limits::*;
-
-// #[macro_use]
-// use super::api_specialization_macro::*;
 
 use crate::errors::ApiError;
 
@@ -119,7 +116,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
+            let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
@@ -129,14 +126,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         {
-            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, modulus.clone(), 6u64);
+            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
@@ -159,7 +156,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         {
-            extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
@@ -167,7 +164,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
         {
-            extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
@@ -200,7 +197,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
-        let x = biguint_to_u64_vec(x);
+        let x = slice_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_BLS12_X_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
@@ -331,7 +328,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
+            let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
@@ -341,14 +338,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         {
-            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, modulus.clone(), 6u64);
+            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
@@ -371,7 +368,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         {
-            extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
@@ -379,7 +376,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
         {
-            extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
@@ -421,26 +418,28 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        use crate::constants::*;
+        let two = MaxLoopParametersUint::from(2u64);
+        let six = MaxLoopParametersUint::from(6u64);
+
         // we need only absolute value of 6u+2, so manually handle negative and positive U
         let six_u_plus_two = if u_is_negative {
-            let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) - &*TWO_BIGUINT;
+            let six_u_plus_two = (six * u) - two;
 
             six_u_plus_two
         } else {
-            let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) + &*TWO_BIGUINT;
+            let six_u_plus_two = (six * u) + two;
 
             six_u_plus_two
         };
 
-        let six_u_plus_two = biguint_to_u64_vec(six_u_plus_two);
+        let six_u_plus_two = slice_to_u64_vec(six_u_plus_two.as_ref());
         if calculate_hamming_weight(&six_u_plus_two) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
             return Err(ApiError::InputError("|6*U + 2| has too large hamming weight".to_owned()));
         }
 
-        let p_minus_one_over_2 = (modulus.clone() - &*ONE_BIGUINT) >> 1;
+        let p_minus_one_over_2 = (modulus - MaxFieldUint::from(1u64)) >> 1;
 
-        let fp2_non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(&biguint_to_u64_vec(p_minus_one_over_2));
+        let fp2_non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(p_minus_one_over_2.as_ref());
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -501,7 +500,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = BnInstance {
-            u: biguint_to_u64_vec(u),
+            u: slice_to_u64_vec(u),
             six_u_plus_2: six_u_plus_two,
             u_is_negative: u_is_negative,
             twist_type: twist_type,
@@ -558,7 +557,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_root = is_non_nth_root(&fp_non_residue, modulus.clone(), 6u64);
+            let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 6u64);
             if !is_not_a_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
@@ -568,14 +567,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_3 = Extension3::new(fp_non_residue);
-        extension_3.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_3.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp3".to_owned())
         })?;
 
         let mut extension_6 = Extension2Over3::new(Fp3::zero(&extension_3));
 
         {
-            extension_6.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs(&modulus).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
@@ -606,7 +605,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate loop count parameters can not be zero".to_owned()));
         }
-        let x = biguint_to_u64_vec(x);
+        let x = slice_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
@@ -699,8 +698,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let engine = MNT6Instance {
             x: x,
             x_is_negative: x_is_negative,
-            exp_w0: biguint_to_u64_vec(exp_w0),
-            exp_w1: biguint_to_u64_vec(exp_w1),
+            exp_w0: slice_to_u64_vec(exp_w0),
+            exp_w1: slice_to_u64_vec(exp_w1),
             exp_w0_is_negative: exp_w0_is_negative,
             base_field: &base_field,
             curve: &g1_curve,
@@ -754,7 +753,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_root = is_non_nth_root(&fp_non_residue, modulus.clone(), 4u64);
+            let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 4u64);
             if !is_not_a_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
@@ -764,14 +763,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let mut extension_4 = Extension2Over2::new(Fp2::zero(&extension_2));
 
         {
-            extension_4.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+            extension_4.calculate_frobenius_coeffs(&modulus).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp4".to_owned())
             })?;
         }
@@ -802,7 +801,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate pairing loop count parameters can not be zero".to_owned()));
         }
-        let x = biguint_to_u64_vec(x);
+        let x = slice_to_u64_vec(x);
         if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
@@ -895,8 +894,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let engine = MNT4Instance {
             x: x,
             x_is_negative: x_is_negative,
-            exp_w0: biguint_to_u64_vec(exp_w0),
-            exp_w1: biguint_to_u64_vec(exp_w1),
+            exp_w0: slice_to_u64_vec(exp_w0),
+            exp_w1: slice_to_u64_vec(exp_w1),
             exp_w0_is_negative: exp_w0_is_negative,
             base_field: &base_field,
             curve: &g1_curve,

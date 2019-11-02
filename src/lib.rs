@@ -3,11 +3,15 @@
 #![cfg_attr(feature = "benchmarks", feature(test))]
 
 extern crate byteorder;
-extern crate num_bigint;
-extern crate num_integer;
-extern crate num_traits;
 extern crate eth_pairings_repr_derive;
-extern crate lazy_static;
+// extern crate lazy_static;
+// extern crate uint;
+extern crate arrayvec;
+extern crate fixed_width_field;
+extern crate fixed_width_fp3_fp4;
+extern crate fixed_width_fp6;
+extern crate fixed_width_fp12;
+extern crate fixed_width_group_and_loop;
 
 mod arithmetics;
 mod traits;
@@ -24,7 +28,7 @@ mod errors;
 mod constants;
 
 pub mod public_interface;
-pub mod gas_meter;
+// pub mod gas_meter;
 
 #[cfg(test)]
 mod test;
@@ -40,6 +44,9 @@ mod tests {
 
     use num_bigint::BigUint;
     use num_traits::Num;
+    use num_traits::Zero;
+    use num_traits::cast::ToPrimitive;
+
     use crate::field::*;
     use crate::fp::Fp;
     use crate::weierstrass::curve::*;
@@ -48,6 +55,18 @@ mod tests {
     use crate::weierstrass::Group;
     use crate::traits::ZeroAndOne;
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters};
+
+    fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
+        let m = BigUint::from(1u64) << 64;
+        let mut ret = Vec::with_capacity((v.bits() / 64) + 1);
+
+        while v > BigUint::zero() {
+            ret.push((&v % &m).to_u64().expect("is guaranteed to fit"));
+            v >>= 64;
+        }
+
+        ret
+    }
 
     const MULTIEXP_NUM_POINTS: usize = 100;
 
@@ -90,60 +109,6 @@ mod tests {
 
         assert!(res.is_zero());
     }
-
-    // #[test]
-    // fn test_ben_coster_bn254() {
-    //     use crate::representation::ElementRepr;
-    //     use rand::{RngCore, SeedableRng};
-    //     use rand_xorshift::XorShiftRng;
-
-    //     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    //     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    //     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-    //     let one = Fp::one(&field);
-    //     let a_coeff = Fp::zero(&field);
-    //     let mut b_coeff = one.clone();
-    //     b_coeff.double();
-    //     b_coeff.add_assign(&one);
-
-    //     let curve = WeierstrassCurve::new(
-    //         &group, 
-    //         a_coeff, 
-    //         b_coeff);
-
-    //     let mut two = one.clone();
-    //     two.double();
-
-    //     let point = CurvePoint::point_from_xy(
-    //         &curve, 
-    //         one, 
-    //         two);
-
-    //     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-    //         let mut scalar = U256Repr::default();
-    //         let mut bytes = vec![0u8; 32];
-    //         rng.fill_bytes(&mut bytes[1..]);
-    //         scalar.read_be(& bytes[..]).unwrap();
-
-    //         (point.clone(), scalar)
-    //     }).collect();
-
-
-    //     let naive_res = {
-    //         let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.mul(el.1)).collect();
-    //         let mut acc = pairs.pop().unwrap();
-    //         while let Some(p) = pairs.pop() {
-    //             acc.add_assign(&p);
-    //         }
-
-    //         acc.into_xy()
-    //     };
-
-    //     let ben_coster_res = ben_coster(pairs).into_xy();
-
-    //     assert!(ben_coster_res.0 == naive_res.0);
-    //     assert!(ben_coster_res.1 == naive_res.1);
-    // }
 
     #[test]
     fn test_peppinger_bn254() {

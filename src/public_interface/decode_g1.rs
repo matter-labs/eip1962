@@ -1,48 +1,29 @@
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
-use crate::field::{SizedPrimeField, field_from_modulus, PrimeField};
+use crate::field::{SizedPrimeField};
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-// use crate::traits::ZeroAndOne;
 use crate::weierstrass::CurveParameters;
+use crate::constants::{MaxGroupSizeUint};
 
 use super::constants::*;
 use super::decode_fp::*;
-use super::decode_utils::*;
-
-use num_bigint::BigUint;
-use num_traits::{Zero};
 
 use super::decode_utils::split;
 
 use crate::errors::ApiError;
 
-pub(crate) fn parse_base_field_from_encoding<
-    'a,
-    FE: ElementRepr,
-    >(encoding: &'a [u8]) -> Result<(PrimeField<FE>, usize, BigUint, &'a [u8]), ApiError>
-{
-    let ((modulus, modulus_len), rest) = get_base_field_params(&encoding)?;
-    let field = field_from_modulus::<FE>(modulus.clone()).map_err(|_| {
-        ApiError::InputError("Failed to create prime field from modulus".to_owned())
-    })?;
-    if rest.len() < modulus_len {
-        return Err(ApiError::InputError("Input is not long enough".to_owned()));
-    }
-
-    Ok((field, modulus_len, modulus, rest))
-}
-
 pub(crate) fn parse_group_order_from_encoding<
     'a
-    >(encoding: &'a [u8]) -> Result<(Vec<u64>, usize, BigUint, &'a [u8]), ApiError>
+    >(encoding: &'a [u8]) -> Result<(Vec<u64>, usize, MaxGroupSizeUint, &'a [u8]), ApiError>
 {
-    use crate::field::biguint_to_u64_vec;
+    use crate::field::slice_to_u64_vec;
+
     let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
-    let order = BigUint::from_bytes_be(&order);
+    let order = MaxGroupSizeUint::from_big_endian(&order);
     if order.is_zero() {
         return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())))
     }
-    let as_vec = biguint_to_u64_vec(order.clone());
+    let as_vec = slice_to_u64_vec(order.as_ref());
 
     Ok((as_vec, order_len, order, rest))
 }
@@ -82,9 +63,12 @@ pub(crate) fn serialize_g1_point<
 }
 
 pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ApiError> {
-
+    use crate::constants::MAX_GROUP_BYTE_LEN;
     let (order_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get group size length")?;
     let order_len = order_len[0] as usize;
+    if order_len > MAX_GROUP_BYTE_LEN {
+        return Err(ApiError::InputError(format!("Group order length is too large, file {}, line {}", file!(), line!())));
+    }
     let (order_encoding, rest) = split(rest, order_len, "Input is not long enough to get main group order size")?;
 
     Ok(((order_encoding, order_len), rest))
@@ -116,17 +100,18 @@ pub(crate) fn decode_scalar_representation<
     (
         bytes: &'a [u8], 
         order_byte_len: usize,
-        order: &BigUint,
+        order: &MaxGroupSizeUint,
         order_repr: &[u64],
     ) -> Result<(Vec<u64>, &'a [u8]), ApiError>
 {
-    use crate::field::biguint_to_u64_vec;
+    use crate::field::slice_to_u64_vec;
+
     let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
-    let scalar = BigUint::from_bytes_be(&encoding);
+    let scalar = MaxGroupSizeUint::from_big_endian(&encoding);
     if &scalar >= order {
         return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
     }
-    let mut repr = biguint_to_u64_vec(scalar);
+    let mut repr = slice_to_u64_vec(scalar.as_ref());
     if repr.len() < order_repr.len() {
         repr.resize(order_repr.len(), 0u64);
     }

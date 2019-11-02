@@ -124,6 +124,7 @@ use hex::{encode};
 use csv::{Writer};
 
 #[test]
+#[ignore]
 fn dump_g2_mul_vectors() {
     let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);

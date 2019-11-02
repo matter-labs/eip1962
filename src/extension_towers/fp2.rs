@@ -3,6 +3,7 @@ use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension};
 use crate::traits::ZeroAndOne;
+use crate::constants::*;
 
 // this implementation assumes extension using polynomial u^2 + m = 0
 pub struct Fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
@@ -224,10 +225,6 @@ pub struct Extension2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
-use num_bigint::BigUint;
-use num_integer::Integer;
-use num_traits::Zero;
-
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
     pub (crate) fn new(non_residue: Fp<'a, E, F>) -> Self {
         let field = non_residue.field;
@@ -244,28 +241,24 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
 
     pub(crate) fn calculate_frobenius_coeffs(
         &mut self,
-        modulus: BigUint,
-        // base: &WindowExpBase<Fp<'a, E, F>>
+        modulus: &MaxFieldUint,
     ) -> Result<(), ()> {
-        use crate::field::biguint_to_u64_vec;
-        use crate::constants::ONE_BIGUINT;
-        use crate::constants::TWO_BIGUINT;
-
         let non_residue = self.non_residue.clone();
+        let one = MaxFieldUint::from(1u64);
+        let two = MaxFieldUint::from(2u64);
 
         // NONRESIDUE**(((q^0) - 1) / 2)
         let f_0 = Fp::one(self.field);
 
         // NONRESIDUE**(((q^1) - 1) / 2)
-        let q_power = modulus;
-        let power = q_power - &*ONE_BIGUINT;
-        let (power, rem) = power.div_rem(&*TWO_BIGUINT);
+        let power = *modulus - one;
+        let (power, rem) = power.div_mod(two);
         if !rem.is_zero() {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(());
             }
         }
-        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_1 = non_residue.pow(power.as_ref());
 
         self.frobenius_coeffs_c1 = [f_0, f_1];
         self.frobenius_coeffs_are_calculated = true;

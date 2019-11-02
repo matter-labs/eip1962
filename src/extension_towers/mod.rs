@@ -9,31 +9,28 @@ use crate::fp::Fp;
 use crate::field::{SizedPrimeField};
 use crate::traits::FieldElement;
 use crate::representation::{ElementRepr};
-use crate::field::biguint_to_u64_vec;
 use crate::traits::ZeroAndOne;
 use crate::constants::*;
-
-use num_bigint::BigUint;
-use num_integer::Integer;
-use num_traits::Zero;
 
 pub(crate) fn is_non_nth_root<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>
 (
     element: & Fp<'a, FE, F>,
-    modulus: BigUint,
+    modulus: &MaxFieldUint,
     n: u64
 ) -> bool {
     if element.is_zero() {
         return false;
     }
-    let mut power = modulus;
-    power -= &*ONE_BIGUINT;
-    let divisor = BigUint::from(n);
-    let (power, rem) = power.div_rem(&divisor);
+    let one = MaxFieldUint::from(1u64);
+    let mut power = *modulus;
+    power -= one;
+
+    let divisor = MaxFieldUint::from(n);
+    let (power, rem) = power.div_mod(divisor);
     if !rem.is_zero() {
         return false;
     }
-    let l = element.pow(biguint_to_u64_vec(power));
+    let l = element.pow(power.as_ref());
     let one = Fp::one(element.field);
     if l == one {
         return false;
@@ -45,21 +42,22 @@ pub(crate) fn is_non_nth_root<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>
 pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>
 (
     element: & self::fp2::Fp2<'a, FE, F>,
-    modulus: BigUint,
+    modulus: &MaxFieldUint,
     n: u64
 ) -> bool {
     if element.is_zero() {
         return false;
     }
-    let mut power = modulus.clone();
-    power *= &modulus;
-    power -= &*ONE_BIGUINT;
-    let divisor = BigUint::from(n);
-    let (power, rem) = power.div_rem(&divisor);
+    let mut power = MaxFieldSquaredUint::from(modulus.as_ref());
+    power *= power;
+    power -= MaxFieldSquaredUint::from(1u64);
+
+    let divisor = MaxFieldSquaredUint::from(n);
+    let (power, rem) = power.div_mod(divisor);
     if !rem.is_zero() {
         return false;
     }
-    let l = element.pow(biguint_to_u64_vec(power));
+    let l = element.pow(power.as_ref());
     let one = self::fp2::Fp2::one(element.extension_field);
     if l == one {
         return false;
@@ -67,33 +65,6 @@ pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
         return true;
     }
 }
-
-// pub(crate) fn is_non_nth_root_fp3<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>>
-// (
-//     element: & self::fp3::Fp3<'a, FE, F>,
-//     modulus: BigUint,
-//     n: u64
-// ) -> bool {
-//     if element.is_zero() {
-//         return false;
-//     }
-//     let mut power = modulus.clone();
-//     power *= &modulus;
-//     power *= &modulus;
-//     power -= &*ONE_BIGUINT;
-//     let divisor = BigUint::from(n);
-//     let (power, rem) = power.div_rem(&divisor);
-//     if !rem.is_zero() {
-//         return false;
-//     }
-//     let l = element.pow(biguint_to_u64_vec(power));
-//     let one = self::fp3::Fp3::one(element.extension_field);
-//     if l == one {
-//         return false;
-//     } else {
-//         return true;
-//     }
-// }
 
 #[cfg(test)]
 mod tests {

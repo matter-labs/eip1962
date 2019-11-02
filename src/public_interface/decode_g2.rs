@@ -7,8 +7,7 @@ use crate::representation::{ElementRepr};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::traits::FieldElement;
 use crate::weierstrass::CurveParameters;
-
-use num_bigint::BigUint;
+use crate::constants::MaxFieldUint;
 
 use super::decode_fp::*;
 use super::constants::*;
@@ -23,7 +22,7 @@ pub(crate) fn create_fp2_extension<
     >
     (
         bytes: &'a [u8], 
-        modulus: BigUint,
+        modulus: &MaxFieldUint,
         field_byte_len: usize,
         base_field: &'a F,
         need_frobenius: bool
@@ -40,7 +39,7 @@ pub(crate) fn create_fp2_extension<
     }
 
     {
-        let not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2);
+        let not_a_square = is_non_nth_root(&fp_non_residue, modulus, 2);
         if !not_a_square {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
@@ -65,7 +64,7 @@ pub(crate) fn create_fp3_extension<
     >
     (
         bytes: &'a [u8], 
-        modulus: BigUint,
+        modulus: &MaxFieldUint,
         field_byte_len: usize,
         base_field: &'a F,
         need_frobenius: bool
@@ -82,7 +81,7 @@ pub(crate) fn create_fp3_extension<
     }
 
     {
-        let not_a_cube = is_non_nth_root(&fp_non_residue, modulus.clone(), 3);
+        let not_a_cube = is_non_nth_root(&fp_non_residue, modulus, 3);
         if !not_a_cube {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));

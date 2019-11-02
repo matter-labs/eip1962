@@ -496,7 +496,9 @@ impl<
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;
-    use crate::field::{U320Repr, new_field, biguint_to_u64_vec};
+    use crate::field::{U320Repr, new_field};
+    use crate::test::biguint_to_u64_vec;
+    use crate::constants::MaxFieldUint;
     use crate::fp::Fp;
     use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp2::{Fp2, Extension2};
@@ -513,8 +515,10 @@ mod tests {
         let nonres_repr = U320Repr::from(17);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -522,7 +526,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("423894536526684178289416011533888240029318103673896002803341544124054745019340795360841685", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -633,9 +637,11 @@ mod tests {
         let base_field = new_field::<U768Repr>("41898490967918953402344214791240637128170709919953949071783502921025352812571106773058893763790338921418070971888253786114353726529584385201591605722013126468931404347949840543007986327743462853720628051692141265303114721689601", 10).unwrap();
         let nonres_repr = U768Repr::from(13);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -643,7 +649,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("28798803903456388891410036793299405764940372360099938340752576406393880372126970068421383312482853541572780087363938442377933706865252053507077543420534380486492786626556269083255657125025963825610840222568694137138741554679540", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -760,8 +766,10 @@ mod tests {
         let nonres_repr = U256Repr::from(22724705057637137);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -769,7 +777,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("22027092453322650", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();

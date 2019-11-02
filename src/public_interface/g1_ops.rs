@@ -22,11 +22,9 @@ use crate::multiexp::peppinger;
 use crate::field::*;
 use super::constants::*;
 
-// #[macro_use]
-// use super::api_specialization_macro::*;
-
 use super::decode_g1::*;
 use super::decode_utils::*;
+use super::decode_fp::*;
 
 use crate::errors::ApiError;
 
@@ -84,7 +82,7 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
 
         let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
-        })?;;
+        })?;
 
         let (p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
         let (scalar, rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
@@ -113,7 +111,7 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
 
         let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
-        })?;;
+        })?;
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;

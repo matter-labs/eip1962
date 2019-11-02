@@ -297,10 +297,7 @@ pub struct Extension2Over3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
-use num_bigint::BigUint;
-use num_integer::Integer;
-use num_traits::Zero;
-// use crate::sliding_window_exp::{WindowExpBase};
+use crate::constants::*;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F> {
     pub (crate) fn new(non_residue: Fp3<'a, E, F>) -> Self {
@@ -319,39 +316,39 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
 
     pub(crate) fn calculate_frobenius_coeffs(
         &mut self,
-        modulus: BigUint,
-        // base: &WindowExpBase<Fp<'a, E, F>>
+        modulus: &MaxFieldUint,
     ) -> Result<(), ()> {
-        use crate::field::biguint_to_u64_vec;
-        use crate::constants::ONE_BIGUINT;
-        use crate::constants::SIX_BIGUINT;
     
         // NON_REDISUE**(((q^0) - 1) / 6)
         let non_residue = self.field.non_residue.clone();
         let f_0 = Fp::one(self.field.field);
 
-        let mut q_power = modulus.clone();
-        let power = q_power.clone() - &*ONE_BIGUINT;
-        let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+        let modulus = MaxFrobeniusFp6::from(modulus.as_ref());
+        let mut q_power = modulus;
+        let one = MaxFrobeniusFp6::from(1u64);
+        let six = MaxFrobeniusFp6::from(6u64);
+
+        let power = q_power - one;
+        let (power, rem) = power.div_mod(six);
         if !rem.is_zero() {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(());
             }
         }
-        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_1 = non_residue.pow(power.as_ref());
 
-        q_power *= &modulus;
+        q_power *= modulus;
         let f_2 = Fp::zero(self.field.field);
 
-        q_power *= &modulus;
-        let power = q_power.clone() - &*ONE_BIGUINT;
-        let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+        q_power *= modulus;
+        let power = q_power - one;
+        let (power, rem) = power.div_mod(six);
         if !rem.is_zero() {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(());
             }
         }
-        let f_3 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_3 = non_residue.pow(power.as_ref());
 
         let f_4 = Fp::zero(self.field.field);
         let f_5 = Fp::zero(self.field.field);

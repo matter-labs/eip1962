@@ -3,6 +3,7 @@ use crate::test::gas_meter::bn;
 use crate::test::gas_meter::mnt4;
 use crate::test::gas_meter::mnt6;
 use crate::test::gas_meter::arithmetic_ops;
+use crate::test::*;
 
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
@@ -150,7 +151,6 @@ fn run_single_curve_arithmetic_ops() {
 
     use crate::test::g2_ops::mnt4 as g2_mnt4;
     use crate::test::g2_ops::mnt6 as g2_mnt6;
-    use crate::field::calculate_num_limbs;
     use crate::test::gas_meter::arithmetic_ops::*;
 
     use rand::{SeedableRng};
@@ -177,7 +177,7 @@ fn run_single_curve_arithmetic_ops() {
     use std::time::Instant;
 
     let limbs = calculate_num_limbs(&curve.q).expect("must work");
-    let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+    let group_order_limbs = crate::test::num_units_for_group_order(&curve.r).expect("must work");
     let (common_g1_data, modulus_length, group_length) = g1_mnt6::assemble_single_curve_params(curve.clone());
     let (common_g2_data, _, _) = g2_mnt6::assemble_single_curve_params(curve.clone());
 
@@ -213,7 +213,6 @@ fn run_single_curve_and_fields_construction() {
     use crate::test::g1_ops::mnt6 as g1_mnt6;
 
     use crate::test::g2_ops::mnt6 as g2_mnt6;
-    use crate::field::calculate_num_limbs;
     use crate::test::gas_meter::arithmetic_ops::*;
 
     use rand::{SeedableRng};
@@ -240,7 +239,7 @@ fn run_single_curve_and_fields_construction() {
 
             let limbs = calculate_num_limbs(&curve.q).expect("must work");
             assert!(limbs == num_limbs);
-            let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+            let group_order_limbs = crate::test::num_units_for_group_order(&curve.r).expect("must work");
             assert!(num_group_limbs == group_order_limbs);
             let (common_g1_data, modulus_length, group_length) = g1_mnt6::assemble_single_curve_params(curve.clone());
             let (common_g2_data, _, _) = g2_mnt6::assemble_single_curve_params(curve.clone());

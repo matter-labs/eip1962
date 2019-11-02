@@ -1,0 +1,8 @@
+[package]
+name = "fixed_width_group_and_loop"
+version = "0.1.0"
+authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+uint = {version = "0.8", path = "../../uint" }

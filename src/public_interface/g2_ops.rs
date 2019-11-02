@@ -9,6 +9,7 @@ use super::decode_utils::*;
 use super::decode_g2::*;
 use super::decode_g1::*;
 use super::constants::*;
+use super::decode_fp::*;
 
 use crate::errors::ApiError;
 
@@ -35,7 +36,7 @@ pub struct G2ApiImplementationFp2<FE: ElementRepr> {
 impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_2, rest) = create_fp2_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (order_repr, _order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
@@ -70,7 +71,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_2, rest) = create_fp2_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
@@ -100,7 +101,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(&rest, modulus, modulus_len, &field, false)?;
+        let (extension_2, rest) = create_fp2_extension(&rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
@@ -154,7 +155,7 @@ pub struct G2ApiImplementationFp3<FE: ElementRepr> {
 impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_3, rest) = create_fp3_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_3, rest) = create_fp3_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp3_from_encoding(&rest, modulus_len, &extension_3)?;
         let (order_repr, _order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
@@ -189,7 +190,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_3, rest) = create_fp3_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_3, rest) = create_fp3_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp3_from_encoding(&rest, modulus_len, &extension_3)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
@@ -219,7 +220,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_3, rest) = create_fp3_extension(&rest, modulus, modulus_len, &field, false)?;
+        let (extension_3, rest) = create_fp3_extension(&rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp3_from_encoding(&rest, modulus_len, &extension_3)?;
         let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 

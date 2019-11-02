@@ -318,9 +318,7 @@ pub struct Extension3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
-use num_bigint::BigUint;
-use num_integer::Integer;
-use num_traits::Zero;
+use crate::constants::*;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
     pub (crate) fn new(non_residue: Fp<'a, E, F>) -> Self {
@@ -339,37 +337,37 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
 
     pub(crate) fn calculate_frobenius_coeffs(
         &mut self,
-        modulus: BigUint,
+        modulus: &MaxFieldUint,
     ) -> Result<(), ()> {
-        use crate::field::biguint_to_u64_vec;
-        use crate::constants::ONE_BIGUINT;
-        use crate::constants::THREE_BIGUINT;
-    
         // NON_RESIDUE**(((q^0) - 1) / 3)
         let non_residue = self.non_residue.clone();
         let f_0 = Fp::one(self.field);
 
         // NON_RESIDUE**(((q^1) - 1) / 3)
-        let mut q_power = modulus.clone();
-        let power = q_power.clone() - &*ONE_BIGUINT;
-        let (power, rem) = power.div_rem(&*THREE_BIGUINT);
+        let modulus = MaxFrobeniusFp3::from(modulus.as_ref());
+        let mut q_power = modulus;
+        let one = MaxFrobeniusFp3::from(1u64);
+        let three = MaxFrobeniusFp3::from(3u64);
+
+        let power = q_power - one;
+        let (power, rem) = power.div_mod(three);
         if !rem.is_zero() {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(());
             }
         }
-        let f_1 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_1 = non_residue.pow(power.as_ref());
 
         // NON_RESIDUE**(((q^2) - 1) / 3)
-        q_power *= &modulus;
-        let power = q_power.clone() - &*ONE_BIGUINT;
-        let (power, rem) = power.div_rem(&*THREE_BIGUINT);
+        q_power *= modulus;
+        let power = q_power - one;
+        let (power, rem) = power.div_mod(three);
         if !rem.is_zero() {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(());
             }
         }
-        let f_2 = non_residue.pow(&biguint_to_u64_vec(power));
+        let f_2 = non_residue.pow(power.as_ref());
 
         let f_0_c2 = f_0.clone();
 

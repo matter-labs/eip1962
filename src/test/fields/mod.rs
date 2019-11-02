@@ -1,3 +1,5 @@
+use crate::constants::MaxFieldUint;
+
 #[test]
 fn test_fp2_inversion() {
     use num_bigint::BigUint;
@@ -14,7 +16,7 @@ fn test_fp2_inversion() {
     let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
     let mut extension_2 = Extension2::new(fp_non_residue.clone());
-    extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+    extension_2.calculate_frobenius_coeffs(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
 
     let mut fp2 = Fp2::one(&extension_2);
     fp2.c1 = fp_non_residue;
@@ -42,13 +44,13 @@ fn test_fp4_inversion() {
     let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
     let mut extension_2 = Extension2::new(fp_non_residue.clone());
-    extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+    extension_2.calculate_frobenius_coeffs(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
 
     let mut fp2_non_residue = Fp2::zero(&extension_2); // non-residue is 13 + 0*u + 0*u^2
     fp2_non_residue.c0 = fp_non_residue.clone();
 
     let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-    extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+    extension_4.calculate_frobenius_coeffs(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
 
     let mut fp2 = Fp2::one(&extension_2);
     fp2.c1 = fp_non_residue;
@@ -83,7 +85,7 @@ fn test_fp3_inversion() {
     let c1 = Fp::from_be_bytes(&base_field, &c1_be, true).unwrap();
 
     let mut extension_3 = Extension3::new(fp_non_residue.clone());
-    extension_3.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+    extension_3.calculate_frobenius_coeffs(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
 
     let mut fp3 = Fp3::zero(&extension_3);
     fp3.c1 = c1;

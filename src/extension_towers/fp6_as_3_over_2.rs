@@ -371,9 +371,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 }
 
-use num_bigint::BigUint;
-use num_integer::Integer;
-use num_traits::Zero;
+use crate::constants::*;
 use crate::sliding_window_exp::{WindowExpBase};
 
 // For example, BLS12-381 has non-residue = 1 + u;
@@ -403,40 +401,39 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
 
     pub(crate) fn calculate_frobenius_coeffs(
         &mut self,
-        modulus: BigUint,
+        modulus: &MaxFieldUint,
         base: &WindowExpBase<Fp2<'a, E, F>>
     ) -> Result<(), ()> {
-        use crate::field::biguint_to_u64_vec;
-        use crate::constants::ONE_BIGUINT;
-        use crate::constants::THREE_BIGUINT;
-
         // NON_RESIDUE**(((q^0) - 1) / 3)
         let f_0 = Fp2::one(self.field);
 
-        let mut powers = vec![];
+        let mut powers = Vec::with_capacity(3);
 
-        let mut q_power = modulus.clone();
+        let modulus = MaxFrobeniusFp6::from(modulus.as_ref());
+        let mut q_power = modulus;
+        let one = MaxFrobeniusFp6::from(1u64);
+        let three = MaxFrobeniusFp6::from(3u64);
 
         {
-            let power = q_power.clone() - &*ONE_BIGUINT;
-            let (power, rem) = power.div_rem(&*THREE_BIGUINT);
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(three);
             if !rem.is_zero() {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(());
                 }
             }
-            powers.push(biguint_to_u64_vec(power));
+            powers.push(Vec::from(power.as_ref()));
         }
         for _ in 1..3 {
-            q_power *= &modulus;
-            let power = q_power.clone() - &*ONE_BIGUINT;
-            let (power, rem) = power.div_rem(&*THREE_BIGUINT);
+            q_power *= modulus;
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(three);
             if !rem.is_zero() {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(());
                 }
             }
-            powers.push(biguint_to_u64_vec(power));
+            powers.push(Vec::from(power.as_ref()));
         }
 
         let mut result = base.exponentiate(&powers);

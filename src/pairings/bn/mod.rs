@@ -524,8 +524,9 @@ mod tests {
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::pairings::{PairingEngine};
     use crate::representation::ElementRepr;
-    use crate::field::{biguint_to_u64_vec};
+    use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
+    use crate::constants::MaxFieldUint;
 
     #[test]
     fn test_bn254_pairing() {
@@ -537,8 +538,10 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -552,10 +555,10 @@ mod tests {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -660,8 +663,12 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
+        let modulus_biguint = modulus.clone();
+
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -675,10 +682,10 @@ mod tests {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -767,11 +774,11 @@ mod tests {
 
         let final_exp = engine.final_exponentiation(&fp12).unwrap();
 
-        use crate::field::biguint_to_u64_vec;
+        use crate::test::biguint_to_u64_vec;
         let one = BigUint::from(1u64);
         let mut power = BigUint::from(1u64);
         for _ in 0..12 {
-            power = power * modulus.clone();
+            power = power * modulus_biguint.clone();
         }
         power = power - one;
         power = power / r;

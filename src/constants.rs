@@ -11,3 +11,8 @@ lazy_static! {
     pub(crate) static ref SIX_BIGUINT: BigUint = BigUint::from(6u64);
     pub(crate) static ref BIGUINT_TWO_IN_64: BigUint = { BigUint::one() << 64 };
 }
+
+pub const MIN_FIELD_LIMBS: usize = 4;
+pub const MAX_FIELD_LIMBS: usize = 16;
+pub const MIN_GROUP_LIMBS: usize = 1;
+pub const MAX_GROUP_LIMBS: usize = 16;

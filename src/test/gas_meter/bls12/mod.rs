@@ -17,7 +17,7 @@ pub(crate) struct Bls12Report {
     group_limbs: usize,
     num_pairs: usize,
     x_is_negative: bool,
-    run_microseconds: u64,
+    pub(crate) run_microseconds: u64,
 }
 
 extern crate csv;
@@ -121,6 +121,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
         };
         let calldata = calldata.unwrap();
         input_data.extend(calldata);
+        // println!("{}", hex::encode(&input_data));
         let now = Instant::now();
         let res = API::run(&input_data);
         let elapsed = now.elapsed();

@@ -12,7 +12,6 @@ use crate::test::g2_ops;
 
 pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
-    assert!(pairs >= 2);
     assert!(pairs % 2 == 0);
 
     // - Curve type

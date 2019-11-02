@@ -218,7 +218,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -444,7 +446,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -638,7 +642,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -832,7 +838,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;

@@ -468,11 +468,17 @@ impl<
 
     fn pair<'b>
         (&self, points: &'b [CurvePoint<'a, CB>], twists: &'b [CurvePoint<'a, CTW>]) -> Option<Self::PairingResult> {
-            if points.len() == 0 || twists.len() == 0 || points.len() != twists.len() {
+            if points.len() != twists.len() {
                 return None;
             }
-            
-            let mut pairs = vec![];
+
+            if !std::option_env!("GAS_METERING").is_some() {
+                if points.len() == 0 || twists.len() == 0 {
+                    return None;
+                }
+            }
+
+            let mut pairs = Vec::with_capacity(points.len());
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
             }

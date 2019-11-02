@@ -17,6 +17,7 @@ use rand::distributions::Uniform;
 
 mod arithmetic_ops;
 mod gen_params;
+mod one_off;
 
 #[test]
 #[ignore]

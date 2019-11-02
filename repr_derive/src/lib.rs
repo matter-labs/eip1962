@@ -8,10 +8,6 @@ extern crate syn;
 #[macro_use]
 extern crate quote;
 
-extern crate num_bigint;
-extern crate num_integer;
-extern crate num_traits;
-
 use quote::TokenStreamExt;
 use std::str::FromStr;
 

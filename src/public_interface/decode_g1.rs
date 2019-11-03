@@ -14,18 +14,15 @@ use crate::errors::ApiError;
 
 pub(crate) fn parse_group_order_from_encoding<
     'a
-    >(encoding: &'a [u8]) -> Result<(Vec<u64>, usize, MaxGroupSizeUint, &'a [u8]), ApiError>
+    >(encoding: &'a [u8]) -> Result<(usize, MaxGroupSizeUint, &'a [u8]), ApiError>
 {
-    use crate::field::slice_to_u64_vec;
-
     let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
     let order = MaxGroupSizeUint::from_big_endian(&order);
     if order.is_zero() {
         return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())))
     }
-    let as_vec = slice_to_u64_vec(order.as_ref());
 
-    Ok((as_vec, order_len, order, rest))
+    Ok((order_len, order, rest))
 }
 
 pub(crate) fn parse_ab_in_base_field_from_encoding<
@@ -101,21 +98,14 @@ pub(crate) fn decode_scalar_representation<
         bytes: &'a [u8], 
         order_byte_len: usize,
         order: &MaxGroupSizeUint,
-        order_repr: &[u64],
-    ) -> Result<(Vec<u64>, &'a [u8]), ApiError>
+    ) -> Result<(MaxGroupSizeUint, &'a [u8]), ApiError>
 {
-    use crate::field::slice_to_u64_vec;
-
     let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
     let scalar = MaxGroupSizeUint::from_big_endian(&encoding);
     if &scalar >= order {
         return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
     }
-    let mut repr = slice_to_u64_vec(scalar.as_ref());
-    if repr.len() < order_repr.len() {
-        repr.resize(order_repr.len(), 0u64);
-    }
 
-    Ok((repr, rest))
+    Ok((scalar, rest))
 }
 

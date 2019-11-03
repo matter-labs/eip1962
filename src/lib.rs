@@ -4,8 +4,6 @@
 
 extern crate byteorder;
 extern crate eth_pairings_repr_derive;
-// extern crate lazy_static;
-// extern crate uint;
 extern crate arrayvec;
 extern crate fixed_width_field;
 extern crate fixed_width_fp3_fp4;
@@ -55,6 +53,8 @@ mod tests {
     use crate::weierstrass::Group;
     use crate::traits::ZeroAndOne;
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters};
+    use crate::field::slice_to_fixed_size_array;
+    use crate::constants::MaxGroupSizeUint;
 
     fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
         let m = BigUint::from(1u64) << 64;
@@ -85,7 +85,7 @@ mod tests {
         let params = CurveOverFpParameters::new(&field);
 
         let curve = WeierstrassCurve::new(
-            group_order, 
+            &group_order, 
             a_coeff, 
             b_coeff,
             &params
@@ -120,7 +120,8 @@ mod tests {
         let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
         let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
         let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let group_order = biguint_to_u64_vec(order.clone());
+        let order = MaxGroupSizeUint::from_big_endian(&order.clone().to_bytes_be());
+        // let group_order = biguint_to_u64_vec(order.clone()));
         let one = Fp::one(&field);
         let a_coeff = Fp::zero(&field);
         let mut b_coeff = one.clone();
@@ -130,7 +131,7 @@ mod tests {
         let params = CurveOverFpParameters::new(&field);
 
         let curve = WeierstrassCurve::new(
-            group_order, 
+            &order.as_ref(), 
             a_coeff, 
             b_coeff,
             &params
@@ -145,28 +146,29 @@ mod tests {
             two
         );
 
-        let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+        let bases = vec![point.clone(); MULTIEXP_NUM_POINTS];
+
+        let scalars: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
             let mut bytes = vec![0u8; 32];
             rng.fill_bytes(&mut bytes[..]);
-            let scalar = BigUint::from_bytes_be(&bytes);
-            let scalar = scalar % &order;
-            let scalar = biguint_to_u64_vec(scalar);
+            let scalar = MaxGroupSizeUint::from_big_endian(&bytes);
+            let scalar = scalar % order;
 
-            (point.clone(), scalar)
+            scalar
         }).collect();
 
 
         let naive_res = {
-            let mut pairs: Vec<_> = pairs.iter().map(|el| el.0.mul(&el.1)).collect();
-            let mut acc = pairs.pop().unwrap();
-            while let Some(p) = pairs.pop() {
+            let mut acc = CurvePoint::zero(&curve);
+            for (s, g) in scalars.iter().zip(bases.iter()) {
+                let p = g.mul(&s.as_ref());
                 acc.add_assign(&p);
             }
 
             acc.into_xy()
         };
 
-        let ben_coster_res = peppinger(pairs).into_xy();
+        let ben_coster_res = peppinger(&bases, scalars).into_xy();
 
         assert!(ben_coster_res.0 == naive_res.0);
         assert!(ben_coster_res.1 == naive_res.1);
@@ -213,7 +215,7 @@ mod tests {
         let params = CurveOverFpParameters::new(&field);
 
         let curve = WeierstrassCurve::new(
-            group_order, 
+            &group_order, 
             a_coeff, 
             b_coeff,
             &params

@@ -59,7 +59,6 @@ struct U1024(U1024Repr);
 use crate::representation::{ElementRepr};
 use crate::constants::*;
 
-/// Convert BigUint into a vector of 64-bit limbs.
 pub(crate) fn slice_to_fixed_length_u64_vec<S: AsRef<[u64]>>(v: S, limbs: usize) -> Vec<u64> {
     let as_ref = v.as_ref();
     let mut ret = Vec::with_capacity(limbs);
@@ -86,7 +85,6 @@ pub(crate) fn slice_to_fixed_length_u64_vec<S: AsRef<[u64]>>(v: S, limbs: usize)
     ret
 }
 
-/// Convert BigUint into a vector of 64-bit limbs.
 pub(crate) fn slice_to_u64_vec<S: AsRef<[u64]>>(v: S) -> Vec<u64> {
     let as_ref = v.as_ref();
 
@@ -106,44 +104,33 @@ pub(crate) fn slice_to_u64_vec<S: AsRef<[u64]>>(v: S) -> Vec<u64> {
     ret
 }
 
-// /// Convert BigUint into a vector of 64-bit limbs.
-// fn fsquared_to_fixed_length_u64_vec(v: &MaxFieldSquaredUint, limbs: usize) -> Vec<u64> {
-//     let mut ret = Vec::with_capacity(limbs);
+use crate::arrayvec::{ArrayVec, Array};
 
-//     let num_words = num_words(&v);
+pub(crate) fn slice_to_fixed_size_array<S: AsRef<[u64]>, A: Array<Item = u64>>(v: S) -> ArrayVec<A> {
+    let as_ref = v.as_ref();
 
-//     debug_assert!(num_words <= limbs);
+    let mut num_words = as_ref.len();
+    for v in as_ref.iter().rev() {
+        if *v == 0 {
+            num_words -= 1;
+        } else {
+            break;
+        }
+    }
 
-//     for i in 0..num_words {
-//         ret.push(v.as_ref()[i]);
-//     }
+    debug_assert!(num_words <= A::CAPACITY);
 
-//     if ret.len() < limbs {
-//         ret.resize(limbs, 0u64);
-//     }
+    let mut ret = ArrayVec::<A>::new();
+    ret.try_extend_from_slice(&as_ref[0..num_words]).expect("must extend with enough capacity");
 
-//     assert!(ret.len() == limbs);
-
-//     ret
-// }
+    ret
+}
 
 fn num_words(number: &MaxFieldSquaredUint) -> usize {
     let bits = number.bits();
 
     (bits + 63) / 64
 }
-
-// pub fn fsquared_to_u64_vec(v: &MaxFieldSquaredUint) -> Vec<u64> {
-//     let num_words = num_words(&v);
-
-//     let mut ret = Vec::with_capacity(num_words);
-
-//     for i in 0..num_words {
-//         ret.push(v.as_ref()[i]);
-//     }
-
-//     ret
-// }
 
 /// This trait represents an element of a field.
 pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug

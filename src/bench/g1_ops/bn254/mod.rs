@@ -12,6 +12,8 @@ use crate::weierstrass::Group;
 use num_bigint::BigUint;
 use num_traits::Num;
 use crate::weierstrass::{CurveOverFpParameters, CurveOverFp2Parameters};
+use crate::constants::MaxGroupSizeUint;
+use crate::test::biguint_to_u64_vec;
 
 const MULTIEXP_NUM_POINTS: usize = 100;
 
@@ -30,7 +32,7 @@ fn bench_doubling_bn254(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_coeff, 
         b_coeff,
         &params
@@ -62,7 +64,7 @@ fn bench_addition_bn254(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_coeff, 
         b_coeff,
         &params
@@ -97,7 +99,7 @@ fn bench_multiplication_bn254(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_coeff, 
         b_coeff,
         &params
@@ -135,7 +137,7 @@ fn bench_multiplication_bn254_into_affine(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_coeff, 
         b_coeff,
         &params
@@ -173,7 +175,7 @@ fn bench_multiplication_bn254_into_affine_wnaf(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_coeff, 
         b_coeff,
         &params
@@ -229,7 +231,7 @@ fn bench_multiplication_bn254_g2_into_affine_wnaf(b: &mut Bencher) {
     let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
     let twist = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_fp2, 
         b_fp2,
         &fp2_params
@@ -298,7 +300,7 @@ fn bench_addition_bn254_g2_into_affine(b: &mut Bencher) {
     let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
     let twist = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_fp2, 
         b_fp2,
         &fp2_params
@@ -376,86 +378,6 @@ fn bench_behavior_of_inversion_by_eea(b: &mut Bencher) {
     b.iter(|| fe.eea_inverse());
 }
 
-// #[bench]
-// fn bench_ben_coster_bn254(b: &mut Bencher) {
-//     use crate::representation::ElementRepr;
-//     use rand::{RngCore, SeedableRng};
-//     use rand_xorshift::XorShiftRng;
-
-//     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-//     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-//     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-//     let one = Fp::one(&field);
-//     let a_coeff = Fp::zero(&field);
-//     let mut b_coeff = one.clone();
-//     b_coeff.double();
-//     b_coeff.add_assign(&one);
-
-//     let curve = WeierstrassCurve::new(
-//         &group, 
-//         a_coeff, 
-//         b_coeff);
-
-//     let mut two = one.clone();
-//     two.double();
-
-//     let point = CurvePoint::point_from_xy(
-//         &curve, 
-//         one, 
-//         two);
-
-//     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-//         let mut scalar = U256Repr::default();
-//         let mut bytes = vec![0u8; 32];
-//         rng.fill_bytes(&mut bytes[1..]);
-//         scalar.read_be(& bytes[..]).unwrap();
-
-//         (point.clone(), scalar)
-//     }).collect();
-
-//     b.iter(move || ben_coster(pairs.clone()));
-// }
-
-// #[bench]
-// fn bench_ben_coster_bn254_using_wnaf(b: &mut Bencher) {
-//     use crate::representation::ElementRepr;
-//     use rand::{RngCore, SeedableRng};
-//     use rand_xorshift::XorShiftRng;
-
-//     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-//     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-//     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-//     let one = Fp::one(&field);
-//     let a_coeff = Fp::zero(&field);
-//     let mut b_coeff = one.clone();
-//     b_coeff.double();
-//     b_coeff.add_assign(&one);
-
-//     let curve = WeierstrassCurve::new(
-//         &group, 
-//         a_coeff, 
-//         b_coeff);
-
-//     let mut two = one.clone();
-//     two.double();
-
-//     let point = CurvePoint::point_from_xy(
-//         &curve, 
-//         one, 
-//         two);
-
-//     let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-//         let mut scalar = U256Repr::default();
-//         let mut bytes = vec![0u8; 32];
-//         rng.fill_bytes(&mut bytes[1..]);
-//         scalar.read_be(& bytes[..]).unwrap();
-
-//         (point.clone(), scalar)
-//     }).collect();
-
-//     b.iter(move || ben_coster_wnaf(pairs.clone()));
-// }
-
 #[bench]
 fn bench_peppinger_bn254(b: &mut Bencher) {
     use crate::representation::ElementRepr;
@@ -466,7 +388,8 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
     let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
     let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-    let group_order = biguint_to_u64_vec(order.clone());
+    let order = MaxGroupSizeUint::from_big_endian(&order.clone().to_bytes_be());
+    // let group_order = biguint_to_u64_vec(order.clone());
     let one = Fp::one(&field);
     let a_coeff = Fp::zero(&field);
     let mut b_coeff = one.clone();
@@ -476,7 +399,7 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &order.as_ref(), 
         a_coeff, 
         b_coeff,
         &params
@@ -490,17 +413,18 @@ fn bench_peppinger_bn254(b: &mut Bencher) {
         one, 
         two);
 
-    let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+    let bases = vec![point.clone(); MULTIEXP_NUM_POINTS];
+
+    let scalars: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
         let mut bytes = vec![0u8; 32];
         rng.fill_bytes(&mut bytes[..]);
-        let scalar = BigUint::from_bytes_be(&bytes);
-        let scalar = scalar % &order;
-        let scalar = biguint_to_u64_vec(scalar);
+        let scalar = MaxGroupSizeUint::from_big_endian(&bytes);
+        let scalar = scalar % order;
 
-        (point.clone(), scalar)
+        scalar
     }).collect();
 
-    b.iter(move || peppinger(pairs.clone()));
+    b.iter(move || peppinger(&bases, scalars.clone()));
 }
 
 #[bench]
@@ -523,7 +447,7 @@ fn bench_naive_multiexp_bn254(b: &mut Bencher) {
     let params = CurveOverFpParameters::new(&field);
 
     let curve = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_coeff, 
         b_coeff,
         &params
@@ -572,6 +496,7 @@ fn bench_peppinger_bn254_g2(b: &mut Bencher) {
     // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
     let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
     let group_order = biguint_to_u64_vec(order.clone());
+    let order = MaxGroupSizeUint::from_big_endian(&order.clone().to_bytes_be());
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
 
@@ -596,7 +521,7 @@ fn bench_peppinger_bn254_g2(b: &mut Bencher) {
     let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
     let twist = WeierstrassCurve::new(
-        group_order, 
+        &group_order, 
         a_fp2, 
         b_fp2,
         &fp2_params
@@ -622,17 +547,18 @@ fn bench_peppinger_bn254_g2(b: &mut Bencher) {
 
     let point = CurvePoint::point_from_xy(&twist, q_x, q_y);
 
-    let pairs: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
+    let bases = vec![point.clone(); MULTIEXP_NUM_POINTS];
+
+    let scalars: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
         let mut bytes = vec![0u8; 32];
         rng.fill_bytes(&mut bytes[..]);
-        let scalar = BigUint::from_bytes_be(&bytes);
-        let scalar = scalar % &order;
-        let scalar = biguint_to_u64_vec(scalar);
+        let scalar = MaxGroupSizeUint::from_big_endian(&bytes);
+        let scalar = scalar % order;
 
-        (point.clone(), scalar)
+        scalar
     }).collect();
 
-    b.iter(move || peppinger(pairs.clone()));
+    b.iter(move || peppinger(&bases, scalars.clone()));
 }
 
 #[bench]

@@ -29,8 +29,8 @@ pub struct BnInstance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub(crate) u: Vec<u64>,
-    pub(crate) six_u_plus_2: Vec<u64>,
+    pub(crate) u: &'a [u64],
+    pub(crate) six_u_plus_2: &'a [u64],
     pub(crate) u_is_negative: bool,
     pub(crate) twist_type: TwistType,
     pub(crate) base_field: &'a F,
@@ -527,6 +527,7 @@ mod tests {
     use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
     use crate::constants::MaxFieldUint;
+    use crate::field::slice_to_fixed_size_array;
 
     #[test]
     fn test_bn254_pairing() {
@@ -571,8 +572,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -635,9 +636,9 @@ mod tests {
         // println!("Expected coeff = {:x}", BigUint::from_str_radix("2813988028633040066320201189843971639620433430176492766961373503539074898364", 10).unwrap());
 
         let engine = super::BnInstance {
-            u: vec![4965661367192848881],
+            u: &[4965661367192848881],
             u_is_negative: false,
-            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
+            six_u_plus_2: &six_u_plus_2.0[..2],
             twist_type: super::TwistType::D,
             base_field: &base_field,
             curve: &curve,
@@ -698,8 +699,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -751,9 +752,9 @@ mod tests {
         six_u_plus_2.add_nocarry(&two);
 
         let engine = super::BnInstance {
-            u: vec![4965661367192848881],
+            u: &[4965661367192848881],
             u_is_negative: false,
-            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
+            six_u_plus_2: &six_u_plus_2.0[..2],
             twist_type: super::TwistType::D,
             base_field: &base_field,
             curve: &curve,

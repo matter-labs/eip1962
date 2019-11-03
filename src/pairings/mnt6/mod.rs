@@ -9,16 +9,16 @@ use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 use crate::pairings::PairingEngine;
 
 pub struct MNT6Instance<
-    'a, 
+        'a, 
         FE: ElementRepr, 
         F: SizedPrimeField<Repr = FE>, 
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp3<'a, FE, F>>
     > {
-    pub(crate) x: Vec<u64>,
+    pub(crate) x: &'a [u64],
     pub(crate) x_is_negative: bool,
-    pub(crate) exp_w0: Vec<u64>,
-    pub(crate) exp_w1: Vec<u64>,
+    pub(crate) exp_w0: &'a [u64],
+    pub(crate) exp_w1: &'a [u64],
     pub(crate) exp_w0_is_negative: bool,
     pub(crate) base_field: &'a F,
     pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
@@ -513,6 +513,7 @@ mod tests {
     use crate::pairings::{PairingEngine};
     use crate::test::{biguint_to_u64_vec};
     use crate::constants::MaxFieldUint;
+    use crate::field::slice_to_fixed_size_array;
 
     #[test]
     fn test_mnt6_pairing() {
@@ -561,8 +562,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp3, b_fp3, &fp3_params).unwrap();
 
         let p_x = BigUint::from_str_radix("336685752883082228109289846353937104185698209371404178342968838739115829740084426881123453", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("402596290139780989709332707716568920777622032073762749862342374583908837063963736098549800", 10).unwrap().to_bytes_be();
@@ -607,10 +608,10 @@ mod tests {
         assert!(q.is_on_curve());
 
         let engine = super::MNT6Instance {
-            x: x,
+            x: &x,
             x_is_negative: true,
-            exp_w0: vec![0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55],
-            exp_w1: vec![1u64],
+            exp_w0: &[0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55],
+            exp_w1: &[1u64],
             exp_w0_is_negative: true,
             base_field: &base_field,
             curve: &curve,
@@ -679,8 +680,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp3, b_fp3, &fp3_params).unwrap();
 
         let p_x = BigUint::from_str_radix("5511163824921585887915590525772884263960974614921003940645351443740084257508990841338974915037175497689287870585840954231884082785026301437744745393958283053278991955159266640440849940136976927372133743626748847559939620888818486853646", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("7913123550914612057135582061699117755797758113868200992327595317370485234417808273674357776714522052694559358668442301647906991623400754234679697332299689255516547752391831738454121261248793568285885897998257357202903170202349380518443", 10).unwrap().to_bytes_be();
@@ -745,10 +746,10 @@ mod tests {
         // in this case w1 != 1
 
         let engine = super::MNT6Instance {
-            x: x,
+            x: &x,
             x_is_negative: false,
-            exp_w0: biguint_to_u64_vec(w0),
-            exp_w1: biguint_to_u64_vec(w1),
+            exp_w0: &biguint_to_u64_vec(w0),
+            exp_w1: &biguint_to_u64_vec(w1),
             exp_w0_is_negative: true,
             base_field: &base_field,
             curve: &curve,
@@ -818,8 +819,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp3, b_fp3, &fp3_params).unwrap();
 
         let p_x = BigUint::from_str_radix("5579967068336365913530314810395365133780834399862286099844214670112509916823249335294962213691537977152362219416893517101994883989493084838175435762233462039369475294964563970855229509232628421518123427796600636650128165679151508", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("3286106293257681699728332709973922945771547429394479993180335107651349218966829706081783660531045380298579922041512096833422398940161774037026391058614654750408470238881887954061918258846716359094162226636558919540815399302189033", 10).unwrap().to_bytes_be();
@@ -872,10 +873,10 @@ mod tests {
         // in this case w1 != 1
 
         let engine = super::MNT6Instance {
-            x: biguint_to_u64_vec(ate_loop_length),
+            x: &biguint_to_u64_vec(ate_loop_length),
             x_is_negative: false,
-            exp_w0: biguint_to_u64_vec(w0),
-            exp_w1: biguint_to_u64_vec(w1),
+            exp_w0: &biguint_to_u64_vec(w0),
+            exp_w1: &biguint_to_u64_vec(w1),
             exp_w0_is_negative: false,
             base_field: &base_field,
             curve: &curve,
@@ -966,8 +967,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp3, b_fp3, &fp3_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp3, b_fp3, &fp3_params).unwrap();
 
         let p_x = BigUint::from_str_radix("10429529130963884009088672788347332381112680208340155261267801535021515284160681139607251964825852124795332292830211013740612118630760054643157598813437729109347416973526597847768430196", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("16905957489427084020812201420874004139445860435619110387337972510865682281055685071559898890725067816998514457554471177636644195808052025100386087604283564319339703394765085347212298098", 10).unwrap().to_bytes_be();
@@ -1022,10 +1023,10 @@ mod tests {
         // in this case w1 != 1
 
         let engine = super::MNT6Instance {
-            x: biguint_to_u64_vec(ate_loop_length),
+            x: &biguint_to_u64_vec(ate_loop_length),
             x_is_negative: false,
-            exp_w0: biguint_to_u64_vec(w0),
-            exp_w1: biguint_to_u64_vec(w1),
+            exp_w0: &biguint_to_u64_vec(w0),
+            exp_w1: &biguint_to_u64_vec(w1),
             exp_w0_is_negative: false,
             base_field: &base_field,
             curve: &curve,

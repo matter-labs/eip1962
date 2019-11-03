@@ -161,7 +161,7 @@ pub(crate) fn num_bits(repr: &[u64]) -> u32 {
     bits
 }
 
-pub(crate) fn left_shift_representation(repr: &mut [u64], shift: u64) {
+pub(crate) fn right_shift_representation(repr: &mut [u64], shift: u64) {
     let num_libs = repr.len();
     for i in 0..(num_libs - 1) {
         repr[i] = (repr[i] >> shift) | (repr[i+1] << (64 - shift));

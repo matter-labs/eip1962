@@ -183,7 +183,7 @@ pub(crate) fn decode_loop_parameter_scalar_with_bit_limit<
         return Err(ApiError::InputError(format!("Loop parameter scalar has zero length, file {}, line {}", file!(), line!())));
     }
     if length > max_length_for_bits {
-        return Err(ApiError::InputError(format!("Scalar is too large for bit length, file {}, line {}", file!(), line!())));
+        return Err(ApiError::InputError(format!("Scalar is too large for bit length, max {} bits, got {} bytes, file {}, line {}", bit_limit, length, file!(), line!())));
     }
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
     let x = MaxLoopParametersUint::from_big_endian(&be_encoding);

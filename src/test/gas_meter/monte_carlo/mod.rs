@@ -18,6 +18,7 @@ mod pseudo_curves;
 extern crate pbr;
 
 #[test]
+#[ignore]
 fn run_monte_carlo() {
     let mut rng = thread_rng();
     // const SAMPLES: usize = 10;
@@ -84,6 +85,7 @@ fn run_monte_carlo() {
 }
 
 #[test]
+#[ignore]
 fn run_factoring_final_exp_monte_carlo() {
     let mut rng = thread_rng();
     const SAMPLES: usize = 30_000;

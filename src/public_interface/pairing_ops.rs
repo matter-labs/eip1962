@@ -24,7 +24,6 @@ use crate::pairings::mnt4::{MNT4Instance};
 use crate::pairings::mnt6::{MNT6Instance};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
-use crate::field::{slice_to_u64_vec};
 use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
 use crate::fp::Fp;
@@ -97,9 +96,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
         }
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -189,7 +188,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let a_fp2 = Fp2::zero(&extension_2);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp2, b_fp2, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -197,8 +196,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
-        let x = slice_to_u64_vec(x);
-        if calculate_hamming_weight(&x) > MAX_BLS12_X_HAMMING {
+        // let x = slice_to_fixed_size_array(x);
+        if calculate_hamming_weight(&x.as_ref()) > MAX_BLS12_X_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
 
@@ -270,7 +269,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = Bls12Instance {
-            x: x,
+            x: &x.as_ref(),
             x_is_negative: x_is_negative,
             twist_type: twist_type,
             base_field: &base_field,
@@ -308,9 +307,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BN curve".to_owned()));
         }
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -401,7 +400,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let a_fp2 = Fp2::zero(&extension_2);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp2, b_fp2, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -432,8 +431,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             six_u_plus_two
         };
 
-        let six_u_plus_two = slice_to_u64_vec(six_u_plus_two.as_ref());
-        if calculate_hamming_weight(&six_u_plus_two) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
+        // let six_u_plus_two = slice_to_fixed_size_array(six_u_plus_two.as_ref());
+        if calculate_hamming_weight(&six_u_plus_two.as_ref()) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
             return Err(ApiError::InputError("|6*U + 2| has too large hamming weight".to_owned()));
         }
 
@@ -500,8 +499,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = BnInstance {
-            u: slice_to_u64_vec(u),
-            six_u_plus_2: six_u_plus_two,
+            u: &u.as_ref(),
+            six_u_plus_2: &six_u_plus_two.as_ref(),
             u_is_negative: u_is_negative,
             twist_type: twist_type,
             base_field: &base_field,
@@ -536,9 +535,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -597,7 +596,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         b_fp3.mul_by_fp(&b_fp);
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp3, b_fp3, &fp3_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp3, b_fp3, &fp3_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -605,8 +604,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate loop count parameters can not be zero".to_owned()));
         }
-        let x = slice_to_u64_vec(x);
-        if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
+        // let x = slice_to_fixed_size_array(x);
+        if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
         let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
@@ -696,10 +695,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = MNT6Instance {
-            x: x,
+            x: &x.as_ref(),
             x_is_negative: x_is_negative,
-            exp_w0: slice_to_u64_vec(exp_w0),
-            exp_w1: slice_to_u64_vec(exp_w1),
+            exp_w0: exp_w0.as_ref(),
+            exp_w1: exp_w1.as_ref(),
             exp_w0_is_negative: exp_w0_is_negative,
             base_field: &base_field,
             curve: &g1_curve,
@@ -732,9 +731,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -793,7 +792,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         b_fp2.mul_by_fp(&b_fp);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp2, b_fp2, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -801,8 +800,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate pairing loop count parameters can not be zero".to_owned()));
         }
-        let x = slice_to_u64_vec(x);
-        if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
+        // let x = slice_to_fixed_size_array(x);
+        if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
 
@@ -892,10 +891,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = MNT4Instance {
-            x: x,
+            x: &x.as_ref(),
             x_is_negative: x_is_negative,
-            exp_w0: slice_to_u64_vec(exp_w0),
-            exp_w1: slice_to_u64_vec(exp_w1),
+            exp_w0: &exp_w0.as_ref(),
+            exp_w1: &exp_w1.as_ref(),
             exp_w0_is_negative: exp_w0_is_negative,
             base_field: &base_field,
             curve: &g1_curve,

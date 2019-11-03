@@ -8,23 +8,13 @@ pub struct WeierstrassCurve<'a, C: CurveParameters> {
     pub(crate) a: C::BaseFieldElement,
     pub(crate) b: C::BaseFieldElement,
     pub(crate) curve_type: CurveType,
-    pub(crate) subgroup_order_repr: Vec<u64>,
+    pub(crate) subgroup_order_repr: &'a [u64],
     pub(crate) params: &'a C
 }
 
-// pub struct WeierstrassCurve<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>, C: CurveParameters> {
-//     pub(crate) base_field: &'a F,
-//     pub(crate) a: Fp<'a, FE, F>,
-//     pub(crate) b: Fp<'a, FE, F>,
-//     pub(crate) curve_type: CurveType,
-//     pub(crate) subgroup_order_repr: Vec<u64>,
-//     pub(crate) params: 
-// }
-
-
 impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
     pub(crate) fn new(
-        subgroup_order: Vec<u64>,
+        subgroup_order: &'a [u64],
         a: C::BaseFieldElement, 
         b: C::BaseFieldElement,
         params: &'a C

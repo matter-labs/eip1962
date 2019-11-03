@@ -68,34 +68,33 @@ fn test_fp4_inversion() {
 #[test]
 fn test_fp3_inversion() {
     use num_bigint::BigUint;
-    use crate::field::{U256Repr, new_field};
+    use crate::field::{U320Repr, new_field};
     use crate::fp::Fp;
     use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp3::{Fp3, Extension3};
-    // use crate::extension_towers::fp4_as_2_over_2::{Extension2Over2};
     use num_traits::Num;
-    use hex::decode;
 
-    let modulus = BigUint::from_str_radix("2a55555555555555555555555555555555555555555555555555555555555555", 16).unwrap();
-    let base_field = new_field::<U256Repr>("2a55555555555555555555555555555555555555555555555555555555555555", 16).unwrap();
-    let be_non_res = decode("0101010113cfae01010101010a00010101010103000101010101010101010101").unwrap();
-    let fp_non_residue = Fp::from_be_bytes(&base_field, &be_non_res, true).unwrap();
+    let modulus_biguint = BigUint::from_str_radix("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
+    let base_field = new_field::<U320Repr>("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
+    let nonres_repr = U320Repr::from(5);
+    let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
-    let c1_be = decode("23f16958a4a8f03772e2c63e457a66eaae8b773051d8c8061178522b1dd1f96e").unwrap();
-    let c1 = Fp::from_be_bytes(&base_field, &c1_be, true).unwrap();
+    let modulus = MaxFieldUint::from_big_endian(&modulus_biguint.clone().to_bytes_be());
 
     let mut extension_3 = Extension3::new(fp_non_residue.clone());
-    extension_3.calculate_frobenius_coeffs(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
+    extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+
+    let one = Fp::one(&base_field);
 
     let mut fp3 = Fp3::zero(&extension_3);
-    fp3.c1 = c1;
-
-    println!("Fp3 = {}", fp3);
+    fp3.c0 = one;
+    fp3.c1 = fp_non_residue;
 
     let inverse = fp3.inverse().unwrap();
+
     let mut maybe_one = fp3.clone();
     maybe_one.mul_assign(&inverse);
 
-    assert!(maybe_one == Fp3::one(&extension_3));
+    assert_eq!(maybe_one, Fp3::one(&extension_3));
 }
 

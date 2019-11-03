@@ -5,4 +5,4 @@ authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-uint = {version = "0.8", path = "../../uint", default-features = false, features = ["std"] }
+uint = {package = "uint_butchered", version = "0.8", path = "../uint", default-features = false, features = ["std"] }

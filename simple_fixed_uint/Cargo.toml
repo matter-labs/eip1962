@@ -1,11 +1,11 @@
 [package]
-description = "Large fixed-size integer arithmetic"
-homepage = "http://parity.io"
-repository = "https://github.com/paritytech/parity-common"
+description = "Large fixed-size integer arithmetic of a healthy person"
+homepage = "https://github.com/matter-labs/"
+repository = "https://github.com/matter-labs/"
 license = "MIT/Apache-2.0"
-name = "uint_butchered"
-version = "0.8.2"
-authors = ["Parity Technologies <admin@parity.io>"]
+name = "simple_uint"
+version = "0.1.0"
+authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 readme = "README.md"
 edition = "2018"
 
@@ -19,25 +19,23 @@ static_assertions = "1.1"
 
 [features]
 # default = ["std", "unroll"]
-default = ["std"]
+# default = ["std"]
+default = ["unroll"]
 unroll = ["crunchy"]
 std = ["byteorder/std", "rustc-hex/std", "crunchy/std"]
 quickcheck = ["qc", "rand"]
-
-[[example]]
-name = "modular"
 
 [[test]]
 name = "uint_tests"
 required-features = ["std"]
 
-[dev-dependencies]
-criterion = "0.3.0"
-num-bigint = "0.2.3"
+# [dev-dependencies]
+# criterion = "0.3.0"
+# num-bigint = "0.2.3"
 
-[target.'cfg(unix)'.dev-dependencies]
-rug = { version = "1.6.0", default-features = false, features = ["integer"] }
+# [target.'cfg(unix)'.dev-dependencies]
+# rug = { version = "1.6.0", default-features = false, features = ["integer"] }
 
-[[bench]]
-name = "bigint"
-harness = false
+# [[bench]]
+# name = "bigint"
+# harness = false

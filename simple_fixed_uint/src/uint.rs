@@ -1,43 +1,3 @@
-// Copyright 2015-2017 Parity Technologies
-//
-// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
-// option. This file may not be copied, modified, or distributed
-// except according to those terms.
-
-// Code derived from original work by Andrew Poelstra <apoelstra@wpsoftware.net>
-
-// Rust Bitcoin Library
-// Written in 2014 by
-//	   Andrew Poelstra <apoelstra@wpsoftware.net>
-//
-// To the extent possible under law, the author(s) have dedicated all
-// copyright and related and neighboring rights to this software to
-// the public domain worldwide. This software is distributed without
-// any warranty.
-//
-// You should have received a copy of the CC0 Public Domain Dedication
-// along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
-
-//! Big unsigned integer types.
-//!
-//! Implementation of a various large-but-fixed sized unsigned integer types.
-//! The functions here are designed to be fast. There are optional `x86_64`
-//! implementations for even more speed, hidden behind the `x64_arithmetic`
-//! feature flag.
-
-/// Conversion from decimal string error
-#[derive(Debug, PartialEq)]
-pub enum FromDecStrErr {
-	/// Char not from range 0-9
-	InvalidCharacter,
-	/// Value does not fit into type
-	InvalidLength,
-}
-
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_map_from {
@@ -48,275 +8,6 @@ macro_rules! impl_map_from {
 			}
 		}
 	};
-}
-
-// #[macro_export]
-// #[doc(hidden)]
-// macro_rules! impl_try_from_for_primitive {
-// 	($from:ident, $to:ty) => {
-// 		impl $crate::core_::convert::TryFrom<$from> for $to {
-// 			type Error = &'static str;
-
-// 			#[inline]
-// 			fn try_from(u: $from) -> $crate::core_::result::Result<$to, &'static str> {
-// 				let $from(arr) = u;
-// 				if !u.fits_word() || arr[0] > <$to>::max_value() as u64 {
-// 					Err(concat!(
-// 						"integer overflow when casting to ",
-// 						stringify!($to)
-// 					))
-// 				} else {
-// 					Ok(arr[0] as $to)
-// 				}
-// 			}
-// 		}
-// 	};
-// }
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(feature = "unroll")]
-macro_rules! uint_overflowing_binop {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => {{
-		use $crate::core_ as core;
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
-
-		let mut ret = [0u64; $n_words];
-		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
-		let mut carry = 0u64;
-		$crate::static_assertions::const_assert!(
-			core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words
-		);
-
-		// `unroll!` is recursive, but doesn’t use `$crate::unroll`, so we need to ensure that it
-		// is in scope unqualified.
-		use $crate::unroll;
-		unroll! {
-			for i in 0..$n_words {
-				use core::ptr;
-
-				if carry != 0 {
-					let (res1, overflow1) = ($fn)(me[i], you[i]);
-					let (res2, overflow2) = ($fn)(res1, carry);
-
-					unsafe {
-						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res2
-					}
-					carry = (overflow1 as u8 + overflow2 as u8) as u64;
-				} else {
-					let (res, overflow) = ($fn)(me[i], you[i]);
-
-					unsafe {
-						// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-						*ret_ptr.offset(i as _) = res
-					}
-
-					carry = overflow as u64;
-				}
-			}
-		}
-
-		($name(ret), carry > 0)
-		}};
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(feature = "unroll"))]
-macro_rules! uint_overflowing_binop {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr, $fn:expr) => {{
-		use $crate::core_ as core;
-		let $name(ref me) = $self_expr;
-		let $name(ref you) = $other;
-
-		let mut ret = [0u64; $n_words];
-		let ret_ptr = &mut ret as *mut [u64; $n_words] as *mut u64;
-		let mut carry = 0u64;
-		$crate::static_assertions::const_assert!(
-			core::isize::MAX as usize / core::mem::size_of::<u64>() > $n_words
-		);
-
-		for i in 0..$n_words {
-			use core::ptr;
-
-			if carry != 0 {
-				let (res1, overflow1) = ($fn)(me[i], you[i]);
-				let (res2, overflow2) = ($fn)(res1, carry);
-
-				unsafe {
-					// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-					*ret_ptr.offset(i as _) = res2
-				}
-				carry = (overflow1 as u8 + overflow2 as u8) as u64;
-			} else {
-				let (res, overflow) = ($fn)(me[i], you[i]);
-
-				unsafe {
-					// SAFETY: `i` is within bounds and `i * size_of::<u64>() < isize::MAX`
-					*ret_ptr.offset(i as _) = res
-				}
-
-				carry = overflow as u64;
-			}
-		}
-
-		($name(ret), carry > 0)
-		}};
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(feature = "unroll")]
-macro_rules! uint_full_mul_reg {
-	($name:ident, 8, $self_expr:expr, $other:expr) => {
-		$crate::uint_full_mul_reg!($name, 8, $self_expr, $other, |a, b| a != 0 || b != 0);
-	};
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => {
-		$crate::uint_full_mul_reg!($name, $n_words, $self_expr, $other, |_, _| true);
-	};
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr, $check:expr) => {{
-		{
-			#![allow(unused_assignments)]
-
-			let $name(ref me) = $self_expr;
-			let $name(ref you) = $other;
-			let mut ret = [0u64; $n_words * 2];
-
-			use $crate::unroll;
-			unroll! {
-				for i in 0..$n_words {
-					let mut carry = 0u64;
-					let b = you[i];
-
-					unroll! {
-						for j in 0..$n_words {
-							if $check(me[j], carry) {
-								let a = me[j];
-
-								let (hi, low) = Self::split_u128(a as u128 * b as u128);
-
-								let overflow = {
-									let existing_low = &mut ret[i + j];
-									let (low, o) = low.overflowing_add(*existing_low);
-									*existing_low = low;
-									o
-								};
-
-								carry = {
-									let existing_hi = &mut ret[i + j + 1];
-									let hi = hi + overflow as u64;
-									let (hi, o0) = hi.overflowing_add(carry);
-									let (hi, o1) = hi.overflowing_add(*existing_hi);
-									*existing_hi = hi;
-
-									(o0 | o1) as u64
-								}
-							}
-						}
-					}
-				}
-			}
-
-			ret
-		}
-	}};
-}
-
-#[macro_export]
-#[doc(hidden)]
-#[cfg(not(feature = "unroll"))]
-macro_rules! uint_full_mul_reg {
-	($name:ident, 8, $self_expr:expr, $other:expr) => {
-		$crate::uint_full_mul_reg!($name, 8, $self_expr, $other, |a, b| a != 0 || b != 0);
-	};
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr) => {
-		$crate::uint_full_mul_reg!($name, $n_words, $self_expr, $other, |_, _| true);
-	};
-	($name:ident, $n_words:tt, $self_expr:expr, $other:expr, $check:expr) => {{
-		{
-			#![allow(unused_assignments)]
-
-			let $name(ref me) = $self_expr;
-			let $name(ref you) = $other;
-			let mut ret = [0u64; $n_words * 2];
-
-			for i in 0..$n_words {
-				let mut carry = 0u64;
-				let b = you[i];
-
-				for j in 0..$n_words {
-					if $check(me[j], carry) {
-						let a = me[j];
-
-						let (hi, low) = Self::split_u128(a as u128 * b as u128);
-
-						let overflow = {
-							let existing_low = &mut ret[i + j];
-							let (low, o) = low.overflowing_add(*existing_low);
-							*existing_low = low;
-							o
-						};
-
-						carry = {
-							let existing_hi = &mut ret[i + j + 1];
-							let hi = hi + overflow as u64;
-							let (hi, o0) = hi.overflowing_add(carry);
-							let (hi, o1) = hi.overflowing_add(*existing_hi);
-							*existing_hi = hi;
-
-							(o0 | o1) as u64
-						}
-					}
-				}
-			}
-
-			ret
-		}
-	}};
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! uint_overflowing_mul {
-	($name:ident, $n_words: tt, $self_expr: expr, $other: expr) => {{
-		let ret: [u64; $n_words * 2] =
-			$crate::uint_full_mul_reg!($name, $n_words, $self_expr, $other);
-
-		// The safety of this is enforced by the compiler
-		let ret: [[u64; $n_words]; 2] = unsafe { $crate::core_::mem::transmute(ret) };
-
-		// The compiler WILL NOT inline this if you remove this annotation.
-		#[cfg(feature = "unroll")]
-		#[inline]
-		fn any_nonzero(arr: &[u64; $n_words]) -> bool {
-			use $crate::unroll;
-			unroll! {
-				for i in 0..$n_words {
-					if arr[i] != 0 {
-						return true;
-					}
-				}
-			}
-
-			false
-		}
-
-		#[cfg(not(feature = "unroll"))]
-		#[inline]
-		fn any_nonzero(arr: &[u64; $n_words]) -> bool {
-			for i in 0..$n_words {
-				if arr[i] != 0 {
-					return true;
-				}
-			}
-
-			false
-		}
-
-		($name(ret[0]), any_nonzero(&ret[1]))
-	}};
 }
 
 #[macro_export]
@@ -453,85 +144,6 @@ macro_rules! impl_mul_for_primitive {
 	};
 }
 
-// #[macro_export]
-// #[doc(hidden)]
-// macro_rules! impl_shift_by_primitive {
-// 	($name: ty, $other: ident, $n_words: tt) => {
-// 		impl $crate::core_::ops::Shl<$other> for $name {
-// 			type Output = $name;
-
-// 			fn shl(self, shift: $other) -> $name {
-// 				let $name(ref original) = self;
-// 				let mut ret = [0u64; $n_words];
-// 				let word_shift = shift / 64;
-// 				let bit_shift = shift % 64;
-
-// 				// shift
-// 				for i in word_shift..$n_words {
-// 					ret[i] = original[i - word_shift] << bit_shift;
-// 				}
-// 				// carry
-// 				if bit_shift > 0 {
-// 					for i in word_shift+1..$n_words {
-// 						ret[i] += original[i - 1 - word_shift] >> (64 - bit_shift);
-// 					}
-// 				}
-// 				$name(ret)
-// 			}
-// 		}
-
-// 		impl<'a> $crate::core_::ops::Shl<$other> for &'a $name {
-// 			type Output = $name;
-// 			fn shl(self, shift: $other) -> $name {
-// 				*self << shift
-// 			}
-// 		}
-
-// 		impl $crate::core_::ops::ShlAssign<$other> for $name {
-// 			fn shl_assign(&mut self, shift: $other) {
-// 				*self = *self << shift;
-// 			}
-// 		}
-
-// 		impl $crate::core_::ops::Shr<$other> for $name {
-// 			type Output = $name;
-
-// 			fn shr(self, shift: $other) -> $name {
-// 				let $name(ref original) = self;
-// 				let mut ret = [0u64; $n_words];
-// 				let word_shift = shift / 64;
-// 				let bit_shift = shift % 64;
-
-// 				// shift
-// 				for i in word_shift..$n_words {
-// 					ret[i - word_shift] = original[i] >> bit_shift;
-// 				}
-
-// 				// Carry
-// 				if bit_shift > 0 {
-// 					for i in word_shift+1..$n_words {
-// 						ret[i - word_shift - 1] += original[i] << (64 - bit_shift);
-// 					}
-// 				}
-
-// 				$name(ret)
-// 			}
-// 		}
-
-// 		impl<'a> $crate::core_::ops::Shr<$other> for &'a $name {
-// 			type Output = $name;
-// 			fn shr(self, shift: $other) -> $name {
-// 				*self >> shift
-// 			}
-// 		}
-
-// 		impl $crate::core_::ops::ShrAssign<$other> for $name {
-// 			fn shr_assign(&mut self, shift: $other) {
-// 				*self = *self >> shift;
-// 			}
-// 		}
-// 	};
-// }
 
 #[macro_export]
 macro_rules! construct_uint {
@@ -550,15 +162,6 @@ macro_rules! construct_uint {
 					$name(ret)
 				}
 			}
-
-			// impl $crate::core_::convert::From<i128> for $name {
-			// 	fn from(value: i128) -> $name {
-			// 		match value >= 0 {
-			// 			true => From::from(value as u128),
-			// 			false => { panic!("Unsigned integer can't be created from negative value"); }
-			// 		}
-			// 	}
-			// }
 
 			impl $name {
 				/// Low 2 words (u128)
@@ -585,36 +188,6 @@ macro_rules! construct_uint {
 					self.low_u128()
 				}
 			}
-
-			// impl $crate::core_::convert::TryFrom<$name> for u128 {
-			// 	type Error = &'static str;
-
-			// 	#[inline]
-			// 	fn try_from(u: $name) -> $crate::core_::result::Result<u128, &'static str> {
-			// 		let $name(arr) = u;
-			// 		for i in 2..$n_words {
-			// 			if arr[i] != 0 {
-			// 				return Err("integer overflow when casting to u128");
-			// 			}
-			// 		}
-			// 		Ok(((arr[1] as u128) << 64) + arr[0] as u128)
-			// 	}
-			// }
-
-			// impl $crate::core_::convert::TryFrom<$name> for i128 {
-			// 	type Error = &'static str;
-
-			// 	#[inline]
-			// 	fn try_from(u: $name) -> $crate::core_::result::Result<i128, &'static str> {
-			// 		let err_str = "integer overflow when casting to i128";
-			// 		let i = u128::try_from(u).map_err(|_| err_str)?;
-			// 		if i > i128::max_value() as u128 {
-			// 			Err(err_str)
-			// 		} else {
-			// 			Ok(i as i128)
-			// 		}
-			// 	}
-			// }
 	};
 	( @construct $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
 		/// Little-endian large integer type
@@ -627,6 +200,14 @@ macro_rules! construct_uint {
 			#[inline]
 			fn as_ref(&self) -> &[u64] {
 				&self.0
+			}
+		}
+
+		/// Get a mutable reference to the underlying little-endian words.
+		impl AsMut<[u64]> for $name {
+			#[inline]
+			fn as_mut(&mut self) -> &mut [u64] {
+				&mut self.0
 			}
 		}
 
@@ -985,11 +566,11 @@ macro_rules! construct_uint {
 					// D6.
 					// actually, q_hat == q_j + 1 and u[j..] has overflowed
 					// highly unlikely ~ (1 / 2^63)
-					if c {
+					if c != 0 {
 						q_hat -= 1;
 						// add v to u[j..]
 						let c = Self::add_slice(&mut u[j..], &v.0[..n]);
-						u[j + n] = u[j + n].wrapping_add(u64::from(c));
+						u[j + n] = u[j + n].wrapping_add(c);
 					}
 
 					// D5.
@@ -1099,13 +680,44 @@ macro_rules! construct_uint {
 			/// Add with overflow.
 			#[inline(always)]
 			pub fn overflowing_add(self, other: $name) -> ($name, bool) {
-				$crate::uint_overflowing_binop!(
-					$name,
-					$n_words,
-					self,
-					other,
-					u64::overflowing_add
-				)
+				self.add_impl(other)
+			}
+
+			#[cfg(feature="unroll")]
+			#[inline(always)]
+			fn add_impl(self, other: $name) -> ($name, bool) {
+				use $crate::adc;
+
+				let mut carry = 0u64;
+				let me = self.0;
+				let you = other.0;
+				let mut result = [0u64; $n_words];
+
+				use $crate::unroll;
+				unroll! {
+					for i in 0..$n_words {
+						result[i] = adc(me[i], you[i], &mut carry);
+					}
+				}
+			
+				($name(result), carry > 0)	
+			}
+
+			#[cfg(not(feature="unroll"))]
+			#[inline(always)]
+			fn add_impl(self, other: $name) -> ($name, bool) {
+				use $crate::adc;
+
+				let mut carry = 0u64;
+				let me = self.0;
+				let you = other.0;
+				let mut result = [0u64; $n_words];
+
+				for i in 0..$n_words {
+					result[i] = adc(me[i], you[i], &mut carry);
+				}
+			
+				($name(result), carry > 0)	
 			}
 
 			/// Addition which saturates at the maximum value (Self::max_value()).
@@ -1127,13 +739,42 @@ macro_rules! construct_uint {
 			/// Subtraction which underflows and returns a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_sub(self, other: $name) -> ($name, bool) {
-				$crate::uint_overflowing_binop!(
-					$name,
-					$n_words,
-					self,
-					other,
-					u64::overflowing_sub
-				)
+				self.sub_impl(other)
+			}
+
+			#[cfg(feature="unroll")]
+			#[inline(always)]
+			fn sub_impl(self, other: $name) -> ($name, bool) {
+				use $crate::sbb;
+				let mut borrow = 0u64;
+				let me = self.0;
+				let you = other.0;
+				let mut result = [0u64; $n_words];
+
+				use $crate::unroll;
+				unroll! {
+					for i in 0..$n_words {
+						result[i] = sbb(me[i], you[i], &mut borrow);
+					}
+				}
+			
+				($name(result), borrow != 0)
+			}
+
+			#[cfg(not(feature="unroll"))]
+			#[inline(always)]
+			fn sub_impl(self, other: $name) -> ($name, bool) {
+				use $crate::sbb;
+				let mut borrow = 0u64;
+				let me = self.0;
+				let you = other.0;
+				let mut result = [0u64; $n_words];
+
+				for i in 0..$n_words {
+					result[i] = sbb(me[i], you[i], &mut borrow);
+				}
+			
+				($name(result), borrow != 0)
 			}
 
 			/// Subtraction which saturates at zero.
@@ -1155,7 +796,86 @@ macro_rules! construct_uint {
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {
-				$crate::uint_overflowing_mul!($name, $n_words, self, other)
+				self.mul_impl(other)
+			}
+
+			#[cfg(feature="unroll")]
+			#[inline(always)]
+			fn mul_impl(self, other: $name) -> ($name, bool) {
+				use $crate::{mac_with_carry, add_carry};
+				use $crate::unroll;
+				let mut carry = 0u64;
+				let me = self.0;
+				let you = other.0;
+
+				let mut result = [0u64; $n_words * 2];
+
+				unroll!{
+					for k in 0..$n_words {
+						carry = 0;
+						let limb = me[k];
+						unroll! {
+							for i in 0..$n_words {
+								let other_limb = you[i];
+								if other_limb != 0 {
+									result[k+i] = mac_with_carry(result[k+i], limb, you[i], &mut carry);
+								} else {
+									result[k+i] = add_carry(result[k+i], &mut carry);
+								}
+							}
+						}
+						result[$n_words+k] = carry;
+					}
+				}
+
+				// The safety of this is enforced by the compiler
+				let ret: [[u64; $n_words]; 2] = unsafe { $crate::core_::mem::transmute(result) };
+
+				($name(ret[0]), Self::any_nonzero(&ret[1]))	
+			}
+
+			#[cfg(not(feature="unroll"))]
+			#[inline(always)]
+			fn mul_impl(self, other: $name) -> ($name, bool) {
+				use $crate::{mac_with_carry, add_carry};
+				let mut carry = 0u64;
+				let me = self.0;
+				let you = other.0;
+
+				let mut result = [0u64; $n_words * 2];
+
+				for k in 0..$n_words {
+					carry = 0;
+					let limb = me[k];
+						for i in 0..$n_words {
+							let other_limb = you[i];
+							if other_limb != 0 {
+								result[k+i] = mac_with_carry(result[k+i], limb, you[i], &mut carry);
+							} else {
+								result[k+i] = add_carry(result[k+i], &mut carry);
+							}
+						}
+					result[$n_words+k] = carry;
+				}
+
+				// The safety of this is enforced by the compiler
+				let ret: [[u64; $n_words]; 2] = unsafe { $crate::core_::mem::transmute(result) };
+
+				($name(ret[0]), Self::any_nonzero(&ret[1]))	
+			}
+
+			#[inline]
+			fn any_nonzero(arr: &[u64; $n_words]) -> bool {
+				use $crate::unroll;
+				unroll! {
+					for i in 0..$n_words {
+						if arr[i] != 0 {
+							return true;
+						}
+					}
+				}
+
+				false
 			}
 
 			/// Multiplication which saturates at the maximum value..
@@ -1252,31 +972,27 @@ macro_rules! construct_uint {
 			}
 
 			#[inline(always)]
-			fn add_slice(a: &mut [u64], b: &[u64]) -> bool {
-				Self::binop_slice(a, b, u64::overflowing_add)
+			fn add_slice(a: &mut [u64], b: &[u64]) -> u64 {
+				use $crate::adc;
+
+				let mut carry = 0u64;
+				for (a, b) in a.iter_mut().zip(b.iter()) {
+					*a = adc(*a, *b, &mut carry);
+				}
+
+				carry
 			}
 
 			#[inline(always)]
-			fn sub_slice(a: &mut [u64], b: &[u64]) -> bool {
-				Self::binop_slice(a, b, u64::overflowing_sub)
-			}
+			fn sub_slice(a: &mut [u64], b: &[u64]) -> u64 {
+				use $crate::sbb;
 
-			#[inline(always)]
-			fn binop_slice(a: &mut [u64], b: &[u64], binop: impl Fn(u64, u64) -> (u64, bool) + Copy) -> bool {
-				let mut c = false;
-				a.iter_mut().zip(b.iter()).for_each(|(x, y)| {
-					let (res, carry) = Self::binop_carry(*x, *y, c, binop);
-					*x = res;
-					c = carry;
-				});
-				c
-			}
+				let mut borrow = 0u64;
+				for (a, b) in a.iter_mut().zip(b.iter()) {
+					*a = sbb(*a, *b, &mut borrow);
+				}
 
-			#[inline(always)]
-			fn binop_carry(a: u64, b: u64, c: bool, binop: impl Fn(u64, u64) -> (u64, bool)) -> (u64, bool) {
-				let (res1, overflow1) = b.overflowing_add(u64::from(c));
-				let (res2, overflow2) = binop(a, res1);
-				(res2, overflow1 || overflow2)
+				borrow
 			}
 
 			#[inline(always)]
@@ -1343,25 +1059,25 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// impl $crate::core_::convert::From<$name> for [u8; $n_words * 8] {
-		// 	fn from(number: $name) -> Self {
-		// 		let mut arr = [0u8; $n_words * 8];
-		// 		number.to_big_endian(&mut arr);
-		// 		arr
-		// 	}
-		// }
+		impl $crate::core_::convert::From<$name> for [u8; $n_words * 8] {
+			fn from(number: $name) -> Self {
+				let mut arr = [0u8; $n_words * 8];
+				number.to_big_endian(&mut arr);
+				arr
+			}
+		}
 
-		// impl $crate::core_::convert::From<[u8; $n_words * 8]> for $name {
-		// 	fn from(bytes: [u8; $n_words * 8]) -> Self {
-		// 		Self::from(&bytes)
-		// 	}
-		// }
+		impl $crate::core_::convert::From<[u8; $n_words * 8]> for $name {
+			fn from(bytes: [u8; $n_words * 8]) -> Self {
+				Self::from_big_endian(&bytes)
+			}
+		}
 
-		// impl<'a> $crate::core_::convert::From<&'a [u8; $n_words * 8]> for $name {
-		// 	fn from(bytes: &[u8; $n_words * 8]) -> Self {
-		// 		Self::from(&bytes[..])
-		// 	}
-		// }
+		impl<'a> $crate::core_::convert::From<&'a [u8; $n_words * 8]> for $name {
+			fn from(bytes: &[u8; $n_words * 8]) -> Self {
+				Self::from_big_endian(&bytes[..])
+			}
+		}
 
 		impl $crate::core_::default::Default for $name {
 			fn default() -> Self {
@@ -1415,8 +1131,8 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		// $crate::impl_map_from!($name, u8, u64);
-		// $crate::impl_map_from!($name, u16, u64);
+		$crate::impl_map_from!($name, u8, u64);
+		$crate::impl_map_from!($name, u16, u64);
 		$crate::impl_map_from!($name, u32, u64);
 		$crate::impl_map_from!($name, usize, u64);
 
@@ -1678,86 +1394,6 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// impl<T> $crate::core_::ops::Shl<T> for $name where T: Into<$name> {
-		// 	type Output = $name;
-
-		// 	fn shl(self, shift: T) -> $name {
-		// 		let shift = shift.into().as_usize();
-		// 		let $name(ref original) = self;
-		// 		let mut ret = [0u64; $n_words];
-		// 		let word_shift = shift / 64;
-		// 		let bit_shift = shift % 64;
-
-		// 		// shift
-		// 		for i in word_shift..$n_words {
-		// 			ret[i] = original[i - word_shift] << bit_shift;
-		// 		}
-		// 		// carry
-		// 		if bit_shift > 0 {
-		// 			for i in word_shift+1..$n_words {
-		// 				ret[i] += original[i - 1 - word_shift] >> (64 - bit_shift);
-		// 			}
-		// 		}
-		// 		$name(ret)
-		// 	}
-		// }
-
-		// impl<'a, T> $crate::core_::ops::Shl<T> for &'a $name where T: Into<$name> {
-		// 	type Output = $name;
-		// 	fn shl(self, shift: T) -> $name {
-		// 		*self << shift
-		// 	}
-		// }
-
-		// impl<T> $crate::core_::ops::ShlAssign<T> for $name where T: Into<$name> {
-		// 	fn shl_assign(&mut self, shift: T) {
-		// 		*self = *self << shift;
-		// 	}
-		// }
-
-		// impl<T> $crate::core_::ops::Shr<T> for $name where T: Into<$name> {
-		// 	type Output = $name;
-
-		// 	fn shr(self, shift: T) -> $name {
-		// 		let shift = shift.into().as_usize();
-		// 		let $name(ref original) = self;
-		// 		let mut ret = [0u64; $n_words];
-		// 		let word_shift = shift / 64;
-		// 		let bit_shift = shift % 64;
-
-		// 		// shift
-		// 		for i in word_shift..$n_words {
-		// 			ret[i - word_shift] = original[i] >> bit_shift;
-		// 		}
-
-		// 		// Carry
-		// 		if bit_shift > 0 {
-		// 			for i in word_shift+1..$n_words {
-		// 				ret[i - word_shift - 1] += original[i] << (64 - bit_shift);
-		// 			}
-		// 		}
-
-		// 		$name(ret)
-		// 	}
-		// }
-
-		// impl<'a, T> $crate::core_::ops::Shr<T> for &'a $name where T: Into<$name> {
-		// 	type Output = $name;
-		// 	fn shr(self, shift: T) -> $name {
-		// 		*self >> shift
-		// 	}
-		// }
-
-		// impl<T> $crate::core_::ops::ShrAssign<T> for $name where T: Into<$name> {
-		// 	fn shr_assign(&mut self, shift: T) {
-		// 		*self = *self >> shift;
-		// 	}
-		// }
-
-		// $crate::impl_shift_by_primitive!($name, u32, $n_words);
-		// $crate::impl_shift_by_primitive!($name, usize, $n_words);
-		// $crate::impl_shift_by_primitive!($name, u64, $n_words);
-
 		impl $crate::core_::ops::Shl<u32> for $name {
 			type Output = $name;
 
@@ -1915,47 +1551,47 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// $crate::impl_std_for_uint!($name, $n_words);
+		$crate::impl_std_for_uint!($name, $n_words);
 		// `$n_words * 8` because macro expects bytes and
 		// uints use 64 bit (8 byte) words
 		// $crate::impl_quickcheck_arbitrary_for_uint!($name, ($n_words * 8));
 	}
 }
 
-// #[cfg(feature = "std")]
-// #[macro_export]
-// #[doc(hidden)]
-// macro_rules! impl_std_for_uint {
-// 	($name: ident, $n_words: tt) => {
-// 		impl $crate::core_::str::FromStr for $name {
-// 			type Err = $crate::rustc_hex::FromHexError;
+#[cfg(feature = "std")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_std_for_uint {
+	($name: ident, $n_words: tt) => {
+		impl $crate::core_::str::FromStr for $name {
+			type Err = $crate::rustc_hex::FromHexError;
 
-// 			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
-// 				use $crate::rustc_hex::FromHex;
-// 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
-// 					true => value.from_hex()?,
-// 					false => ("0".to_owned() + value).from_hex()?,
-// 				};
+			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
+				use $crate::rustc_hex::FromHex;
+				let bytes: Vec<u8> = match value.len() % 2 == 0 {
+					true => value.from_hex()?,
+					false => ("0".to_owned() + value).from_hex()?,
+				};
 
-// 				let bytes_ref: &[u8] = &bytes;
-// 				Ok(From::from(bytes_ref))
-// 			}
-// 		}
+				let bytes_ref: &[u8] = &bytes;
+				Ok($name::from_big_endian(bytes_ref))
+			}
+		}
 
-// 		impl $crate::core_::convert::From<&'static str> for $name {
-// 			fn from(s: &'static str) -> Self {
-// 				s.parse().unwrap()
-// 			}
-// 		}
-// 	};
-// }
+		impl $crate::core_::convert::From<&'static str> for $name {
+			fn from(s: &'static str) -> Self {
+				s.parse().unwrap()
+			}
+		}
+	};
+}
 
-// #[cfg(not(feature = "std"))]
-// #[macro_export]
-// #[doc(hidden)]
-// macro_rules! impl_std_for_uint {
-// 	($name: ident, $n_words: tt) => {};
-// }
+#[cfg(not(feature = "std"))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_std_for_uint {
+	($name: ident, $n_words: tt) => {};
+}
 
 // #[cfg(feature = "quickcheck")]
 // #[macro_export]

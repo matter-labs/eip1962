@@ -206,7 +206,7 @@ pub fn field_from_modulus<R: ElementRepr>(modulus: &MaxFieldUint) -> Result<Prim
         return Err(());
     }
 
-    let r = (MaxFieldSquaredUint::one() << (num_limbs * 64)) % modulus;
+    let r = (MaxFieldSquaredUint::one() << ((num_limbs * 64) as u32)) % modulus;
     if num_words(&r) > R::NUM_LIMBS {
         return Err(());
     }

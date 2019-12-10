@@ -425,7 +425,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
             powers.push(Vec::from(power.as_ref()));
         }
         for _ in 1..3 {
-            q_power *= modulus;
+            // q_power *= modulus;
+            q_power = q_power.adaptive_multiplication(modulus);
             let power = q_power - one;
             let (power, rem) = power.div_mod(three);
             if !rem.is_zero() {

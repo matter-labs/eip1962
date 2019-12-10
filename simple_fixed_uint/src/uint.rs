@@ -793,6 +793,50 @@ macro_rules! construct_uint {
 				}
 			}
 
+			#[inline(always)]
+			fn num_words(&self) -> usize {
+				let mut words = $n_words;
+
+				for w in self.0.iter().rev() {
+					if *w == 0 {
+						words -= 1;
+					} else {
+						break;
+					}
+				}
+
+				words
+			}
+
+			/// Multiply without overflow by checking number of words for each input
+			#[inline]
+			pub fn adaptive_multiplication(self, other: $name) -> $name {
+				use $crate::{mac_with_carry, add_carry};
+				
+				let me_words = self.num_words();
+				let you_words = other.num_words();
+				assert!(me_words + you_words <= $n_words);
+				let me = self.0;
+				let you = other.0;
+
+				let mut result = [0u64; $n_words];
+				for k in 0..me_words {
+					let mut carry = 0u64;
+					let limb = me[k];
+					for i in 0..you_words {
+						let other_limb = you[i];
+						if other_limb != 0 {
+							result[k+i] = mac_with_carry(result[k+i], limb, you[i], &mut carry);
+						} else {
+							result[k+i] = add_carry(result[k+i], &mut carry);
+						}
+					}
+					result[you_words+k] = carry;
+				}
+
+				$name(result)
+			}
+
 			/// Multiply with overflow, returning a flag if it does.
 			#[inline(always)]
 			pub fn overflowing_mul(self, other: $name) -> ($name, bool) {

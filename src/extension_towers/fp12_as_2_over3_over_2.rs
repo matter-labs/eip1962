@@ -412,6 +412,17 @@ pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2Over3Over2<'a, E, F> {
+    fn clone(&self) -> Self {
+        Self {
+            field: self.field,
+            non_residue: self.non_residue.clone(),
+            frobenius_coeffs_c1: self.frobenius_coeffs_c1.clone(),
+            frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
+        }
+    }
+}
+
 use crate::constants::*;
 use crate::sliding_window_exp::{WindowExpBase};
 
@@ -460,7 +471,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         }
         // 2 & 3
         for _ in 1..3 {
-            q_power *= modulus;
+            q_power = q_power.adaptive_multiplication(modulus);
+            // q_power *= modulus;
             let power = q_power - one;
             let (power, rem) = power.div_mod(six);
             if !rem.is_zero() {
@@ -472,7 +484,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         }
         // 6
         {
-            q_power *= q_power;
+            q_power = q_power.adaptive_multiplication(q_power);
+            // q_power *= q_power;
             let power = q_power - one;
             let (power, rem) = power.div_mod(six);
             if !rem.is_zero() {

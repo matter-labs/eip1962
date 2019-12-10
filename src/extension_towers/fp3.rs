@@ -359,7 +359,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         let f_1 = non_residue.pow(power.as_ref());
 
         // NON_RESIDUE**(((q^2) - 1) / 3)
-        q_power *= modulus;
+        // q_power *= modulus;
+        q_power = q_power.adaptive_multiplication(modulus);
         let power = q_power - one;
         let (power, rem) = power.div_mod(three);
         if !rem.is_zero() {

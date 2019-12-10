@@ -297,6 +297,17 @@ pub struct Extension2Over3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2Over3<'a, E, F> {
+    fn clone(&self) -> Self {
+        Self {
+            field: self.field,
+            non_residue: self.non_residue.clone(),
+            frobenius_coeffs_c1: self.frobenius_coeffs_c1.clone(),
+            frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
+        }
+    }
+}
+
 use crate::constants::*;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F> {
@@ -337,10 +348,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
         }
         let f_1 = non_residue.pow(power.as_ref());
 
-        q_power *= modulus;
+        // q_power *= modulus;
+        q_power = q_power.adaptive_multiplication(modulus);
         let f_2 = Fp::zero(self.field.field);
 
-        q_power *= modulus;
+        // q_power *= modulus;
+        q_power = q_power.adaptive_multiplication(modulus);
         let power = q_power - one;
         let (power, rem) = power.div_mod(six);
         if !rem.is_zero() {

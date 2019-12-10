@@ -105,6 +105,8 @@ pub trait ElementRepr:
     // but it's a necessary evil
     fn mont_mul_assign(&mut self, other: &Self, modulus: &Self, mont_inv: u64);
     fn mont_square(&mut self, modulus: &Self, mont_inv: u64);
+    fn mont_mul_assign_with_partial_reduction(&mut self, other: &Self, modulus: &Self, mont_inv: u64);
+    fn mont_square_with_partial_reduction(&mut self, modulus: &Self, mont_inv: u64);
     fn into_normal_repr(&self, modulus: &Self, mont_inv: u64) -> Self;
 }
 

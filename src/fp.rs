@@ -234,6 +234,18 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
             self.repr.sub_noborrow(&self.field.modulus());
         }
     }
+
+    #[inline]
+    fn mul_assign_with_partial_reduction(&mut self, other: &Self)
+    {
+        self.repr.mont_mul_assign_with_partial_reduction(&other.repr, &self.field.modulus(), self.field.mont_inv());
+    }
+
+    #[inline]
+    fn square_with_partial_reduction(&mut self)
+    {
+        self.repr.mont_square_with_partial_reduction(&self.field.modulus(), self.field.mont_inv());
+    }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp<'a, E, F> {
@@ -316,22 +328,45 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
         self.repr.mont_square(&self.field.modulus(), self.field.mont_inv());
     }
 
+    // fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+    //     let mut res = Self::one(&self.field);
+
+    //     let mut found_one = false;
+
+    //     for i in BitIterator::new(exp) {
+    //         if found_one {
+    //             res.square();
+    //         } else {
+    //             found_one = i;
+    //         }
+
+    //         if i {
+    //             res.mul_assign(self);
+    //         }
+    //     }
+
+    //     res
+    // }
+
     fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+        // This is powering with partial reduction!
         let mut res = Self::one(&self.field);
 
         let mut found_one = false;
 
         for i in BitIterator::new(exp) {
             if found_one {
-                res.square();
+                res.square_with_partial_reduction();
             } else {
                 found_one = i;
             }
 
             if i {
-                res.mul_assign(self);
+                res.mul_assign_with_partial_reduction(self);
             }
         }
+
+        res.reduce();
 
         res
     }

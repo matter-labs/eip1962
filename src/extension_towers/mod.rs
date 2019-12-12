@@ -30,7 +30,13 @@ pub(crate) fn is_non_nth_root<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>
     if !rem.is_zero() {
         return false;
     }
-    let l = element.pow(power.as_ref());
+
+    let l = if std::option_env!("GAS_METERING").is_some() {
+        element.pow(&vec![core::u64::MAX; power.as_ref().len()])
+    } else {
+        element.pow(power.as_ref())
+    };
+
     let one = Fp::one(element.field);
     if l == one {
         return false;
@@ -49,7 +55,8 @@ pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
         return false;
     }
     let mut power = MaxFieldSquaredUint::from(modulus.as_ref());
-    power *= power;
+    // power *= power;
+    power = power.adaptive_multiplication(power);
     power -= MaxFieldSquaredUint::from(1u64);
 
     let divisor = MaxFieldSquaredUint::from(n);
@@ -57,7 +64,13 @@ pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
     if !rem.is_zero() {
         return false;
     }
-    let l = element.pow(power.as_ref());
+
+    let l = if std::option_env!("GAS_METERING").is_some() {
+        element.pow(&vec![core::u64::MAX; power.as_ref().len()])
+    } else {
+        element.pow(power.as_ref())
+    };
+    
     let one = self::fp2::Fp2::one(element.extension_field);
     if l == one {
         return false;

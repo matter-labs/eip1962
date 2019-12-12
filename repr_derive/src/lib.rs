@@ -332,17 +332,6 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
 
                 #montgomery_impl
             }
-
-            #[inline(always)]
-            fn reduce(
-                &mut self,
-                modulus: &#repr
-            )
-            {
-                if &*self >= modulus {
-                    self.sub_noborrow(&modulus);
-                }
-            }
         }
 
         impl ::std::fmt::Debug for #repr
@@ -609,6 +598,17 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 r.reduce(modulus);
 
                 r
+            }
+
+            #[inline(always)]
+            fn reduce(
+                &mut self,
+                modulus: &#repr
+            )
+            {
+                if &*self >= modulus {
+                    self.sub_noborrow(&modulus);
+                }
             }
         }
     }

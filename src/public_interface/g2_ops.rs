@@ -1,5 +1,5 @@
 use crate::weierstrass::{Group, CurveOverFp2Parameters, CurveOverFp3Parameters};
-use crate::weierstrass::curve::WeierstrassCurve;
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 
@@ -144,6 +144,15 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
+        if bases.len() != scalars.len() || bases.len() == 0 {
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
+            } else {
+                let result = CurvePoint::zero(&curve);
+                return serialize_g2_point_in_fp2(modulus_len, &result);
+            }
+        } 
+
         let result = peppinger(&bases, scalars);
 
         serialize_g2_point_in_fp2(modulus_len, &result)   
@@ -264,6 +273,15 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
+
+        if bases.len() != scalars.len() || bases.len() == 0 {
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
+            } else {
+                let result = CurvePoint::zero(&curve);
+                return serialize_g2_point_in_fp3(modulus_len, &result);
+            }
+        } 
 
         let result = peppinger(&bases, scalars);
 

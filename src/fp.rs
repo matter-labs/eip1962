@@ -106,7 +106,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
     // }
 
     pub fn from_repr(field: &'a F, repr: E) -> Result<Self, RepresentationDecodingError> {
-        if field.is_valid_repr(repr) {
+        if field.is_valid_repr(&repr) {
             let mut r = Self {
                 field: field,
                 repr: repr
@@ -230,9 +230,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
     /// field. Only used interally.
     #[inline(always)]
     fn reduce(&mut self) {
-        if !self.field.is_valid_repr(self.repr) {
-            self.repr.sub_noborrow(&self.field.modulus());
-        }
+        self.repr.reduce(&self.field.modulus());
+        // if !self.field.is_valid_repr(self.repr) {
+        //     self.repr.sub_noborrow(&self.field.modulus());
+        // }
     }
 
     #[inline]
@@ -328,48 +329,48 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
         self.repr.mont_square(&self.field.modulus(), self.field.mont_inv());
     }
 
-    // fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-    //     let mut res = Self::one(&self.field);
-
-    //     let mut found_one = false;
-
-    //     for i in BitIterator::new(exp) {
-    //         if found_one {
-    //             res.square();
-    //         } else {
-    //             found_one = i;
-    //         }
-
-    //         if i {
-    //             res.mul_assign(self);
-    //         }
-    //     }
-
-    //     res
-    // }
-
     fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
-        // This is powering with partial reduction!
         let mut res = Self::one(&self.field);
 
         let mut found_one = false;
 
         for i in BitIterator::new(exp) {
             if found_one {
-                res.square_with_partial_reduction();
+                res.square();
             } else {
                 found_one = i;
             }
 
             if i {
-                res.mul_assign_with_partial_reduction(self);
+                res.mul_assign(self);
             }
         }
 
-        res.reduce();
-
         res
     }
+
+    // fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+    //     // This is powering with partial reduction!
+    //     let mut res = Self::one(&self.field);
+
+    //     let mut found_one = false;
+
+    //     for i in BitIterator::new(exp) {
+    //         if found_one {
+    //             res.square_with_partial_reduction();
+    //         } else {
+    //             found_one = i;
+    //         }
+
+    //         if i {
+    //             res.mul_assign_with_partial_reduction(self);
+    //         }
+    //     }
+
+    //     res.reduce();
+
+    //     res
+    // }
 
     fn mul_by_nonresidue<EXT: FieldExtension<Element = Self>>(&mut self, for_extesion: &EXT) {
         for_extesion.multiply_by_non_residue(self);

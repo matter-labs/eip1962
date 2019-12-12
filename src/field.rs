@@ -143,7 +143,7 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug
     fn mont_r(&self) -> &Self::Repr;
     fn mont_r2(&self) -> &Self::Repr;
     fn mont_inv(&self) -> u64;
-    fn is_valid_repr(&self, repr: Self::Repr) -> bool;
+    fn is_valid_repr(&self, repr: &Self::Repr) -> bool;
 }
 
 #[derive(Debug)]
@@ -178,8 +178,8 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     fn mont_inv(&self) -> u64 { self.mont_inv }
 
     #[inline(always)]
-    fn is_valid_repr(&self, repr: Self::Repr) -> bool {
-        repr < self.modulus
+    fn is_valid_repr(&self, repr: &Self::Repr) -> bool {
+        repr < &self.modulus
     }
 }
 

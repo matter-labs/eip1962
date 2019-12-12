@@ -53,7 +53,8 @@ pub(crate) fn serialize_g1_point<
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
-    let mut result = serialize_fp_fixed_len(modulus_len, &x)?;
+    let mut result = Vec::with_capacity(2*modulus_len);
+    result.extend(serialize_fp_fixed_len(modulus_len, &x)?);
     result.extend(serialize_fp_fixed_len(modulus_len, &y)?);
 
     Ok(result)

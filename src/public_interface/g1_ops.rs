@@ -16,7 +16,7 @@
 /// - one byte for length encoding
 
 use crate::weierstrass::{Group, CurveOverFpParameters};
-use crate::weierstrass::curve::{WeierstrassCurve};
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 use crate::field::*;
@@ -145,6 +145,15 @@ impl<FE: ElementRepr> G1Api for G1ApiImplementation<FE> {
         if global_rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
+
+        if bases.len() != scalars.len() || bases.len() == 0 {
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
+            } else {
+                let result = CurvePoint::zero(&curve);
+                return serialize_g1_point(modulus_len, &result);
+            }
+        } 
 
         let result = peppinger(&bases, scalars);
 

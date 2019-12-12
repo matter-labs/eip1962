@@ -29,3 +29,8 @@ pub const OPERATION_G2_MUL: u8 = 0x05;
 pub const OPERATION_G2_MULTIEXP: u8 = 0x06;
 
 pub const OPERATION_PAIRING: u8 = 0x07;
+
+pub const NUM_LIMBS_MIN: usize = 4;
+pub const NUM_LIMBS_MAX: usize = 16;
+pub const NUM_GROUP_LIMBS_MIN: usize = 1;
+pub const NUM_GROUP_LIMBS_MAX: usize = 16;

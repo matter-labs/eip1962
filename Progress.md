@@ -7,7 +7,7 @@
   - [x] Initial + fuzzy testing on it
   - [ ] Update and check for latest changes from Rust one
   - [ ] Port gas metering
-  - [ ] Another run of fuzzy testing + fuzzy test multiexponentiation
+  - [ ] Another run of fuzzy testing + fuzzy test gas metering
 - [ ] Gas metering for add/mul/multiexp operations in G1/G2 (WIP)
   - [x] Addition (paitially)
   - [x] Multiplication (partially)

@@ -285,98 +285,6 @@ fn run_single_curve_and_fields_construction() {
     }
 }
 
-
-// #[test]
-// #[ignore]
-// fn run_arithmetic_ops_pseudo_curves_monte_carlo() {
-//     assert!(std::option_env!("GAS_METERING").is_some());
-
-//     use rand::{SeedableRng};
-//     use rand_xorshift::XorShiftRng;
-
-//     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-//     // low number of samples is ok cause we test many things redundantly
-//     const SAMPLES: usize = 10_000;
-
-//     let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/monte_carlo_arith_{}.csv", SAMPLES));
-
-//     let limbs_rng = Uniform::new_inclusive(4, 16);
-//     let group_limbs_rng = Uniform::new_inclusive(1, 16);
-
-//     use pbr::ProgressBar;
-
-//     let mut pb = ProgressBar::new(SAMPLES as u64);
-//     let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
-//     multiexp_len.reverse();
-
-//     let mut samples_processed = 0;
-
-//     while samples_processed < SAMPLES {
-//         let mut got_results = false;
-//         let num_limbs = limbs_rng.sample(&mut rng);
-//         let num_group_limbs = group_limbs_rng.sample(&mut rng);
-//         let (mut curve_ext3, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext3(num_limbs, num_group_limbs, 128, &mut rng);
-//         let mut curve_ext3_a_zero = curve_ext3.clone();
-//         make_a_zero_ext3(&mut curve_ext3_a_zero);
-//         for len in multiexp_len.iter() {
-//             trim_multiexp_ext_3(&mut curve_ext3, *len);
-//             let reports = arithmetic_ops::process_for_ext3(curve_ext3.clone(), g1_worst_case.clone(), g2_worst_case.clone());
-//             for r in reports.into_iter() {
-//                 got_results = true;
-//                 writer.write_report(r);
-//             }
-//         }
-//         if !got_results {
-//             continue;
-//         }
-//         got_results = false;
-//         for len in multiexp_len.iter() {
-//             trim_multiexp_ext_3(&mut curve_ext3_a_zero, *len);
-//             let reports = arithmetic_ops::process_for_ext3(curve_ext3_a_zero.clone(), g1_worst_case.clone(), g2_worst_case.clone());
-//             for r in reports.into_iter() {
-//                 got_results = true;
-//                 writer.write_report(r);
-//             }
-//         }
-//         if !got_results {
-//             continue;
-//         }
-//         got_results = false;
-//         let (mut curve_ext2, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext2(num_limbs, num_group_limbs, 128, &mut rng);
-//         let mut curve_ext2_a_zero = curve_ext2.clone();
-//         make_a_zero_ext2(&mut curve_ext2_a_zero);
-//         for len in multiexp_len.iter() {
-//             trim_multiexp_ext_2(&mut curve_ext2, *len);
-//             let reports = arithmetic_ops::process_for_ext2(curve_ext2.clone(), g1_worst_case.clone(), g2_worst_case.clone());
-//             for r in reports.into_iter() {
-//                 got_results = true;
-//                 writer.write_report(r);
-//             }
-//         }
-//         if !got_results {
-//             continue;
-//         }
-//         got_results = false;
-//         for len in multiexp_len.iter() {
-//             trim_multiexp_ext_2(&mut curve_ext2_a_zero, *len);
-//             let reports = arithmetic_ops::process_for_ext2(curve_ext2_a_zero.clone(), g1_worst_case.clone(), g2_worst_case.clone());
-//             for r in reports.into_iter() {
-//                 got_results = true;
-//                 writer.write_report(r);
-//             }
-//         }
-        
-//         if got_results {
-//             samples_processed += 1;
-//             pb.inc();
-//         }
-//     }
-
-
-//     pb.finish_print("done");
-// }
-
-
 #[test]
 #[ignore]
 fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
@@ -493,6 +401,181 @@ fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
     }
 
     pb.finish_print("done");
+}
+
+
+
+#[test]
+#[ignore]
+fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
+    assert!(std::option_env!("GAS_METERING").is_some());
+
+    use std::fs::File;
+
+    // use pbr::MultiBar;
+
+    use crate::public_interface::decode_utils::*;
+    use crate::test::parsers::*;
+    use crate::test::g1_ops::mnt4 as g1_mnt4;
+    use crate::test::g1_ops::mnt6 as g1_mnt6;
+    use crate::public_interface::constants::*;
+
+    use crate::test::g2_ops::mnt4 as g2_mnt4;
+    use crate::test::g2_ops::mnt6 as g2_mnt6;
+    use crate::test::gas_meter::arithmetic_ops::*;
+
+    use std::thread;
+
+    use std::sync::mpsc::{channel, TryRecvError};
+
+    use rayon::prelude::*;
+
+    use rand::{SeedableRng};
+    use rand_xorshift::XorShiftRng;
+
+    let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+    let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path("src/test/gas_meter/pseudo_curves/monte_carlo_arith_deterministic_parallel.csv");
+
+    const RUNS_PER_PARTICULAR_CURVE: usize = 5;
+    const RUNS_PER_PARAMETERS_COMBINATION: usize = 40;
+
+    // let mut multiexp_len = vec![0, 2, 4, 8, 16, 32, 64, 128];
+    let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
+    multiexp_len.reverse();
+
+    use indicatif::{ProgressBar, ProgressStyle};
+
+    let pb = ProgressBar::new((RUNS_PER_PARAMETERS_COMBINATION * 13 * 16) as u64);
+
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+        .progress_chars("##-"));
+
+    let mut parameters_space = vec![];
+    let (tx, rx) = channel();
+    for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
+        for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
+            parameters_space.push((num_limbs, num_group_limbs, rng.clone(), pb.clone(), tx.clone()));
+        }
+    }
+
+    // let mut pb = ProgressBar::new((RUNS_PER_PARAMETERS_COMBINATION * RUNS_PER_PARTICULAR_CURVE * parameters_space.len()) as u64);
+
+    // let mut results = vec![vec![]; parameters_space.len()];
+
+    let handler = thread::spawn(move || {
+        // let results: Vec<_> = parameters_space.into_par_iter().map(|(num_limbs, num_group_limbs, rng, pb, tx)| {
+        parameters_space.into_par_iter().for_each(|(num_limbs, num_group_limbs, rng, pb, tx)| {
+            let mut rng = rng;
+
+            let mut filter_g1 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
+            let mut filter_g1_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
+            let mut filter_g2_ext_2 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
+            let mut filter_g2_ext_3 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
+            let mut filter_g2_ext_2_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
+            let mut filter_g2_ext_3_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
+
+            for _ in 0..RUNS_PER_PARAMETERS_COMBINATION {
+            // while samples_processed < RUNS_PER_PARAMETERS_COMBINATION {
+                let (mut curve_ext3, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext3(num_limbs, num_group_limbs, 128, &mut rng);
+                let mut curve_ext3_a_zero = curve_ext3.clone();
+                make_a_zero_ext3(&mut curve_ext3_a_zero);
+                for ((len, filter_g2), filter_g1) in multiexp_len.iter().zip(filter_g2_ext_3.iter_mut()).zip(filter_g1.iter_mut()) {
+                    trim_multiexp_ext_3(&mut curve_ext3, *len);
+                    for _ in 0..RUNS_PER_PARTICULAR_CURVE {
+                        let mut reports = arithmetic_ops::process_for_ext3(curve_ext3.clone(), g1_worst_case.clone(), g2_worst_case.clone());
+                        if reports.len() != 2 {
+                            break;
+                        }
+                        // println!("{:?}", filter_g2);
+                        filter_g2.filter(reports.pop().unwrap());
+                        filter_g1.filter(reports.pop().unwrap());
+                    }
+                }
+                for ((len, filter_g2), filter_g1) in multiexp_len.iter().zip(filter_g2_ext_3_a_is_zero.iter_mut()).zip(filter_g1_a_is_zero.iter_mut()) {
+                    trim_multiexp_ext_3(&mut curve_ext3_a_zero, *len);
+                    for _ in 0..RUNS_PER_PARTICULAR_CURVE {
+                        let mut reports = arithmetic_ops::process_for_ext3(curve_ext3_a_zero.clone(), g1_worst_case.clone(), g2_worst_case.clone());
+                        if reports.len() != 2 {
+                            break;
+                        }
+                        // println!("{:?}", filter_g2);
+                        filter_g2.filter(reports.pop().unwrap());
+                        filter_g1.filter(reports.pop().unwrap());
+                    }
+                }
+                let (mut curve_ext2, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext2(num_limbs, num_group_limbs, 128, &mut rng);
+                let mut curve_ext2_a_zero = curve_ext2.clone();
+                make_a_zero_ext2(&mut curve_ext2_a_zero);
+                for ((len, filter_g2), filter_g1) in multiexp_len.iter().zip(filter_g2_ext_2.iter_mut()).zip(filter_g1.iter_mut()) {
+                    trim_multiexp_ext_2(&mut curve_ext2, *len);
+                    for _ in 0..RUNS_PER_PARTICULAR_CURVE {
+                        let mut reports = arithmetic_ops::process_for_ext2(curve_ext2.clone(), g1_worst_case.clone(), g2_worst_case.clone());
+                        if reports.len() != 2 {
+                            break;
+                        }
+                        filter_g2.filter(reports.pop().unwrap());
+                        filter_g1.filter(reports.pop().unwrap());
+                    }
+                }
+                for ((len, filter_g2), filter_g1) in multiexp_len.iter().zip(filter_g2_ext_2_a_is_zero.iter_mut()).zip(filter_g1_a_is_zero.iter_mut()) {
+                    trim_multiexp_ext_2(&mut curve_ext2_a_zero, *len);
+                    for _ in 0..RUNS_PER_PARTICULAR_CURVE {
+                        let mut reports = arithmetic_ops::process_for_ext2(curve_ext2_a_zero.clone(), g1_worst_case.clone(), g2_worst_case.clone());
+                        if reports.len() != 2 {
+                            break;
+                        }
+                        filter_g2.filter(reports.pop().unwrap());
+                        filter_g1.filter(reports.pop().unwrap());
+                    }
+                }
+            
+                pb.inc(1);
+            }
+
+            let subresult = vec![filter_g1, filter_g1_a_is_zero, filter_g2_ext_2, filter_g2_ext_2_a_is_zero, filter_g2_ext_3, filter_g2_ext_3_a_is_zero];
+
+            tx.send(subresult).unwrap();
+        });
+        // .collect();
+
+        // results
+    });
+
+    loop {
+        let subres = rx.try_recv();
+        match subres {
+            Ok(subres) => {
+                for f in subres.into_iter() {
+                    for f in f.into_iter() {
+                        let r = f.get().unwrap();
+                        writer.write_report(r);
+                    }
+                }
+            },
+            Err(TryRecvError::Empty) => {
+                std::thread::sleep(std::time::Duration::from_millis(2000u64));
+            },
+            Err(TryRecvError::Disconnected) => {
+                handler.join().unwrap();
+                break;
+            }
+        }
+    }
+
+    // let results = handler.join().unwrap();
+
+    // for subres in results.into_iter() {
+    //     for f in subres.into_iter() {
+    //         for f in f.into_iter() {
+    //             let r = f.get().unwrap();
+    //             writer.write_report(r);
+    //         }
+    //     }
+    // }
+
+    pb.finish();
 }
 
 

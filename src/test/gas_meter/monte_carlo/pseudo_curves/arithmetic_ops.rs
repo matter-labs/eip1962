@@ -410,19 +410,7 @@ fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
 fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
     assert!(std::option_env!("GAS_METERING").is_some());
 
-    use std::fs::File;
-
-    // use pbr::MultiBar;
-
-    use crate::public_interface::decode_utils::*;
-    use crate::test::parsers::*;
-    use crate::test::g1_ops::mnt4 as g1_mnt4;
-    use crate::test::g1_ops::mnt6 as g1_mnt6;
     use crate::public_interface::constants::*;
-
-    use crate::test::g2_ops::mnt4 as g2_mnt4;
-    use crate::test::g2_ops::mnt6 as g2_mnt6;
-    use crate::test::gas_meter::arithmetic_ops::*;
 
     use std::thread;
 
@@ -460,15 +448,17 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
         }
     }
 
+    drop(tx);
+
+    pb.set_length((parameters_space.len() * RUNS_PER_PARAMETERS_COMBINATION) as u64);
+
     // let mut pb = ProgressBar::new((RUNS_PER_PARAMETERS_COMBINATION * RUNS_PER_PARTICULAR_CURVE * parameters_space.len()) as u64);
 
     // let mut results = vec![vec![]; parameters_space.len()];
 
     let handler = thread::spawn(move || {
         // let results: Vec<_> = parameters_space.into_par_iter().map(|(num_limbs, num_group_limbs, rng, pb, tx)| {
-        parameters_space.into_par_iter().for_each(|(num_limbs, num_group_limbs, rng, pb, tx)| {
-            let mut rng = rng;
-
+        parameters_space.into_par_iter().for_each(|(num_limbs, num_group_limbs, mut rng, pb, tx)| {
             let mut filter_g1 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
             let mut filter_g1_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
             let mut filter_g2_ext_2 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];

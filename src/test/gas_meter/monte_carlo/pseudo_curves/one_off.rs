@@ -488,6 +488,168 @@ fn parallel_measure_miller_loop_pairing_costs() {
 
 #[test]
 #[ignore]
+fn parallel_measure_final_exp_pairing_costs() {
+    assert!(std::option_env!("GAS_METERING").is_some());
+
+    use rand::{SeedableRng};
+    use rand_xorshift::XorShiftRng;
+
+    let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    // const SAMPLES: usize = 1_000;
+    const SAMPLES: usize = 10_000;
+
+    use std::thread;
+
+    use std::sync::mpsc::{channel, TryRecvError};
+
+    use rayon::prelude::*;
+
+    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/final_exp_parallel_{}.csv", SAMPLES));
+    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/final_exp_parallel_{}.csv", SAMPLES));
+
+    let (mnt4_tx, mnt4_rx) = channel();
+    let (mnt6_tx, mnt6_rx) = channel();
+
+    use indicatif::{ProgressBar, ProgressStyle};
+
+    let pb = ProgressBar::new(1u64);
+
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+        .progress_chars("##-"));
+
+    let pairs: [usize; 1] = [2];
+
+    let mut parameters_space = vec![];
+    for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
+        for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
+            parameters_space.push((num_limbs, num_group_limbs, rng.clone(), pb.clone(), (mnt4_tx.clone(), mnt6_tx.clone())));
+        }
+    }
+
+    drop(mnt4_tx);
+    drop(mnt6_tx);
+
+    pb.set_length((parameters_space.len() * SAMPLES) as u64);
+
+    let handler = thread::spawn(move || {
+        parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
+            let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
+            let w0_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH);
+            let w1_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH);
+            for _ in 0..SAMPLES {
+                {
+                let ate_bits = ate_rng.sample(&mut rng);
+                let ate_hamming = Uniform::new_inclusive(1, ate_bits);
+                let ate_hamming = ate_hamming.sample(&mut rng);
+
+                let w0_bits = w0_bits_rng.sample(&mut rng);
+                let w0_hamming = Uniform::new_inclusive(1, w0_bits);
+                let w0_hamming = w0_hamming.sample(&mut rng);
+
+                let w1_bits = w1_bits_rng.sample(&mut rng);
+                let w1_hamming = Uniform::new_inclusive(1, w1_bits);
+                let w1_hamming = w1_hamming.sample(&mut rng);
+
+                    let curve = gen_params::random_mnt4_params(num_limbs, num_group_limbs, &mut rng);
+                    for num_pairs in pairs.iter() {
+                        let reports = mnt4::process_for_curve_and_bit_sizes(
+                            curve.clone(), 
+                            ate_bits, 
+                            ate_hamming,
+                            w0_bits,
+                            w0_hamming,
+                            w1_bits,
+                            w1_hamming,                        
+                            *num_pairs);
+                        for r in reports.into_iter() {
+                            mnt4_tx.send(r).unwrap();
+                        }
+                    }
+                }
+                {
+                    let ate_bits = ate_rng.sample(&mut rng);
+                    let ate_hamming = Uniform::new_inclusive(1, ate_bits);
+                    let ate_hamming = ate_hamming.sample(&mut rng);
+    
+                    let w0_bits = w0_bits_rng.sample(&mut rng);
+                    let w0_hamming = Uniform::new_inclusive(1, w0_bits);
+                    let w0_hamming = w0_hamming.sample(&mut rng);
+    
+                    let w1_bits = w1_bits_rng.sample(&mut rng);
+                    let w1_hamming = Uniform::new_inclusive(1, w1_bits);
+                    let w1_hamming = w1_hamming.sample(&mut rng);
+
+                    let curve = gen_params::random_mnt6_params(num_limbs, num_group_limbs, &mut rng);
+                    for num_pairs in pairs.iter() {
+                        let reports = mnt6::process_for_curve_and_bit_sizes(
+                            curve.clone(), 
+                            ate_bits, 
+                            ate_hamming,
+                            w0_bits,
+                            w0_hamming,
+                            w1_bits,
+                            w1_hamming,                        
+                            *num_pairs);
+                        for r in reports.into_iter() {
+                            mnt6_tx.send(r).unwrap();
+                        }
+                    }
+                }
+                pb.inc(1);
+            }
+        });
+    });
+
+    loop {
+        let mut all_empty = false;
+        let mut all_disconnected = false;
+        {
+            let subres = mnt4_rx.try_recv();
+            match subres {
+                Ok(subres) => {
+                    mnt4_writer.write_report(subres);
+                },
+                Err(TryRecvError::Empty) => {
+                    all_empty = true;
+                },
+                Err(TryRecvError::Disconnected) => {
+                    all_disconnected = true;
+                }
+            }
+        }
+        {
+            let subres = mnt6_rx.try_recv();
+            match subres {
+                Ok(subres) => {
+                    mnt6_writer.write_report(subres);
+                },
+                Err(TryRecvError::Empty) => {
+                    all_empty = all_empty & true;
+                },
+                Err(TryRecvError::Disconnected) => {
+                    all_disconnected = all_disconnected & true;
+                }
+            }
+        }
+
+        if all_empty {
+            std::thread::sleep(std::time::Duration::from_millis(2000u64));
+        }
+
+        if all_disconnected {
+            pb.println("Joining threads");
+            handler.join().unwrap();
+            break;
+        }
+    }
+
+    pb.finish_with_message("Done");
+}
+
+
+#[test]
+#[ignore]
 fn run_single_one_off_test() {
     assert!(std::option_env!("GAS_METERING").is_some());
 

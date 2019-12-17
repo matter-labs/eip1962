@@ -343,7 +343,7 @@ fn parallel_measure_miller_loop_pairing_costs() {
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     // const SAMPLES: usize = 1_000;
-    const SAMPLES: usize = 2_000;
+    const SAMPLES: usize = 50;
 
     use std::thread;
 
@@ -496,7 +496,7 @@ fn parallel_measure_final_exp_pairing_costs() {
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     // const SAMPLES: usize = 1_000;
-    const SAMPLES: usize = 10_000;
+    const SAMPLES: usize = 1000;
 
     use std::thread;
 

@@ -343,7 +343,7 @@ fn parallel_measure_miller_loop_pairing_costs() {
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     // const SAMPLES: usize = 1_000;
-    const SAMPLES: usize = 50;
+    const SAMPLES: usize = 100;
 
     use std::thread;
 
@@ -365,7 +365,8 @@ fn parallel_measure_miller_loop_pairing_costs() {
         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
         .progress_chars("##-"));
 
-    let pairs: [usize; 6] = [2, 4, 6, 8, 12, 16];
+    // let pairs: [usize; 6] = [2, 4, 6, 8, 12, 16];
+    let pairs: [usize; 4] = [2, 4, 8, 16];
 
     let mut parameters_space = vec![];
     for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
@@ -381,10 +382,12 @@ fn parallel_measure_miller_loop_pairing_costs() {
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
+            let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
             for _ in 0..SAMPLES {
                 {
-                    let ate_bits = 1;
-                    let ate_hamming = 1;
+                    let ate_bits = ate_rng.sample(&mut rng);
+                    let ate_hamming = Uniform::new_inclusive(1, ate_bits);
+                    let ate_hamming = ate_hamming.sample(&mut rng);
 
                     let w0_bits = 1;
                     let w0_hamming = 1;
@@ -409,8 +412,9 @@ fn parallel_measure_miller_loop_pairing_costs() {
                     }
                 }
                 {
-                    let ate_bits = 1;
-                    let ate_hamming = 1;
+                    let ate_bits = ate_rng.sample(&mut rng);
+                    let ate_hamming = Uniform::new_inclusive(1, ate_bits);
+                    let ate_hamming = ate_hamming.sample(&mut rng);
 
                     let w0_bits = 1;
                     let w0_hamming = 1;
@@ -496,7 +500,7 @@ fn parallel_measure_final_exp_pairing_costs() {
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     // const SAMPLES: usize = 1_000;
-    const SAMPLES: usize = 1000;
+    const SAMPLES: usize = 1500;
 
     use std::thread;
 
@@ -534,14 +538,13 @@ fn parallel_measure_final_exp_pairing_costs() {
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
-            let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
+            // let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
             let w0_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH);
             let w1_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH);
             for _ in 0..SAMPLES {
                 {
-                let ate_bits = ate_rng.sample(&mut rng);
-                let ate_hamming = Uniform::new_inclusive(1, ate_bits);
-                let ate_hamming = ate_hamming.sample(&mut rng);
+                let ate_bits = 1;
+                let ate_hamming = 1;
 
                 let w0_bits = w0_bits_rng.sample(&mut rng);
                 let w0_hamming = Uniform::new_inclusive(1, w0_bits);
@@ -568,9 +571,8 @@ fn parallel_measure_final_exp_pairing_costs() {
                     }
                 }
                 {
-                    let ate_bits = ate_rng.sample(&mut rng);
-                    let ate_hamming = Uniform::new_inclusive(1, ate_bits);
-                    let ate_hamming = ate_hamming.sample(&mut rng);
+                    let ate_bits = 1;
+                    let ate_hamming = 1;
     
                     let w0_bits = w0_bits_rng.sample(&mut rng);
                     let w0_hamming = Uniform::new_inclusive(1, w0_bits);

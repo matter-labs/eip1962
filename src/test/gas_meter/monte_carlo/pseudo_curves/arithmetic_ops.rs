@@ -290,19 +290,7 @@ fn run_single_curve_and_fields_construction() {
 fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
     assert!(std::option_env!("GAS_METERING").is_some());
 
-    use std::fs::File;
-
-    use pbr::ProgressBar;
-
-    use crate::public_interface::decode_utils::*;
-    use crate::test::parsers::*;
-    use crate::test::g1_ops::mnt4 as g1_mnt4;
-    use crate::test::g1_ops::mnt6 as g1_mnt6;
     use crate::public_interface::constants::*;
-
-    use crate::test::g2_ops::mnt4 as g2_mnt4;
-    use crate::test::g2_ops::mnt6 as g2_mnt6;
-    use crate::test::gas_meter::arithmetic_ops::*;
 
     use rand::{SeedableRng};
     use rand_xorshift::XorShiftRng;
@@ -318,12 +306,16 @@ fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
     let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
     multiexp_len.reverse();
 
-    let mut pb = ProgressBar::new((RUNS_PER_PARAMETERS_COMBINATION * RUNS_PER_PARTICULAR_CURVE * 13 * 16) as u64);
+    use indicatif::{ProgressBar, ProgressStyle};
+
+    let pb = ProgressBar::new((RUNS_PER_PARAMETERS_COMBINATION * RUNS_PER_PARTICULAR_CURVE * 13 * 16) as u64);
+
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+        .progress_chars("##-"));
 
     for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
         for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
-
-            let mut samples_processed = 0;
 
             let mut filter_g1 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
             let mut filter_g1_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
@@ -387,8 +379,7 @@ fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
                     }
                 }
                 
-                samples_processed += 1;
-                pb.inc();
+                pb.inc(1);
             }
 
             for f in vec![filter_g1, filter_g1_a_is_zero, filter_g2_ext_2, filter_g2_ext_2_a_is_zero, filter_g2_ext_3, filter_g2_ext_3_a_is_zero].into_iter() {
@@ -400,7 +391,7 @@ fn run_deterministic_search_over_parameter_space_for_g1_and_g2() {
         }
     }
 
-    pb.finish_print("done");
+    pb.finish();
 }
 
 
@@ -425,8 +416,8 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
 
     let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path("src/test/gas_meter/pseudo_curves/monte_carlo_arith_deterministic_parallel.csv");
 
-    const RUNS_PER_PARTICULAR_CURVE: usize = 5;
-    const RUNS_PER_PARAMETERS_COMBINATION: usize = 40;
+    const RUNS_PER_PARTICULAR_CURVE: usize = 3;
+    const RUNS_PER_PARAMETERS_COMBINATION: usize = 15;
 
     // let mut multiexp_len = vec![0, 2, 4, 8, 16, 32, 64, 128];
     let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
@@ -452,12 +443,7 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
 
     pb.set_length((parameters_space.len() * RUNS_PER_PARAMETERS_COMBINATION) as u64);
 
-    // let mut pb = ProgressBar::new((RUNS_PER_PARAMETERS_COMBINATION * RUNS_PER_PARTICULAR_CURVE * parameters_space.len()) as u64);
-
-    // let mut results = vec![vec![]; parameters_space.len()];
-
     let handler = thread::spawn(move || {
-        // let results: Vec<_> = parameters_space.into_par_iter().map(|(num_limbs, num_group_limbs, rng, pb, tx)| {
         parameters_space.into_par_iter().for_each(|(num_limbs, num_group_limbs, mut rng, pb, tx)| {
             let mut filter_g1 = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
             let mut filter_g1_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
@@ -467,7 +453,6 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
             let mut filter_g2_ext_3_a_is_zero = vec![arithmetic_ops::MaxReportFilter::new(); multiexp_len.len()];
 
             for _ in 0..RUNS_PER_PARAMETERS_COMBINATION {
-            // while samples_processed < RUNS_PER_PARAMETERS_COMBINATION {
                 let (mut curve_ext3, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext3(num_limbs, num_group_limbs, 128, &mut rng);
                 let mut curve_ext3_a_zero = curve_ext3.clone();
                 make_a_zero_ext3(&mut curve_ext3_a_zero);
@@ -478,7 +463,6 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
                         if reports.len() != 2 {
                             break;
                         }
-                        // println!("{:?}", filter_g2);
                         filter_g2.filter(reports.pop().unwrap());
                         filter_g1.filter(reports.pop().unwrap());
                     }
@@ -490,7 +474,6 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
                         if reports.len() != 2 {
                             break;
                         }
-                        // println!("{:?}", filter_g2);
                         filter_g2.filter(reports.pop().unwrap());
                         filter_g1.filter(reports.pop().unwrap());
                     }
@@ -528,9 +511,6 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
 
             tx.send(subresult).unwrap();
         });
-        // .collect();
-
-        // results
     });
 
     loop {
@@ -553,17 +533,6 @@ fn run_deterministic_parallel_search_over_parameter_space_for_g1_and_g2() {
             }
         }
     }
-
-    // let results = handler.join().unwrap();
-
-    // for subres in results.into_iter() {
-    //     for f in subres.into_iter() {
-    //         for f in f.into_iter() {
-    //             let r = f.get().unwrap();
-    //             writer.write_report(r);
-    //         }
-    //     }
-    // }
 
     pb.finish();
 }

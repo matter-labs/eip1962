@@ -507,7 +507,6 @@ mod tests {
     use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::pairings::{PairingEngine};
-    use crate::field::slice_to_fixed_size_array;
 
     #[test]
     fn test_mnt4_pairing() {

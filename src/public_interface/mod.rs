@@ -17,6 +17,8 @@ pub use pairing_ops::{PairingApi, PublicPairingApi};
 pub use g1_ops::{G1Api, PublicG1Api};
 pub use g2_ops::{G2Api, PublicG2Api};
 
+mod unified_api;
+
 use crate::errors::ApiError;
 
 pub struct API;
@@ -56,3 +58,5 @@ impl API {
         }
     }
 }
+
+pub use self::unified_api::{OperationType, perform_operation, c_perform_operation, PREALLOCATE_FOR_ERROR_BYTES, PREALLOCATE_FOR_RESULT_BYTES};

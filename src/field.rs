@@ -104,27 +104,27 @@ pub(crate) fn slice_to_u64_vec<S: AsRef<[u64]>>(v: S) -> Vec<u64> {
     ret
 }
 
-use crate::arrayvec::{ArrayVec, Array};
+// use crate::arrayvec::{ArrayVec, Array};
 
-pub(crate) fn slice_to_fixed_size_array<S: AsRef<[u64]>, A: Array<Item = u64>>(v: S) -> ArrayVec<A> {
-    let as_ref = v.as_ref();
+// pub(crate) fn slice_to_fixed_size_array<S: AsRef<[u64]>, A: Array<Item = u64>>(v: S) -> ArrayVec<A> {
+//     let as_ref = v.as_ref();
 
-    let mut num_words = as_ref.len();
-    for v in as_ref.iter().rev() {
-        if *v == 0 {
-            num_words -= 1;
-        } else {
-            break;
-        }
-    }
+//     let mut num_words = as_ref.len();
+//     for v in as_ref.iter().rev() {
+//         if *v == 0 {
+//             num_words -= 1;
+//         } else {
+//             break;
+//         }
+//     }
 
-    debug_assert!(num_words <= A::CAPACITY);
+//     debug_assert!(num_words <= A::CAPACITY);
 
-    let mut ret = ArrayVec::<A>::new();
-    ret.try_extend_from_slice(&as_ref[0..num_words]).expect("must extend with enough capacity");
+//     let mut ret = ArrayVec::<A>::new();
+//     ret.try_extend_from_slice(&as_ref[0..num_words]).expect("must extend with enough capacity");
 
-    ret
-}
+//     ret
+// }
 
 fn num_words(number: &MaxFieldSquaredUint) -> usize {
     let bits = number.bits();

@@ -527,7 +527,6 @@ mod tests {
     use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
     use crate::constants::MaxFieldUint;
-    use crate::field::slice_to_fixed_size_array;
 
     #[test]
     fn test_bn254_pairing() {

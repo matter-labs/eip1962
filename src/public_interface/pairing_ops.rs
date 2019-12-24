@@ -57,7 +57,7 @@ pub trait PairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
 }
 
-struct PairingApiImplementation<FE: ElementRepr> {
+pub(crate) struct PairingApiImplementation<FE: ElementRepr> {
     _marker_fe: std::marker::PhantomData<FE>,
 }
 
@@ -86,7 +86,7 @@ impl<FE: ElementRepr> PairingApi for PairingApiImplementation<FE> {
 }
 
 impl<FE: ElementRepr>PairingApiImplementation<FE> {
-    fn pair_bls12(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_bls12(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
         use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
@@ -297,7 +297,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         Ok(result)
     }
 
-    fn pair_bn(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_bn(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
         use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
@@ -529,7 +529,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         Ok(result)
     }
 
-    fn pair_mnt6(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_mnt6(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp3::{Fp3, Extension3};
         use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 
@@ -725,7 +725,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         Ok(result)
     }
 
-    fn pair_mnt4(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_mnt4(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp4_as_2_over_2::{Fp4, Extension2Over2};
 

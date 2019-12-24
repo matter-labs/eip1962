@@ -4,7 +4,6 @@
 
 extern crate byteorder;
 extern crate eth_pairings_repr_derive;
-extern crate arrayvec;
 extern crate fixed_width_field;
 extern crate fixed_width_fp3_fp4;
 extern crate fixed_width_fp6;
@@ -53,7 +52,6 @@ mod tests {
     use crate::weierstrass::Group;
     use crate::traits::ZeroAndOne;
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters};
-    use crate::field::slice_to_fixed_size_array;
     use crate::constants::MaxGroupSizeUint;
 
     fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {

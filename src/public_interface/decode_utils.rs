@@ -1,6 +1,6 @@
 use crate::constants::{MaxFieldUint, MaxGroupSizeUint, MaxLoopParametersUint};
 
-use super::constants::*;
+use crate::public_interface::constants::*;
 
 use crate::errors::ApiError;
 
@@ -25,7 +25,7 @@ pub(crate) fn decode_group_order_with_length<
         bytes: &'a [u8], 
     ) -> Result<(MaxGroupSizeUint, &'a [u8]), ApiError>
 {
-    use crate::constants::MAX_GROUP_BYTE_LEN;
+    use crate::public_interface::constants::*;
 
     let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
     let length = length_encoding[0] as usize;
@@ -66,7 +66,7 @@ pub(crate) fn parse_modulus_and_length<
         bytes: &'a [u8], 
     ) -> Result<(usize, MaxFieldUint, &'a [u8]), ApiError>
 {
-    use crate::constants::MAX_MODULUS_BYTE_LEN;
+    use crate::public_interface::constants::*;
 
     let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
     let length = length_encoding[0] as usize;
@@ -153,15 +153,15 @@ pub(crate) fn num_limbs_for_modulus(modulus: &MaxFieldUint) -> Result<usize, Api
 }
 
 pub(crate) fn num_units_for_group_order(order: &MaxGroupSizeUint) -> Result<usize, ApiError> {
-    use crate::constants::{MIN_GROUP_LIMBS, MAX_GROUP_LIMBS};
+    use crate::public_interface::constants::*;
 
     let limbs = (order.bits() + 63) / 64;
 
-    if limbs < MIN_GROUP_LIMBS {
+    if limbs < NUM_GROUP_LIMBS_MIN {
         return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())));
     }
 
-    if limbs > MAX_GROUP_LIMBS {
+    if limbs > NUM_GROUP_LIMBS_MAX {
         return Err(ApiError::InputError(format!("Group order is too large, file {}, line {}", file!(), line!())));
     }
 

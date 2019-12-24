@@ -513,7 +513,6 @@ mod tests {
     use crate::pairings::{PairingEngine};
     use crate::test::{biguint_to_u64_vec};
     use crate::constants::MaxFieldUint;
-    use crate::field::slice_to_fixed_size_array;
 
     #[test]
     fn test_mnt6_pairing() {

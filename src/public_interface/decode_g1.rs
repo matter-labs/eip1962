@@ -5,7 +5,6 @@ use crate::representation::ElementRepr;
 use crate::weierstrass::CurveParameters;
 use crate::constants::{MaxGroupSizeUint};
 
-use super::constants::*;
 use super::decode_fp::*;
 
 use super::decode_utils::split;
@@ -61,7 +60,7 @@ pub(crate) fn serialize_g1_point<
 }
 
 pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ApiError> {
-    use crate::constants::MAX_GROUP_BYTE_LEN;
+    use crate::public_interface::constants::*;
     let (order_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get group size length")?;
     let order_len = order_len[0] as usize;
     if order_len > MAX_GROUP_BYTE_LEN {

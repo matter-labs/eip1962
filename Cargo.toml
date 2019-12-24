@@ -1,6 +1,6 @@
 [package]
 name = "eth_pairings"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
 edition = "2018"
 description = "EIP1962 reference implementation"
@@ -14,6 +14,10 @@ exclude = [
     "cpp_version"
 ]
 
+[lib]
+name = "eth_pairings"
+crate-type = ["cdylib", "staticlib"]
+
 [dependencies]
 byteorder = "1.3"
 eth_pairings_repr_derive = {version = "0.2.0", path = "repr_derive"}
@@ -22,7 +26,7 @@ fixed_width_fp3_fp4 = {version = "0.1", path = "fixed_width_fp3_fp4" }
 fixed_width_fp6 = {version = "0.1", path = "fixed_width_fp6" }
 fixed_width_fp12 = {version = "0.1", path = "fixed_width_fp12" }
 fixed_width_group_and_loop = {version = "0.1", path = "fixed_width_group_and_loop" }
-arrayvec = "0.5"
+static_assertions = "1.1.*"
 
 [dev-dependencies]
 num-bigint = "0.2"

@@ -312,10 +312,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         let f_0 = Fp::one(self.field.field);
 
         // NON_REDISUE**(((q^1) - 1) / 4)
-        let modulus = MaxFrobeniusFp3::from(modulus.as_ref());
+        let modulus = MaxFrobeniusFp4::from(modulus.as_ref());
         let mut q_power = modulus;
-        let one = MaxFrobeniusFp3::from(1u64);
-        let four = MaxFrobeniusFp3::from(4u64);
+        let one = MaxFrobeniusFp4::from(1u64);
+        let four = MaxFrobeniusFp4::from(4u64);
 
         let power = q_power - one;
         let (power, rem) = power.div_mod(four);

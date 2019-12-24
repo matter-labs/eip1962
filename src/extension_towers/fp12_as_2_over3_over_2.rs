@@ -447,10 +447,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         modulus: &MaxFieldUint,
         base: &WindowExpBase<Fp2<'a, E, F>>
     ) -> Result<(), ()> {    
-        // Fq2(u + 1)**(((q^0) - 1) / 6)
+        // NON_RES**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);
 
-        // Fq2(u + 1)**(((q^1) - 1) / 6)
+        // NON_RES**(((q^1) - 1) / 6)
         let mut powers = Vec::with_capacity(4);
 
         let modulus = MaxFrobeniusFp12::from(modulus.as_ref());

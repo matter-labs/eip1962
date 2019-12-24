@@ -31,27 +31,27 @@ Following curve families are supported for pairing operations:
 
 ## Constants
 
-NUM_LIMBS_MIN = 4
-NUM_LIMBS_MAX = 16
-NUM_GROUP_LIMBS_MIN = 1
-NUM_GROUP_LIMBS_MAX = 16
-MAX_MODULUS_BYTE_LEN = 128
-MAX_GROUP_BYTE_LEN = 128
+- NUM_LIMBS_MIN = 4;
+- NUM_LIMBS_MAX = 16;
+- NUM_GROUP_LIMBS_MIN = 1;
+- NUM_GROUP_LIMBS_MAX = 16;
+- MAX_MODULUS_BYTE_LEN = 128;
+- MAX_GROUP_BYTE_LEN = 128;
 
 ## Sane limits
 
 These limits are just simple upper bound to prevent long computations. Those do not in principle affect correctness, but allow to reject heavy computational calls early
 
-NOTE: This limits may change
+NOTE: These limits may change
 
-MAX_BLS12_X_BIT_LENGTH = 128;
-MAX_BN_U_BIT_LENGTH = 128;
-MAX_BLS12_X_HAMMING = 128;
-MAX_BN_SIX_U_PLUS_TWO_HAMMING = 128;
-MAX_ATE_PAIRING_ATE_LOOP_COUNT = 2032;
-MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING = 2032;
-MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH = 2032;
-MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH = 2032;
+- MAX_BLS12_X_BIT_LENGTH = 128;
+- MAX_BN_U_BIT_LENGTH = 128;
+- MAX_BLS12_X_HAMMING = 128;
+- MAX_BN_SIX_U_PLUS_TWO_HAMMING = 128;
+- MAX_ATE_PAIRING_ATE_LOOP_COUNT = 2032;
+- MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING = 2032;
+- MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH = 2032;
+- MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH = 2032;
 
 ## Zero point (point of infinity) encoding convension
 
@@ -278,6 +278,7 @@ Note that BLS12 is a family of curves that are parametrized by a single scalar `
 |pairs              |`6*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
 
 Validations:
+- All validations from G1 common prefix section
 - `fp2_non_residue` is not a square root
 - `fp6_non_residue` is not a 6-th root
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2, Fp6 and Fp12) perform the following checks:
@@ -316,6 +317,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |pairs              |`6*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
 
 Validations:
+- All validations from G1 common prefix section
 - `fp2_non_residue` is not a square root
 - `fp6_non_residue` is not a 6-th root
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2, Fp6 and Fp12) perform the following checks:
@@ -357,6 +359,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |pairs              |`6*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
 
 Validations:
+- All validations from G1 common prefix section
 - `fp2_non_residue` is not a 4-th root
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2 and Fp4) perform the following checks:
   - `base_field_modulus == 1 mod 2` 
@@ -376,7 +379,7 @@ Return value:
 
 If result of a pairing (element of `Fp12`) is equal to identity - return single byte `0x01`, otherwise return `0x00` following the existing ABI for BN254 precompile.
 
-### ABI for pairing operations on MNT4 curves
+### ABI for pairing operations on MNT6 curves
 
 |Value              |Length                    |Comment                                      |
 |-------------------|--------------------------|---------------------------------------------|
@@ -400,6 +403,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |pairs              |`8*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
 
 Validations:
+- All validations from G1 common prefix section
 - `fp2_non_residue` is not a 6-th root
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2 and Fp4) perform the following checks:
   - `base_field_modulus == 1 mod 2` 

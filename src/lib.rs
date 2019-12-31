@@ -9,6 +9,9 @@ extern crate fixed_width_fp3_fp4;
 extern crate fixed_width_fp6;
 extern crate fixed_width_fp12;
 extern crate fixed_width_group_and_loop;
+extern crate serde;
+extern crate serde_json;
+extern crate once_cell;
 
 mod arithmetics;
 mod traits;
@@ -25,7 +28,7 @@ mod errors;
 mod constants;
 
 pub mod public_interface;
-// pub mod gas_meter;
+pub mod gas_meter;
 
 #[cfg(test)]
 mod test;

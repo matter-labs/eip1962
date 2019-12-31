@@ -28,7 +28,9 @@ pub(crate) fn is_non_nth_root<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>
     let divisor = MaxFieldUint::from(n);
     let (power, rem) = power.div_mod(divisor);
     if !rem.is_zero() {
-        return false;
+        if !std::option_env!("GAS_METERING").is_some() {
+            return false;
+        }
     }
 
     let l = if std::option_env!("GAS_METERING").is_some() {
@@ -62,7 +64,9 @@ pub(crate) fn is_non_nth_root_fp2<'a, FE: ElementRepr, F: SizedPrimeField<Repr =
     let divisor = MaxFieldSquaredUint::from(n);
     let (power, rem) = power.div_mod(divisor);
     if !rem.is_zero() {
-        return false;
+        if !std::option_env!("GAS_METERING").is_some() {
+            return false;
+        }
     }
 
     let l = if std::option_env!("GAS_METERING").is_some() {

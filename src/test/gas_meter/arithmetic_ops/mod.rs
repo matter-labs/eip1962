@@ -354,7 +354,6 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p1);
 
         let now = Instant::now();
-        // let _ = API::run(&input_data);
         let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 

@@ -557,9 +557,9 @@ fn run_deterministic_parallel_search_no_filtering() {
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-    let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path("src/test/gas_meter/pseudo_curves/monte_carlo_arith_deterministic_parallel_unfiltered.csv");
+    let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path("src/test/gas_meter/pseudo_curves/monte_carlo_arith_deterministic_parallel_unfiltered_2.csv");
 
-    const RUNS_PER_PARAMETERS_COMBINATION: usize = 250;
+    const RUNS_PER_PARAMETERS_COMBINATION: usize = 200;
 
     // let mut multiexp_len = vec![0, 2, 4, 8, 16, 32, 64, 128];
     let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];

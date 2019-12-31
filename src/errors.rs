@@ -9,6 +9,7 @@ pub enum ApiError {
     DivisionByZero,
     UnknownParameter(String),
     OutputError(String),
+    MissingValue,
 }
 
 impl Error for ApiError {
@@ -20,6 +21,7 @@ impl Error for ApiError {
             ApiError::DivisionByZero => "division by zero",
             ApiError::UnknownParameter(_) => "parameter has value out of bounds",
             ApiError::OutputError(_) => "error outputing results",
+            ApiError::MissingValue => "missing value",
         }
     }
 }
@@ -33,6 +35,7 @@ impl fmt::Display for ApiError {
             ApiError::DivisionByZero => write!(f, "division by zero"),
             ApiError::UnknownParameter(descr) => write!(f, "parameter has value out of bounds, {}", descr),
             ApiError::OutputError(descr) => write!(f, "error outputing results, {}", descr),
+            ApiError::MissingValue => write!(f, "missing value"),
         }
     }
 }

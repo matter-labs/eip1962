@@ -1,76 +1,135 @@
 mod parsers;
 mod utils;
-
-use num_bigint::BigUint;
+mod meter_arith;
 
 use crate::errors::ApiError;
 use crate::public_interface::decode_utils::*;
 use crate::public_interface::constants::*;
 use self::parsers::*;
-use self::utils::*;
+use crate::public_interface::OperationType;
 
 pub struct GasMeter;
 
-trait GroupGasMeteringParams {
-    const ADD_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64;
-    const ADD_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64;
-    const ADD_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64;
-    const MUL_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64;
-    const MUL_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64;
-    const MUL_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64;
-    const ORDER_UNITS_LINEAR_TERM: f64;
-    const ADDITION_CONSTANT: f64;
-    const MULTIPLICATION_CONSTANT: f64;
-    const MULTIEXP_CONSTANT: f64;
-    const MULTIEXP_DISCOUNT: f64;
+// This is pure rust API
+pub fn perform_operation(operation: OperationType, input: &[u8]) -> Result<u64, ApiError> {
+    match operation {
+        OperationType::G1ADD => {
+            meter_addition_g1(&input)
+        },
+        OperationType::G1MUL => {
+            meter_multiplication_g1(&input)
+        },
+        // OperationType::G1MULTIEXP => {
+        //     PublicG1Api::multiexp(&input)
+        // },
+        OperationType::G2ADD => {
+            meter_addition_g2(&input)
+        },
+        OperationType::G2MUL => {
+            meter_multiplication_g2(&input)
+        },
+        _ => {
+            unimplemented!()
+        }
+        // OperationType::G2MULTIEXP => {
+        //     PublicG2Api::multiexp(&input)
+        // },
+        // OperationType::BLS12PAIR | OperationType::BNPAIR | OperationType::MNT4PAIR | OperationType::MNT6PAIR) => {
+        //     use crate::field::*;
+        //     use crate::public_interface::decode_utils::*;
+
+        //     let modulus_limbs = {
+        //         let (_, modulus, _) = parse_modulus_and_length(&input)?;
+        //         let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+
+        //         modulus_limbs
+        //     };
+
+        //     match operation {
+        //         OperationType::BLS12PAIR => {
+        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_bls12); 
+
+        //             result
+        //         },
+        //         OperationType::BNPAIR => {
+        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_bn); 
+
+        //             result
+        //         },
+        //         OperationType::MNT4PAIR => {
+        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_mnt4); 
+
+        //             result
+        //         },
+        //         OperationType::MNT6PAIR => {
+        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_mnt6); 
+
+        //             result
+        //         },
+
+        //         _ => {
+        //             unreachable!()
+        //         }
+        //     }
+        // }
+    }
 }
 
-struct G1GasMeteringParams;
+fn meter_addition_g1(input: &[u8]) -> Result<u64, ApiError> {
 
-impl GroupGasMeteringParams for G1GasMeteringParams {
-    const ADD_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64 = 2.5f64;
-    const ADD_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64 = 2f64;
-    const ADD_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64 = 1.1f64;
-    const MUL_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64 = 45f64;
-    const MUL_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64 = 14f64;
-    const MUL_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64 = 1.2f64;
-    const ORDER_UNITS_LINEAR_TERM: f64 = 1f64;
-    const ADDITION_CONSTANT: f64 = 300f64;
-    const MULTIPLICATION_CONSTANT: f64 = 100f64;
-    const MULTIEXP_CONSTANT: f64 = 100f64;
-    const MULTIEXP_DISCOUNT: f64 = 0.25f64;
+    let (modulus, _, _) = parse_g1_curve_parameters(&input)?;
+    let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+
+    let params = &*meter_arith::G1_ADDITION_PARAMS_INSTANCE;
+
+    meter_arith::meter_addition(modulus_limbs, params)
 }
 
-struct G2GasMeteringParamsFp2;
+fn meter_addition_g2(input: &[u8]) -> Result<u64, ApiError> {
 
-impl GroupGasMeteringParams for G2GasMeteringParamsFp2 {
-    const ADD_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64 = 15f64;
-    const ADD_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64 = 12f64;
-    const ADD_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64 = 7f64;
-    const MUL_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64 = 100f64;
-    const MUL_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64 = 50f64;
-    const MUL_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64 = 50f64;
-    const ORDER_UNITS_LINEAR_TERM: f64 = 1f64;
-    const ADDITION_CONSTANT: f64 = 500f64;
-    const MULTIPLICATION_CONSTANT: f64 = 300f64;
-    const MULTIEXP_CONSTANT: f64 = 300f64;
-    const MULTIEXP_DISCOUNT: f64 = 0.25f64;
+    let (modulus, _, ext_degree, _) = parse_g2_curve_parameters(&input)?;
+
+    let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+
+    let params = if ext_degree == EXTENSION_DEGREE_2 {
+        &*meter_arith::G2_EXT_2_ADDITION_PARAMS_INSTANCE
+    } else if ext_degree == EXTENSION_DEGREE_3 {
+        &*meter_arith::G2_EXT_3_ADDITION_PARAMS_INSTANCE
+    } else {
+        unreachable!();
+    };
+
+    meter_arith::meter_addition(modulus_limbs, params)
 }
 
-struct G2GasMeteringParamsFp3;
 
-impl GroupGasMeteringParams for G2GasMeteringParamsFp3 {
-    const ADD_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64 = 30f64;
-    const ADD_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64 = 24f64;
-    const ADD_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64 = 14f64;
-    const MUL_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER: f64 = 30f64;
-    const MUL_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER: f64 = 24f64;
-    const MUL_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER: f64 = 14f64;
-    const ORDER_UNITS_LINEAR_TERM: f64 = 12f64;
-    const ADDITION_CONSTANT: f64 = 500f64;
-    const MULTIPLICATION_CONSTANT: f64 = 300f64;
-    const MULTIEXP_CONSTANT: f64 = 300f64;
-    const MULTIEXP_DISCOUNT: f64 = 0.25f64;
+fn meter_multiplication_g1(input: &[u8]) -> Result<u64, ApiError> {
+
+    let (modulus, order, _) = parse_g1_curve_parameters(&input)?;
+    let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+    let order_limbs = num_units_for_group_order(&order)?;
+
+    let params = &*meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE;
+
+    meter_arith::meter_multiplication(modulus_limbs, order_limbs, params)
+}
+
+fn meter_multiplication_g2(input: &[u8]) -> Result<u64, ApiError> {
+
+    let (modulus, order, ext_degree, _) = parse_g2_curve_parameters(&input)?;
+
+    let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+    let order_limbs = num_units_for_group_order(&order)?;
+
+    let params = if ext_degree == EXTENSION_DEGREE_2 {
+        &*meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE
+    } else if ext_degree == EXTENSION_DEGREE_3 {
+        &*meter_arith::G2_EXT_3_MULTIPLICATION_PARAMS_INSTANCE
+    } else {
+        unreachable!();
+    };
+
+    meter_arith::meter_multiplication(modulus_limbs, order_limbs, params)
 }
 
 impl GasMeter {
@@ -78,187 +137,29 @@ impl GasMeter {
         let (op_type, rest) = split(bytes, OPERATION_ENCODING_LENGTH , "Input should be longer than operation type encoding")?;
         let operation = op_type[0];
         let result = match operation {
-            OPERATION_G1_ADD | OPERATION_G1_MUL | OPERATION_G1_MULTIEXP => {
-                Self::meter_in_base_field(operation, &rest)
-            },
-            OPERATION_G2_ADD | OPERATION_G2_MUL | OPERATION_G2_MULTIEXP => {
-                Self::meter_in_extension(operation, &rest)
-            },
-            OPERATION_PAIRING => {
-                Ok(1_000_000u64)
-            },
-            _ => {
-                Err(ApiError::InputError("Unknown operation type".to_owned()))
-            }
-        };
-
-        result
-    }
-
-    fn meter_addition<P: GroupGasMeteringParams>(
-        modulus: &BigUint
-    ) -> Result<u64, ApiError> {
-        use std::f64;
-        // apriori formula:
-        // CONSTANT + A*LIBMS^1 + B*LIMBS^2 + C*LIMBS^3
-        // linear term account for additions and should be small
-        // quadratic term accounts for multiplications and should give the largest contribution
-        // cubic term reflects inversions
-
-        // let (modulus, _, _) = parse_g1_curve_parameters(&bytes)?;
-        let num_limbs = num_limbs_for_modulus(&modulus)? as f64;
-        let price = evaluate_poly(&vec![
-            P::ADDITION_CONSTANT,
-            P::ADD_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER,
-            P::ADD_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER,
-            P::ADD_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER
-        ], num_limbs)?;
-        let price = price as u64;
-        return Ok(price)
-    }
-
-    fn meter_multiplication<P: GroupGasMeteringParams>(
-        modulus: &BigUint,
-        order: &BigUint
-    ) -> Result<u64, ApiError> {
-        use std::f64;
-        // apriori formula:
-        // CONSTANT + (A*LIBMS^1 + B*LIMBS^2)*ORDER_WORDS + C*LIMBS^3
-        // linear term account for additions and should be small
-        // quadratic term accounts for multiplications and should give the largest contribution
-        // cubic term reflects inversions
-
-        // let (modulus, order, _) = parse_g1_curve_parameters(&bytes)?;
-        let num_limbs = num_limbs_for_modulus(&modulus)? as f64;
-        let num_order_words = num_units_for_group_order(&order)? as f64;
-
-        let inner_term = evaluate_poly(&vec![
-            0f64,
-            P::MUL_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER,
-            P::MUL_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER,
-        ], num_limbs)?;
-        let order_words_factor = num_order_words * P::ORDER_UNITS_LINEAR_TERM;
-        let inner_term = inner_term * order_words_factor;
-
-        let cubic_term = evaluate_poly(&vec![
-            0f64,
-            0f64,
-            0f64,
-            P::MUL_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER
-        ], num_limbs)?;
-
-        let price = P::MULTIPLICATION_CONSTANT;
-        let price = price + inner_term;
-        let price = price + cubic_term;
-        let price = price as u64;
-
-        return Ok(price)
-    }
-
-    fn meter_multiexp<P: GroupGasMeteringParams>(
-        modulus: &BigUint,
-        order: &BigUint,
-        rest: &[u8]
-    ) -> Result<u64, ApiError> {
-        use std::f64;
-        // apriori formula:
-        // CONSTANT + (A*LIBMS^1 + B*LIMBS^2)*ORDER_WORDS*NUM_PAIR*DISCOUNT + C*LIMBS^3
-        // linear term account for additions and should be small
-        // quadratic term accounts for multiplications and should give the largest contribution
-        // cubic term reflects inversions
-
-        // let (modulus, order, rest) = parse_g1_curve_parameters(&bytes)?;
-        let (num_pairs_encoding, _) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
-        let num_pairs = num_pairs_encoding[0] as f64;
-        if num_pairs == 0f64 {
-            return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
-        }
-
-        let num_limbs = num_limbs_for_modulus(&modulus)? as f64;
-        let num_order_words = num_units_for_group_order(&order)? as f64;
-
-        let inner_term = evaluate_poly(&vec![
-            0f64,
-            P::MUL_FIELD_MODULUS_LIMBS_LINEAR_TERM_MULTIPLIER,
-            P::MUL_FIELD_MODULUS_LIMBS_QUADRATIC_TERM_MULTIPLIER,
-        ], num_limbs)?;
-        let order_words_factor = num_order_words * P::ORDER_UNITS_LINEAR_TERM;
-        let num_pair_factor = order_words_factor * num_pairs;
-        let num_pair_factor = num_pair_factor* P::MULTIEXP_DISCOUNT;
-        let inner_term = inner_term * num_pair_factor;
-
-        let cubic_term = evaluate_poly(&vec![
-            0f64,
-            0f64,
-            0f64,
-            P::MUL_FIELD_MODULUS_LIMBS_CUBIC_TERM_MULTIPLIER
-        ], num_limbs)?;
-
-        let price = P::MULTIEXP_CONSTANT;
-        let price = price + inner_term;
-        let price = price + cubic_term;
-
-        let price = price as u64;
-        return Ok(price)
-    }
-
-    fn meter_in_base_field(operation: u8, bytes: &[u8]) -> Result<u64, ApiError> {
-        let (modulus, order, rest) = parse_g1_curve_parameters(&bytes)?;
-        let result = match operation {
             OPERATION_G1_ADD => {
-                Self::meter_addition::<G1GasMeteringParams>(&modulus)
+                meter_addition_g1(&rest)
+            },
+            OPERATION_G2_ADD => {
+                meter_addition_g2(&rest)
             },
             OPERATION_G1_MUL => {
-                Self::meter_multiplication::<G1GasMeteringParams>(&modulus, &order)
+                meter_multiplication_g1(&rest)
             },
-            OPERATION_G1_MULTIEXP => {
-                Self::meter_multiexp::<G1GasMeteringParams>(&modulus, &order, &rest)
-            },
+            OPERATION_G2_MUL => {
+                meter_multiplication_g2(&rest)
+            }
+            // OPERATION_G1_ADD | OPERATION_G1_MUL | OPERATION_G1_MULTIEXP => {
+            //     Self::meter_in_base_field(operation, &rest)
+            // },
+            // OPERATION_G2_ADD | OPERATION_G2_MUL | OPERATION_G2_MULTIEXP => {
+            //     Self::meter_in_extension(operation, &rest)
+            // },
+            // OPERATION_PAIRING => {
+            //     Ok(1_000_000u64)
+            // },
             _ => {
                 Err(ApiError::InputError("Unknown operation type".to_owned()))
-            }
-        };
-
-        result
-    }
-
-    fn meter_in_extension(operation: u8, bytes: &[u8]) -> Result<u64, ApiError> {
-        let (modulus, order, extension_degree, rest) = parse_g2_curve_parameters(&bytes)?;
-        let result = match extension_degree {
-            EXTENSION_DEGREE_2 => {
-                match operation {
-                    OPERATION_G2_ADD => {
-                        Self::meter_addition::<G2GasMeteringParamsFp2>(&modulus)
-                    },
-                    OPERATION_G2_MUL => {
-                        Self::meter_multiplication::<G2GasMeteringParamsFp2>(&modulus, &order)
-                    },
-                    OPERATION_G2_MULTIEXP => {
-                        Self::meter_multiexp::<G2GasMeteringParamsFp2>(&modulus, &order, &rest)
-                    },
-                    _ => {
-                        Err(ApiError::InputError("Unknown operation type".to_owned()))
-                    }
-                }
-            },
-            EXTENSION_DEGREE_3 => {
-                match operation {
-                    OPERATION_G2_ADD => {
-                        Self::meter_addition::<G2GasMeteringParamsFp3>(&modulus)
-                    },
-                    OPERATION_G2_MUL => {
-                        Self::meter_multiplication::<G2GasMeteringParamsFp3>(&modulus, &order)
-                    },
-                    OPERATION_G2_MULTIEXP => {
-                        Self::meter_multiexp::<G2GasMeteringParamsFp3>(&modulus, &order, &rest)
-                    },
-                    _ => {
-                        Err(ApiError::InputError("Unknown operation type".to_owned()))
-                    }
-                }
-            },
-            _ => {
-                Err(ApiError::InputError("Unknown extension degree".to_owned()))
             }
         };
 

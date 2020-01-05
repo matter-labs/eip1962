@@ -108,8 +108,7 @@ pub(crate) static MULTIEXP_PARAMS_INSTANCE: Lazy<G1G2MultiexpParams> = Lazy::new
     crate::serde_json::from_str(MULTIEXP_PARAMS_JSON).expect("must deserialize parameters")
 });
 
-
-fn parse_tuple_usize_u64<'de, D>(deserializer: D) -> Result<Vec<(usize, u64)>, D::Error>
+pub(crate) fn parse_tuple_usize_u64<'de, D>(deserializer: D) -> Result<Vec<(usize, u64)>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -147,7 +146,7 @@ where
     Ok(result)
 }
 
-fn parse_hashmap_usize_u64<'de, D>(deserializer: D) -> Result<HashMap<usize, u64>, D::Error>
+pub(crate) fn parse_hashmap_usize_u64<'de, D>(deserializer: D) -> Result<HashMap<usize, u64>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -185,7 +184,7 @@ where
     Ok(result)
 }
 
-fn parse_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
+pub(crate) fn parse_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -195,7 +194,7 @@ where
     Ok(value)
 }
 
-fn parse_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
+pub(crate) fn parse_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -265,7 +264,6 @@ pub(crate) fn meter_multiexp<P: ArithmeticMultiplicationParams, M: ArithmeticMul
 mod test {
     #[test]
     fn test_deserialization() {
-        use super::*;
         let t = &*super::G1_ADDITION_PARAMS_INSTANCE;
         println!("Params G1 add = {:?}", t);
 

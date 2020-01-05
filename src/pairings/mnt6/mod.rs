@@ -963,6 +963,8 @@ mod tests {
         let group_order = BigUint::from_str_radix("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
         let group_order = biguint_to_u64_vec(group_order);
 
+        println!("Group order has {} words", group_order.len());
+
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
@@ -1012,6 +1014,13 @@ mod tests {
         let ate_loop_length = BigUint::from_str_radix("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480168338007954582497829268616217645022027066087172884188759553810237800430314078304362451150", 10).unwrap();
 
         println!("Miller loop length is {} bits", ate_loop_length.bits());
+        println!("Miller loop hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(ate_loop_length.clone())));
+
+        println!("Exp w0 length is {} bits", w0.bits());
+        println!("Exp w0 hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(w0.clone())));
+
+        println!("Exp w1 length is {} bits", w1.bits());
+        println!("Exp w1 hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(w1.clone())));
         
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());

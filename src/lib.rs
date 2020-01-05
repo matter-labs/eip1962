@@ -178,11 +178,7 @@ mod tests {
     #[test]
     fn test_wnaf_decomposition() {
         use crate::representation::ElementRepr;
-        use rand::{RngCore, SeedableRng};
-        use rand_xorshift::XorShiftRng;
         use crate::representation::IntoWnaf;
-
-        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let mut scalar = U256Repr::default();
         let mut bytes = vec![0u8; 32];

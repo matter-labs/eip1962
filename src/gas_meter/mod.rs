@@ -225,7 +225,7 @@ impl GasMeter {
                 meter_multiexp_g2(&rest)
             },
             OPERATION_PAIRING => {
-                let (curve_type, rest) = split(bytes, CURVE_TYPE_LENGTH, "Input should be longer than curve type encoding")?;
+                let (curve_type, rest) = split(rest, CURVE_TYPE_LENGTH, "Input should be longer than curve type encoding")?;
 
                 match curve_type[0] {
                     BLS12 => {

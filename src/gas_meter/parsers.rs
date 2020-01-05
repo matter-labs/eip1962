@@ -86,9 +86,10 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
     let ((modulus, modulus_len), rest) = get_base_field_params(&bytes)?;
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get A parameter")?;
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get B parameter")?;
-    let (_, rest) = split(rest, modulus_len, "Input is not long enough to get non-residue")?;
 
     let (_, order, rest) = parse_group_order_from_encoding(rest)?;
+
+    let (_, rest) = split(rest, modulus_len, "Input is not long enough to get non-residue")?;
 
     let (x, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_ATE_LOOP_COUNT)?;
     if x.is_zero() {
@@ -153,6 +154,72 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
             (ate_loop_bits as u64, ate_loop_hamming as u64),
             (exp_w0_bits as u64, exp_w0_hamming as u64),
             (exp_w1_bits as u64, exp_w1_hamming as u64),
+            rest
+        )
+    )
+}
+
+pub(crate) fn parse_bls12_bn_pairing_parameters<'a>(bytes: &'a [u8], max_x_bit_limit: usize) -> Result<(
+    MaxFieldUint, 
+    MaxGroupSizeUint,
+    usize,
+    MaxLoopParametersUint,
+    bool,
+    &'a [u8]), ApiError> 
+{
+    use crate::pairings::TwistType;
+
+    let ((modulus, modulus_len), rest) = get_base_field_params(&bytes)?;
+    let (_, rest) = split(rest, modulus_len, "Input is not long enough to get A parameter")?;
+    let (_, rest) = split(rest, modulus_len, "Input is not long enough to get B parameter")?;
+
+    let (_, order, rest) = parse_group_order_from_encoding(rest)?;
+    
+    let (_, rest) = split(rest, modulus_len, "Input is not long enough to get Fp2 non-residue")?;
+    let (_, rest) = split(rest, modulus_len*2, "Input is not long enough to get Fp6/Fp12 non-residue")?;
+
+    let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
+
+    let _ = match twist_type_encoding[0] {
+        TWIST_TYPE_D => TwistType::D,
+        TWIST_TYPE_M => TwistType::M, 
+        _ => {
+            return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
+        },
+    };
+
+    let (x, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, max_x_bit_limit)?;
+    if x.is_zero() {
+        return Err(ApiError::InputError("Ate pairing loop count parameters can not be zero".to_owned()));
+    }
+
+    let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
+    let x_is_negative = match x_sign[0] {
+        SIGN_PLUS => false,
+        SIGN_MINUS => true,
+        _ => {
+            return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
+        },
+    };
+
+    let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
+    let num_pairs = num_pairs_encoding[0] as usize;
+
+    if num_pairs == 0 {
+        return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+    }
+    
+    if rest.len() == 0 {
+        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+    }
+
+    Ok(
+        (
+            modulus,
+            order,
+            num_pairs,
+            x,
+            x_is_negative,
             rest
         )
     )

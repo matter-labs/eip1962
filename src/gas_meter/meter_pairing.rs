@@ -1,5 +1,4 @@
-use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
+use serde::{Deserialize};
 use crate::errors::ApiError;
 
 use crate::once_cell::sync::Lazy;
@@ -8,6 +7,7 @@ use super::meter_arith::*;
 use super::parsers::*;
 
 use crate::public_interface::decode_utils::*;
+use crate::public_interface::sane_limits::*;
 
 pub(crate) const MNT4_MAX_MODULUS_POWER: usize = 4;
 pub(crate) const MNT6_MAX_MODULUS_POWER: usize = 6;
@@ -22,7 +22,33 @@ pub(crate) struct MntPairingParams {
 
     #[serde(deserialize_with = "parse_u64")]
     #[serde(rename = "multiplier")]
-    discount_multiplier: u64,
+    multiplier: u64,
+
+    miller_features: Vec<(String, u64)>,
+
+    miller: Vec<(u64, Vec<(usize, usize)>)>,
+
+    final_exp_features: Vec<(String, u64)>,
+
+    final_exp: Vec<(u64, Vec<(usize, usize)>)>
+}
+
+#[derive(Clone, Deserialize, Debug)]
+pub(crate) struct Bls12PairingParams {
+    multiplier: u64,
+
+    miller_features: Vec<(String, u64)>,
+
+    miller: Vec<(u64, Vec<(usize, usize)>)>,
+
+    final_exp_features: Vec<(String, u64)>,
+
+    final_exp: Vec<(u64, Vec<(usize, usize)>)>
+}
+
+#[derive(Clone, Deserialize, Debug)]
+pub(crate) struct BnPairingParams {
+    multiplier: u64,
 
     miller_features: Vec<(String, u64)>,
 
@@ -35,6 +61,8 @@ pub(crate) struct MntPairingParams {
 
 static MNT4_PARAMS_JSON: &'static str = include_str!("mnt4_model.json");
 static MNT6_PARAMS_JSON: &'static str = include_str!("mnt6_model.json");
+static BLS12_PARAMS_JSON: &'static str = include_str!("bls12_model.json");
+static BN_PARAMS_JSON: &'static str = include_str!("bn_model.json");
 
 pub(crate) static MNT4_PARAMS_INSTANCE: Lazy<MntPairingParams> = Lazy::new(|| {
     crate::serde_json::from_str(MNT4_PARAMS_JSON).expect("must deserialize parameters")
@@ -44,17 +72,15 @@ pub(crate) static MNT6_PARAMS_INSTANCE: Lazy<MntPairingParams> = Lazy::new(|| {
     crate::serde_json::from_str(MNT6_PARAMS_JSON).expect("must deserialize parameters")
 });
 
+pub(crate) static BLS12_PARAMS_INSTANCE: Lazy<Bls12PairingParams> = Lazy::new(|| {
+    crate::serde_json::from_str(BLS12_PARAMS_JSON).expect("must deserialize parameters")
+});
+
+pub(crate) static BN_PARAMS_INSTANCE: Lazy<BnPairingParams> = Lazy::new(|| {
+    crate::serde_json::from_str(BN_PARAMS_JSON).expect("must deserialize parameters")
+});
+
 pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_power: usize) -> Result<u64, ApiError> {
-    const GROUP_LIMBS_INDEX: usize = 0;
-    const ATE_LOOP_BITS_INDEX: usize = 1;
-    const ATE_LOOP_HAMMING_INDEX: usize = 2;
-    const EXP_W0_LOOP_BITS_INDEX: usize = 3;
-    const EXP_W0_HAMMING_INDEX: usize = 4;
-    const EXP_W1_LOOP_BITS_INDEX: usize = 3;
-    const EXP_W1_HAMMING_INDEX: usize = 4;
-
-    debug_assert!(max_power == MNT4_MAX_MODULUS_POWER || max_power == MNT6_MAX_MODULUS_POWER);
-
     let (
         modulus, 
         order, 
@@ -67,6 +93,39 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     let order_limbs = num_units_for_group_order(&order)?;
+
+    calculate_mnt_pairing_cost(
+        modulus_limbs,
+        order_limbs,
+        num_pairs,
+        (ate_loop_bits, ate_loop_hamming), 
+        (exp_w0_bits, exp_w0_hamming),
+        (exp_w1_bits, exp_w1_hamming),
+        params,
+        max_power
+    )
+}
+
+fn calculate_mnt_pairing_cost(
+    modulus_limbs: usize,
+    order_limbs: usize,
+    num_pairs: usize,
+    (ate_loop_bits, ate_loop_hamming): (u64, u64), 
+    (exp_w0_bits, exp_w0_hamming): (u64, u64),
+    (exp_w1_bits, exp_w1_hamming): (u64, u64),
+    params: &MntPairingParams, 
+    max_power: usize
+
+) -> Result<u64, ApiError> {
+    const GROUP_LIMBS_INDEX: usize = 0;
+    const ATE_LOOP_BITS_INDEX: usize = 1;
+    const ATE_LOOP_HAMMING_INDEX: usize = 2;
+    const EXP_W0_LOOP_BITS_INDEX: usize = 3;
+    const EXP_W0_HAMMING_INDEX: usize = 4;
+    const EXP_W1_LOOP_BITS_INDEX: usize = 3;
+    const EXP_W1_HAMMING_INDEX: usize = 4;
+
+    debug_assert!(max_power == MNT4_MAX_MODULUS_POWER || max_power == MNT6_MAX_MODULUS_POWER);
 
     let mut one_off: Vec<_> = params.one_off.iter().filter(|(limbs, _)| *limbs == modulus_limbs).collect();
     if one_off.len() != 1 {
@@ -107,6 +166,189 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
     let mut result = one_off;
     result = result.checked_add(miller_cost).ok_or(ApiError::Overflow)?;
     result = result.checked_add(final_exp_cost).ok_or(ApiError::Overflow)?;
+    result = result.checked_div(params.multiplier).ok_or(ApiError::Overflow)?;
+
+    Ok(result)
+}
+
+pub(crate) fn meter_bls12_pairing(input: &[u8], params: &Bls12PairingParams, max_power: usize) -> Result<u64, ApiError> {
+    let (
+        modulus, 
+        order, 
+        num_pairs, 
+        x,
+        _,
+        _
+    ) = parse_bls12_bn_pairing_parameters(&input, MAX_BLS12_X_BIT_LENGTH)?;
+
+    let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+    let order_limbs = num_units_for_group_order(&order)?;
+
+    let x_bits = x.bits();
+    let x_hamming = calculate_hamming_weight(&x.as_ref());
+
+    if x_hamming > MAX_BLS12_X_HAMMING {
+        return Err(ApiError::InputError(format!("Hamming weight for scalar is too large, file {}, line {}", file!(), line!())));
+    }
+
+    calculate_bls12_pairing_cost(
+        modulus_limbs,
+        order_limbs,
+        num_pairs,
+        (x_bits as u64, x_hamming as u64),
+        params,
+        max_power
+    )
+}
+
+
+pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power: usize) -> Result<u64, ApiError> {
+    let (
+        modulus, 
+        order, 
+        num_pairs, 
+        u,
+        u_is_negative,
+        _
+    ) = parse_bls12_bn_pairing_parameters(&input, MAX_BN_U_BIT_LENGTH)?;
+    use crate::constants::MaxLoopParametersUint;
+
+    let modulus_limbs = num_limbs_for_modulus(&modulus)?;
+    let order_limbs = num_units_for_group_order(&order)?;
+
+    let u_bits = u.bits();
+    let u_hamming = calculate_hamming_weight(&u.as_ref());
+
+    let two = MaxLoopParametersUint::from(2u64);
+    let six = MaxLoopParametersUint::from(6u64);
+
+    // we need only absolute value of 6u+2, so manually handle negative and positive U
+    let six_u_plus_two = if u_is_negative {
+        let six_u_plus_two = (six * u) - two;
+
+        six_u_plus_two
+    } else {
+        let six_u_plus_two = (six * u) + two;
+
+        six_u_plus_two
+    };
+
+    let six_u_plus_two_bits = six_u_plus_two.bits();
+
+    let six_u_plus_two_hamming = calculate_hamming_weight(six_u_plus_two.as_ref());
+
+    if six_u_plus_two_hamming > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
+        return Err(ApiError::InputError(format!("Hamming weight for scalar is too large, file {}, line {}", file!(), line!())));
+    }
+
+    calculate_bn_pairing_cost(
+        modulus_limbs,
+        order_limbs,
+        num_pairs,
+        (six_u_plus_two_bits as u64, six_u_plus_two_hamming as u64),
+        (u_bits as u64, u_hamming as u64),
+        params,
+        max_power
+    )
+}
+
+fn calculate_bls12_pairing_cost(
+    modulus_limbs: usize,
+    order_limbs: usize,
+    num_pairs: usize,
+    (x_bits, x_hamming): (u64, u64),
+    params: &Bls12PairingParams, 
+    max_power: usize
+
+) -> Result<u64, ApiError> {
+    const X_BITS_INDEX: usize = 0;
+    const X_HAMMING_INDEX: usize = 1;
+    const GROUP_LIMBS_INDEX: usize = 2;
+
+    debug_assert!(max_power == BLS12_MAX_MODULUS_POWER);
+
+    let modulus_limbs_powers = make_powers(modulus_limbs as u64, max_power)?;
+    let params_vector = vec![x_bits, x_hamming, order_limbs as u64];
+
+    let miller_cost = {
+        let miller_params = vec![
+            &params_vector[X_BITS_INDEX..(X_BITS_INDEX+1)], 
+            &params_vector[X_HAMMING_INDEX..(X_HAMMING_INDEX+1)], 
+            &params_vector[GROUP_LIMBS_INDEX..(GROUP_LIMBS_INDEX+1)], 
+            &modulus_limbs_powers[..] 
+            ];
+        let mut miller_cost = eval_model(&params.miller, &miller_params)?;
+        miller_cost = miller_cost.checked_mul(num_pairs as u64).ok_or(ApiError::Overflow)?;
+
+        miller_cost
+    };
+
+    let final_exp_cost = {
+        let final_exp_params = vec![
+            &params_vector[X_BITS_INDEX..(X_BITS_INDEX+1)], 
+            &params_vector[X_HAMMING_INDEX..(X_HAMMING_INDEX+1)], 
+            &modulus_limbs_powers[..] 
+            ];
+        let final_exp_cost = eval_model(&params.final_exp, &final_exp_params)?;
+
+        final_exp_cost
+    };
+
+    let mut result = miller_cost;
+    result = result.checked_add(final_exp_cost).ok_or(ApiError::Overflow)?;
+    result = result.checked_div(params.multiplier).ok_or(ApiError::Overflow)?;
+
+    Ok(result)
+}
+
+fn calculate_bn_pairing_cost(
+    modulus_limbs: usize,
+    order_limbs: usize,
+    num_pairs: usize,
+    (six_u_plus_two_bits, six_u_plus_two_hamming): (u64, u64),
+    (u_bits, u_hamming): (u64, u64),
+    params: &BnPairingParams, 
+    max_power: usize
+
+) -> Result<u64, ApiError> {
+    const U_BITS_INDEX: usize = 0;
+    const U_HAMMING_INDEX: usize = 1;
+    const SIX_U_PLUS_TWO_BITS_INDEX: usize = 2;
+    const SIX_U_PLUS_TWO_HAMMING_INDEX: usize = 3;
+    const GROUP_LIMBS_INDEX: usize = 4;
+
+    debug_assert!(max_power == BN_MAX_MODULUS_POWER);
+
+    let modulus_limbs_powers = make_powers(modulus_limbs as u64, max_power)?;
+    let params_vector = vec![u_bits, u_hamming, six_u_plus_two_bits, six_u_plus_two_hamming, order_limbs as u64];
+
+    let miller_cost = {
+        let miller_params = vec![
+            &params_vector[SIX_U_PLUS_TWO_BITS_INDEX..(SIX_U_PLUS_TWO_BITS_INDEX+1)], 
+            &params_vector[SIX_U_PLUS_TWO_HAMMING_INDEX..(SIX_U_PLUS_TWO_HAMMING_INDEX+1)], 
+            &params_vector[GROUP_LIMBS_INDEX..(GROUP_LIMBS_INDEX+1)], 
+            &modulus_limbs_powers[..] 
+            ];
+        let mut miller_cost = eval_model(&params.miller, &miller_params)?;
+        miller_cost = miller_cost.checked_mul(num_pairs as u64).ok_or(ApiError::Overflow)?;
+
+        miller_cost
+    };
+
+    let final_exp_cost = {
+        let final_exp_params = vec![
+            &params_vector[U_BITS_INDEX..(U_BITS_INDEX+1)], 
+            &params_vector[U_HAMMING_INDEX..(U_HAMMING_INDEX+1)], 
+            &modulus_limbs_powers[..] 
+            ];
+        let final_exp_cost = eval_model(&params.final_exp, &final_exp_params)?;
+
+        final_exp_cost
+    };
+
+    let mut result = miller_cost;
+    result = result.checked_add(final_exp_cost).ok_or(ApiError::Overflow)?;
+    result = result.checked_div(params.multiplier).ok_or(ApiError::Overflow)?;
 
     Ok(result)
 }
@@ -116,7 +358,20 @@ fn eval_model(
     variables: &[ &[u64] ]
 ) -> Result<u64, ApiError> {
     let mut final_result = 0u64;
-    if coeffs_variables_and_powers.len() != variables.len() {
+    if coeffs_variables_and_powers.len() == 0 {
+        return Err(ApiError::MissingValue);
+    }
+    let mut max_var_id = 0usize;
+    for (_, var_and_power) in coeffs_variables_and_powers.iter() {
+        for (variable, _) in var_and_power.iter() {
+            if max_var_id < *variable {
+                max_var_id = *variable;
+            }
+        }
+    }
+
+    if max_var_id +1 != variables.len() {
+        println!("Max variable ID (zero enumerated) {} is missing: coeffs = {:?}, variables = {:?}", max_var_id, coeffs_variables_and_powers, variables);
         return Err(ApiError::MissingValue);
     }
 
@@ -155,22 +410,26 @@ mod test {
         let t = &*super::MNT6_PARAMS_INSTANCE;
         println!("Params MNT6 = {:?}", t);
 
-        // let t = &*super::G2_EXT_2_ADDITION_PARAMS_INSTANCE;
-        // println!("Params G2 add ext 2= {:?}", t);
+        let t = &*super::BLS12_PARAMS_INSTANCE;
+        println!("Params BLS12 = {:?}", t);
 
-        // let t = &*super::G2_EXT_3_ADDITION_PARAMS_INSTANCE;
-        // println!("Params G2 add ext 3 = {:?}", t);
+        let t = &*super::BN_PARAMS_INSTANCE;
+        println!("Params BN = {:?}", t);
+    }
 
-        // let t = &*super::G1_MULTIPLICATION_PARAMS_INSTANCE;
-        // println!("Params G1 mul = {:?}", t);
+    #[test]
+    fn test_calculate_example_prices() {
+        let ey_pendulum_gas_cost = super::calculate_mnt_pairing_cost(
+            10, 
+            5, 
+            4, 
+            (613, 292), 
+            (613, 312), 
+            (315, 157), 
+            &*super::MNT6_PARAMS_INSTANCE, 
+            4
+        ).unwrap();
 
-        // let t = &*super::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE;
-        // println!("Params G2 mul ext 2 = {:?}", t);
-
-        // let t = &*super::G2_EXT_3_MULTIPLICATION_PARAMS_INSTANCE;
-        // println!("Params G2 mul ext 3 = {:?}", t);
-
-        // let t = &*super::MULTIEXP_PARAMS_INSTANCE;
-        // println!("Multiexp discounts = {:?}", t);
+        println!("EY pendulum cost for 4 pairs = {}", ey_pendulum_gas_cost);
     }
 }

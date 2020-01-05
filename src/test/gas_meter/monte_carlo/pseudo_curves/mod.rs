@@ -114,7 +114,7 @@ fn run_pseudo_curves_monte_carlo() {
                         w1_bits,
                         w1_hamming,                        
                         *num_pairs);
-                    for r in reports.into_iter() {
+                    for (r, _) in reports.into_iter() {
                         got_results = true;
                         mnt4_writer.write_report(r);
                     }
@@ -146,7 +146,7 @@ fn run_pseudo_curves_monte_carlo() {
                         w1_bits,
                         w1_hamming,                        
                         *num_pairs);
-                    for r in reports.into_iter() {
+                    for (r, _) in reports.into_iter() {
                         got_results = true;
                         mnt6_writer.write_report(r);
                     }
@@ -307,7 +307,7 @@ fn run_mnt_pseudo_curves_monte_carlo() {
                         w1_bits,
                         w1_hamming,                        
                         *num_pairs);
-                    for r in reports.into_iter() {
+                    for (r, _) in reports.into_iter() {
                         got_results = true;
                         mnt4_writer.write_report(r);
                     }
@@ -339,7 +339,7 @@ fn run_mnt_pseudo_curves_monte_carlo() {
                         w1_bits,
                         w1_hamming,                        
                         *num_pairs);
-                    for r in reports.into_iter() {
+                    for (r, _) in reports.into_iter() {
                         got_results = true;
                         mnt6_writer.write_report(r);
                     }

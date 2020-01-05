@@ -17,6 +17,8 @@ use rand::distributions::Uniform;
 
 use super::gen_params;
 
+const GAS_FACTOR_FROM_MICROS: u64 = 15u64;
+
 #[test]
 #[ignore]
 fn measure_one_off_costs_monte_carlo() {
@@ -83,7 +85,7 @@ fn measure_one_off_costs_monte_carlo() {
                         w1_bits,
                         w1_hamming,                        
                         *num_pairs);
-                    for r in reports.into_iter() {
+                    for (r, _) in reports.into_iter() {
                         mnt4_writer.write_report(r);
                     }
                 }
@@ -109,7 +111,7 @@ fn measure_one_off_costs_monte_carlo() {
                         w1_bits,
                         w1_hamming,                        
                         *num_pairs);
-                    for r in reports.into_iter() {
+                    for (r, _) in reports.into_iter() {
                         mnt6_writer.write_report(r);
                     }
                 }
@@ -220,7 +222,7 @@ fn parallel_measure_one_off_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             mnt4_tx.send(r).unwrap();
                         }
                     }
@@ -246,7 +248,7 @@ fn parallel_measure_one_off_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             mnt6_tx.send(r).unwrap();
                         }
                     }
@@ -406,7 +408,7 @@ fn parallel_measure_miller_loop_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             mnt4_tx.send(r).unwrap();
                         }
                     }
@@ -433,7 +435,7 @@ fn parallel_measure_miller_loop_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             mnt6_tx.send(r).unwrap();
                         }
                     }
@@ -565,7 +567,7 @@ fn parallel_measure_final_exp_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             mnt4_tx.send(r).unwrap();
                         }
                     }
@@ -593,7 +595,7 @@ fn parallel_measure_final_exp_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             mnt6_tx.send(r).unwrap();
                         }
                     }
@@ -730,7 +732,7 @@ fn parallel_measure_alt_final_exp_pairing_costs() {
                                 w1_bits,
                                 w1_hamming,                        
                                 *num_pairs);
-                            for r in reports.into_iter() {
+                            for (r, _) in reports.into_iter() {
                                 mnt4_tx.send(r).unwrap();
                             }
                         }
@@ -763,7 +765,7 @@ fn parallel_measure_alt_final_exp_pairing_costs() {
                                 w1_bits,
                                 w1_hamming,                        
                                 *num_pairs);
-                            for r in reports.into_iter() {
+                            for (r, _) in reports.into_iter() {
                                 mnt6_tx.send(r).unwrap();
                             }
                         }
@@ -818,6 +820,226 @@ fn parallel_measure_alt_final_exp_pairing_costs() {
             break;
         }
     }
+
+    pb.finish_with_message("Done");
+}
+
+#[test]
+#[ignore]
+fn parallel_check_correspondance_of_gas_metering_mnt() {
+    assert!(std::option_env!("GAS_METERING").is_some());
+
+    use rand::{SeedableRng};
+    use rand_xorshift::XorShiftRng;
+
+    let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    // const SAMPLES: usize = 1_000;
+    const NUM_BIT_LENGTHS: usize = 10;
+    const NUM_HAMMING_PER_BIT_LENGTH: usize = 1;
+    const SAMPLES: usize = NUM_BIT_LENGTHS * NUM_HAMMING_PER_BIT_LENGTH;
+
+    use std::thread;
+
+    use std::sync::mpsc::{channel, TryRecvError};
+
+    use rayon::prelude::*;
+
+    let (mnt4_tx, mnt4_rx) = channel();
+    let (mnt6_tx, mnt6_rx) = channel();
+
+    use indicatif::{ProgressBar, ProgressStyle};
+
+    let pb = ProgressBar::new(1u64);
+
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+        .progress_chars("##-"));
+
+    let pairs: [usize; 4] = [2, 4, 8, 16];
+
+    let mut parameters_space = vec![];
+    for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
+        for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
+            parameters_space.push((num_limbs, num_group_limbs, rng.clone(), pb.clone(), (mnt4_tx.clone(), mnt6_tx.clone())));
+        }
+    }
+
+    drop(mnt4_tx);
+    drop(mnt6_tx);
+
+    pb.set_length((parameters_space.len() * SAMPLES * 2) as u64);
+
+    let handler = thread::spawn(move || {
+        parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
+            let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
+            let w0_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH);
+            let w1_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH);
+            let mut max_diff_mnt4 = 0i64;
+            let mut max_diff_mnt6 = 0i64;
+
+            let mut worst_case_report_mnt4 = None;
+            let mut worst_case_report_mnt6 = None;
+
+            for _ in 0..NUM_BIT_LENGTHS {
+                {
+                let ate_bits = ate_rng.sample(&mut rng);
+                let ate_hamming = Uniform::new_inclusive(1, ate_bits);
+
+                let w0_bits = w0_bits_rng.sample(&mut rng);
+                let w0_hamming = Uniform::new_inclusive(1, w0_bits);
+                
+                let w1_bits = w1_bits_rng.sample(&mut rng);
+                let w1_hamming = Uniform::new_inclusive(1, w1_bits);
+
+                for _ in 0..NUM_HAMMING_PER_BIT_LENGTH {
+                    let ate_hamming = ate_hamming.sample(&mut rng);
+                    let w0_hamming = w0_hamming.sample(&mut rng);
+                    let w1_hamming = w1_hamming.sample(&mut rng);
+
+                        let curve = gen_params::random_mnt4_params(num_limbs, num_group_limbs, &mut rng);
+                        for num_pairs in pairs.iter() {
+                            let reports = mnt4::process_for_curve_and_bit_sizes(
+                                curve.clone(), 
+                                ate_bits, 
+                                ate_hamming,
+                                w0_bits,
+                                w0_hamming,
+                                w1_bits,
+                                w1_hamming,                        
+                                *num_pairs);
+                            for (r, data) in reports.into_iter() {
+                                let gas_estimated = crate::gas_meter::GasMeter::meter(&data);
+                                let elapsed = r.run_microseconds;
+                                if gas_estimated.is_ok() {
+                                    let running_gas = elapsed * GAS_FACTOR_FROM_MICROS;
+                                    let difference = (gas_estimated.unwrap() as i64) - (running_gas as i64);
+                    
+                                    if max_diff_mnt4.abs() < difference.abs() {
+                                        max_diff_mnt4 = difference;
+                                        worst_case_report_mnt4 = Some(r.clone());
+                                    }
+
+                                    mnt4_tx.send(difference).unwrap();
+                                } else {
+                                    println!("MNT4 gas estimation error {:?}", gas_estimated.err().unwrap());
+                                }
+                            }
+                        }
+                    }
+                    pb.inc(1);
+                }
+                {
+                    let ate_bits = ate_rng.sample(&mut rng);
+                    let ate_hamming = Uniform::new_inclusive(1, ate_bits);
+    
+                    let w0_bits = w0_bits_rng.sample(&mut rng);
+                    let w0_hamming = Uniform::new_inclusive(1, w0_bits);
+    
+                    let w1_bits = w1_bits_rng.sample(&mut rng);
+                    let w1_hamming = Uniform::new_inclusive(1, w1_bits);
+
+                    for _ in 0..NUM_HAMMING_PER_BIT_LENGTH {
+                        let ate_hamming = ate_hamming.sample(&mut rng);
+                        let w0_hamming = w0_hamming.sample(&mut rng);
+                        let w1_hamming = w1_hamming.sample(&mut rng);
+
+                        let curve = gen_params::random_mnt6_params(num_limbs, num_group_limbs, &mut rng);
+                        for num_pairs in pairs.iter() {
+                            let reports = mnt6::process_for_curve_and_bit_sizes(
+                                curve.clone(), 
+                                ate_bits, 
+                                ate_hamming,
+                                w0_bits,
+                                w0_hamming,
+                                w1_bits,
+                                w1_hamming,                        
+                                *num_pairs);
+                            for (r, data) in reports.into_iter() {
+                                let gas_estimated = crate::gas_meter::GasMeter::meter(&data);
+                                let elapsed = r.run_microseconds;
+                                if gas_estimated.is_ok() {
+                                    let running_gas = elapsed * GAS_FACTOR_FROM_MICROS;
+                                    let difference = (gas_estimated.unwrap() as i64) - (running_gas as i64);
+                    
+                                    if max_diff_mnt6.abs() < difference.abs() {
+                                        max_diff_mnt6 = difference;
+                                        worst_case_report_mnt6 = Some(r.clone());
+                                    }
+
+                                    mnt6_tx.send(difference).unwrap();
+                                } else {
+                                    println!("MNT6 gas estimation error {:?}", gas_estimated.err().unwrap());
+                                }
+                            }
+                        }
+
+                        pb.inc(1);
+                    }
+                }
+
+                println!("Max MNT4 difference is {} gas for report:\n{:?}", max_diff_mnt4, worst_case_report_mnt4);
+                println!("Max MNT6 difference is {} gas for report:\n{:?}", max_diff_mnt6, worst_case_report_mnt6);
+                
+            }
+        });
+    });
+
+
+    let mut max_difference_mnt4 = 0i64;
+    let mut max_difference_mnt6 = 0i64;
+
+    loop {
+        let mut all_empty = false;
+        let mut all_disconnected = false;
+        {
+            let subres = mnt4_rx.try_recv();
+            match subres {
+                Ok(subres) => {
+                    if max_difference_mnt4.abs() < subres.abs() {
+                        max_difference_mnt4 = subres;
+                    }
+                },
+                Err(TryRecvError::Empty) => {
+                    all_empty = true;
+                },
+                Err(TryRecvError::Disconnected) => {
+                    all_disconnected = true;
+                }
+            }
+        }
+        {
+            let subres = mnt6_rx.try_recv();
+            match subres {
+                Ok(subres) => {
+                    if max_difference_mnt6.abs() < subres.abs() {
+                        max_difference_mnt6 = subres;
+                    }
+                },
+                Err(TryRecvError::Empty) => {
+                    all_empty = all_empty & true;
+                },
+                Err(TryRecvError::Disconnected) => {
+                    all_disconnected = all_disconnected & true;
+                }
+            }
+        }
+
+        if all_empty {
+            std::thread::sleep(std::time::Duration::from_millis(2000u64));
+        }
+
+        if all_disconnected {
+            pb.println("Joining threads");
+            handler.join().unwrap();
+            break;
+        }
+    }
+
+    // pb.println("Joining threads");
+    // handler.join().unwrap();
+
+    println!("Max difference for MNT4 = {} gas", max_difference_mnt4);
+    println!("Max difference for MNT6 = {} gas", max_difference_mnt6);
 
     pb.finish_with_message("Done");
 }

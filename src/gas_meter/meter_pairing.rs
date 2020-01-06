@@ -17,11 +17,11 @@ pub(crate) const BLS12_MAX_MODULUS_POWER: usize = 6;
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct MntPairingParams {
-    #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
     #[serde(rename = "one_off")]
     one_off: Vec<(usize, u64)>,
 
-    #[serde(deserialize_with = "parse_u64")]
+    // #[serde(deserialize_with = "parse_u64")]
     #[serde(rename = "multiplier")]
     multiplier: u64,
 

@@ -20,7 +20,7 @@ pub(crate) trait ArithmeticMultiexpParams {
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct G1G2AdditionParams {
-    #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
     #[serde(rename = "price")]
     lookup_parameters: Vec<(usize, u64)>
 }
@@ -33,11 +33,11 @@ impl ArithmeticAdditionParams for G1G2AdditionParams {
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct G1G2MultiplicationParams {
-    #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
     #[serde(rename = "base")]
     base: Vec<(usize, u64)>,
 
-    #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
     #[serde(rename = "per_limb")]
     per_limb: Vec<(usize, u64)>
 }
@@ -50,19 +50,20 @@ impl ArithmeticMultiplicationParams for G1G2MultiplicationParams {
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct G1G2MultiexpParams {
-    #[serde(deserialize_with = "parse_usize")]
+    // #[serde(deserialize_with = "parse_usize")]
     #[serde(rename = "max_pairs")]
     max_pairs: usize,
 
-    #[serde(deserialize_with = "parse_u64")]
+    // #[serde(deserialize_with = "parse_u64")]
     #[serde(rename = "max_discount")]
     max_discount: u64,
 
-    #[serde(deserialize_with = "parse_u64")]
+    // #[serde(deserialize_with = "parse_u64")]
     #[serde(rename = "discount_multiplier")]
     discount_multiplier: u64,
 
-    #[serde(deserialize_with = "parse_hashmap_usize_u64")]
+    // #[serde(deserialize_with = "parse_hashmap_usize_u64")]
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
     #[serde(rename = "discounts")]
     discounts: HashMap<usize, u64>
 }
@@ -172,6 +173,45 @@ where
             while let Some(value) = seq.next_element::<[Value; 2]>()? {
                 let first = value[0].as_str().expect("is a string").parse::<usize>().expect(&format!("should be an integer {:?}", value[0]));
                 let second = value[1].as_str().expect("is a string").parse::<u64>().expect(&format!("should be an integer {:?}", value[1]));
+                results.insert(first, second);
+            }
+
+            Ok(results)
+        }
+    }
+
+    let visitor = MyVisitor;
+    let result = deserializer.deserialize_seq(visitor)?;
+
+    Ok(result)
+}
+
+
+pub(crate) fn parse_hashmap_usize_u64_from_ints<'de, D>(deserializer: D) -> Result<HashMap<usize, u64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde_json::Value;
+    use serde::de::{Visitor, SeqAccess};
+
+    struct MyVisitor;
+
+    impl<'de> Visitor<'de> for MyVisitor
+    {
+        type Value = HashMap<usize, u64>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a nonempty sequence of numbers")
+        }
+
+        fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+        where
+            S: SeqAccess<'de>,
+        {
+            let mut results = HashMap::with_capacity(seq.size_hint().unwrap_or(100));
+            while let Some(value) = seq.next_element::<[Value; 2]>()? {
+                let first = value[0].as_u64().expect(&format!("should be an integer {:?}", value[0])) as usize;
+                let second = value[1].as_u64().expect(&format!("should be an integer {:?}", value[1]));
                 results.insert(first, second);
             }
 

@@ -15,6 +15,7 @@ use crate::extension_towers::fp6_as_3_over_2;
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use num_traits::Num;
 use crate::pairings::*;
+use crate::constants::MaxFieldUint;
 
 use rust_test::Bencher;
 
@@ -25,11 +26,10 @@ fn bench_cp6_frobenius(b: &mut Bencher) {
     let nonres_repr = U832Repr::from(13);
     let mut fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
+    let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
     let mut extension_3 = Extension3::new(fp_non_residue.clone());
-    let (coeffs_1, coeffs_2) = frobenius_calculator_fp3(modulus.clone(), &extension_3).unwrap();
-    extension_3.frobenius_coeffs_c1 = coeffs_1;
-    extension_3.frobenius_coeffs_c2 = coeffs_2;
-    extension_3.frobenius_coeffs_are_calculated = true;
+    extension_3.calculate_frobenius_coeffs(&modulus).unwrap();
 
     let one = Fp::one(&base_field);
 
@@ -39,42 +39,8 @@ fn bench_cp6_frobenius(b: &mut Bencher) {
     let mut extension_6 = fp6_as_2_over_3::Extension2Over3::new(fp3_non_residue);
 
     b.iter(|| {
-        frobenius_calculator_fp6_as_2_over_3(modulus.clone(), &extension_6).unwrap()
+        extension_6.clone().calculate_frobenius_coeffs(&modulus).unwrap()
     });
-}
-
-#[bench]
-fn bench_bls12_381_frob_fp12(b: &mut Bencher) {
-    let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-    let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-    let mut fp_non_residue = Fp::one(&base_field);
-    fp_non_residue.negate(); // non-residue is -1
-
-    let mut extension_2 = Extension2::new(fp_non_residue);
-
-    let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
-    extension_2.frobenius_coeffs_c1 = coeffs;
-    extension_2.frobenius_coeffs_are_calculated = true;
-
-    let one = Fp::one(&base_field);
-
-    let mut fp2_non_residue = Fp2::zero(&extension_2);
-    fp2_non_residue.c0 = one.clone();
-    fp2_non_residue.c1 = one.clone();
-
-    let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
-
-    let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2(modulus.clone(), &extension_6).unwrap();
-
-    extension_6.frobenius_coeffs_c1 = coeffs_c1;
-    extension_6.frobenius_coeffs_c2 = coeffs_c2;
-    extension_6.frobenius_coeffs_are_calculated = true;
-
-    let mut fp2_non_residue = Fp2::zero(&extension_2);
-
-    let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
-
-    b.iter(|| frobenius_calculator_fp12(modulus.clone(), &extension_12).unwrap());
 }
 
 #[bench]
@@ -84,12 +50,11 @@ fn bench_bls12_381_frob_fp12_using_sliding(b: &mut Bencher) {
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
+ 
+    let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
-
-    let coeffs = frobenius_calculator_fp2(&extension_2).unwrap();
-    extension_2.frobenius_coeffs_c1 = coeffs;
-    extension_2.frobenius_coeffs_are_calculated = true;
+    extension_2.calculate_frobenius_coeffs(&modulus).unwrap();
 
     let one = Fp::one(&base_field);
 
@@ -100,16 +65,9 @@ fn bench_bls12_381_frob_fp12_using_sliding(b: &mut Bencher) {
     let base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 15, 7);
 
     let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
+    extension_6.calculate_frobenius_coeffs(&modulus, &base).unwrap();
 
-    let (coeffs_c1, coeffs_c2) = frobenius_calculator_fp6_as_3_over_2_using_sliding_window(modulus.clone(), &base, &extension_6).unwrap();
+    let extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
 
-    extension_6.frobenius_coeffs_c1 = coeffs_c1;
-    extension_6.frobenius_coeffs_c2 = coeffs_c2;
-    extension_6.frobenius_coeffs_are_calculated = true;
-
-    let mut fp2_non_residue = Fp2::zero(&extension_2);
-
-    let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
-
-    b.iter(|| frobenius_calculator_fp12_using_sliding_window(modulus.clone(), &base, &extension_12).unwrap());
+    b.iter(|| extension_12.clone().calculate_frobenius_coeffs(&modulus, &base).unwrap());
 }

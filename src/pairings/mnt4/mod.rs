@@ -15,10 +15,10 @@ pub struct MNT4Instance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub(crate) x: Vec<u64>,
+    pub(crate) x: &'a [u64],
     pub(crate) x_is_negative: bool,
-    pub(crate) exp_w0: Vec<u64>,
-    pub(crate) exp_w1: Vec<u64>,
+    pub(crate) exp_w0: &'a [u64],
+    pub(crate) exp_w1: &'a [u64],
     pub(crate) exp_w0_is_negative: bool,
     pub(crate) base_field: &'a F,
     pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
@@ -468,11 +468,17 @@ impl<
 
     fn pair<'b>
         (&self, points: &'b [CurvePoint<'a, CB>], twists: &'b [CurvePoint<'a, CTW>]) -> Option<Self::PairingResult> {
-            if points.len() == 0 || twists.len() == 0 || points.len() != twists.len() {
+            if points.len() != twists.len() {
                 return None;
             }
-            
-            let mut pairs = vec![];
+
+            if !std::option_env!("GAS_METERING").is_some() {
+                if points.len() == 0 || twists.len() == 0 {
+                    return None;
+                }
+            }
+
+            let mut pairs = Vec::with_capacity(points.len());
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
             }
@@ -490,7 +496,9 @@ impl<
 #[cfg(test)]
 mod tests {
     use num_bigint::BigUint;
-    use crate::field::{U320Repr, new_field, biguint_to_u64_vec};
+    use crate::field::{U320Repr, new_field};
+    use crate::test::biguint_to_u64_vec;
+    use crate::constants::MaxFieldUint;
     use crate::fp::Fp;
     use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp2::{Fp2, Extension2};
@@ -507,8 +515,10 @@ mod tests {
         let nonres_repr = U320Repr::from(17);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -516,7 +526,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("423894536526684178289416011533888240029318103673896002803341544124054745019340795360841685", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -545,8 +555,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("60760244141852568949126569781626075788424196370144486719385562369396875346601926534016838", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("363732850702582978263902770815145784459747722357071843971107674179038674942891694705904306", 10).unwrap().to_bytes_be();
@@ -581,10 +591,10 @@ mod tests {
         assert!(q.is_on_curve());
 
         let engine = super::MNT4Instance {
-            x: biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794944", 10).unwrap()),
+            x: &biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794944", 10).unwrap()),
             x_is_negative: false,
-            exp_w0: biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794945", 10).unwrap()),
-            exp_w1: vec![1u64],
+            exp_w0: &biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794945", 10).unwrap()),
+            exp_w1: &[1u64],
             exp_w0_is_negative: false,
             base_field: &base_field,
             curve: &curve,
@@ -627,9 +637,11 @@ mod tests {
         let base_field = new_field::<U768Repr>("41898490967918953402344214791240637128170709919953949071783502921025352812571106773058893763790338921418070971888253786114353726529584385201591605722013126468931404347949840543007986327743462853720628051692141265303114721689601", 10).unwrap();
         let nonres_repr = U768Repr::from(13);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -637,7 +649,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("28798803903456388891410036793299405764940372360099938340752576406393880372126970068421383312482853541572780087363938442377933706865252053507077543420534380486492786626556269083255657125025963825610840222568694137138741554679540", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -665,8 +677,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("23803503838482697364219212396100314255266282256287758532210460958670711284501374254909249084643549104668878996224193897061976788052185662569738774028756446662400954817676947337090686257134874703224133183061214213216866019444443", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("21091012152938225813050540665280291929032924333518476279110711148670464794818544820522390295209715531901248676888544060590943737249563733104806697968779796610374994498702698840169538725164956072726942500665132927942037078135054", 10).unwrap().to_bytes_be();
@@ -715,10 +727,10 @@ mod tests {
         assert!(q1.is_on_curve());
 
         let engine = super::MNT4Instance {
-            x: biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470400", 10).unwrap()),
+            x: &biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470400", 10).unwrap()),
             x_is_negative: true,
-            exp_w0: biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470399", 10).unwrap()),
-            exp_w1: vec![1u64],
+            exp_w0: &biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470399", 10).unwrap()),
+            exp_w1: &vec![1u64],
             exp_w0_is_negative: true,
             base_field: &base_field,
             curve: &curve,
@@ -754,8 +766,10 @@ mod tests {
         let nonres_repr = U256Repr::from(22724705057637137);
         let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue.clone());
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -763,7 +777,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("22027092453322650", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -794,8 +808,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let curve_twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let curve_twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("12855742144927486", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("14384026285193348", 10).unwrap().to_bytes_be();

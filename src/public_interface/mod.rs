@@ -1,6 +1,6 @@
-mod decode_g1;
-mod decode_g2;
-mod decode_fp;
+pub(crate) mod decode_g1;
+pub(crate) mod decode_g2;
+pub(crate) mod decode_fp;
 pub(crate) mod decode_utils;
 
 #[macro_use]
@@ -16,6 +16,8 @@ pub mod constants;
 pub use pairing_ops::{PairingApi, PublicPairingApi};
 pub use g1_ops::{G1Api, PublicG1Api};
 pub use g2_ops::{G2Api, PublicG2Api};
+
+mod unified_api;
 
 use crate::errors::ApiError;
 
@@ -56,3 +58,5 @@ impl API {
         }
     }
 }
+
+pub use self::unified_api::{OperationType, perform_operation, c_perform_operation, PREALLOCATE_FOR_ERROR_BYTES, PREALLOCATE_FOR_RESULT_BYTES};

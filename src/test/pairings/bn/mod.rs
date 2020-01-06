@@ -12,7 +12,6 @@ use crate::test::g2_ops;
 
 pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
-    assert!(pairs >= 2);
     assert!(pairs % 2 == 0);
 
     // - Curve type
@@ -260,6 +259,7 @@ use hex::{encode};
 use csv::{Writer};
 
 #[test]
+#[ignore]
 fn dump_pairing_vectors() {
     let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
@@ -279,6 +279,7 @@ fn dump_pairing_vectors() {
 }
 
 #[test]
+#[ignore]
 fn dump_fuzzing_vectors() {
     use std::io::Write;
     use std::fs::File;

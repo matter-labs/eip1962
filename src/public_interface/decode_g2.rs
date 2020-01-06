@@ -7,8 +7,7 @@ use crate::representation::{ElementRepr};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::traits::FieldElement;
 use crate::weierstrass::CurveParameters;
-
-use num_bigint::BigUint;
+use crate::constants::MaxFieldUint;
 
 use super::decode_fp::*;
 use super::constants::*;
@@ -21,13 +20,13 @@ pub(crate) fn create_fp2_extension<
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>,
     >
-    (
-        bytes: &'a [u8], 
-        modulus: BigUint,
-        field_byte_len: usize,
-        base_field: &'a F,
-        need_frobenius: bool
-    ) -> Result<(fp2::Extension2<'a, FE, F>, &'a [u8]), ApiError>
+(
+    bytes: &'a [u8], 
+    modulus: &MaxFieldUint,
+    field_byte_len: usize,
+    base_field: &'a F,
+    need_frobenius: bool
+) -> Result<(fp2::Extension2<'a, FE, F>, &'a [u8]), ApiError>
 {
     let (extension_degree, rest) = split(bytes, EXTENSION_DEGREE_ENCODING_LENGTH, "Input is not long enough to get extension degree")?;
     if extension_degree[0] != EXTENSION_DEGREE_2 {
@@ -40,7 +39,7 @@ pub(crate) fn create_fp2_extension<
     }
 
     {
-        let not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2);
+        let not_a_square = is_non_nth_root(&fp_non_residue, modulus, 2);
         if !not_a_square {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
@@ -63,13 +62,13 @@ pub(crate) fn create_fp3_extension<
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>,
     >
-    (
-        bytes: &'a [u8], 
-        modulus: BigUint,
-        field_byte_len: usize,
-        base_field: &'a F,
-        need_frobenius: bool
-    ) -> Result<(fp3::Extension3<'a, FE, F>, &'a [u8]), ApiError>
+(
+    bytes: &'a [u8], 
+    modulus: &MaxFieldUint,
+    field_byte_len: usize,
+    base_field: &'a F,
+    need_frobenius: bool
+) -> Result<(fp3::Extension3<'a, FE, F>, &'a [u8]), ApiError>
 {
     let (extension_degree, rest) = split(bytes, EXTENSION_DEGREE_ENCODING_LENGTH, "Input is not long enough to get extension degree")?;
     if extension_degree[0] != EXTENSION_DEGREE_3 {
@@ -78,11 +77,11 @@ pub(crate) fn create_fp3_extension<
 
     let (fp_non_residue, rest): (Fp<'a, FE, F>, _) = decode_fp(&rest, field_byte_len, base_field)?;
     if fp_non_residue.is_zero() {
-        return Err(ApiError::UnexpectedZero("Fp2 non-residue can not be zero".to_owned()));
+        return Err(ApiError::UnexpectedZero("Fp3 non-residue can not be zero".to_owned()));
     }
 
     {
-        let not_a_cube = is_non_nth_root(&fp_non_residue, modulus.clone(), 3);
+        let not_a_cube = is_non_nth_root(&fp_non_residue, modulus, 3);
         if !not_a_cube {
             if !std::option_env!("GAS_METERING").is_some() {
                 return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
@@ -152,7 +151,8 @@ pub(crate) fn serialize_g2_point_in_fp2<
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
-    let mut result = serialize_fp2_fixed_len(modulus_len, &x)?;
+    let mut result = Vec::with_capacity(4*modulus_len);
+    result.extend(serialize_fp2_fixed_len(modulus_len, &x)?);
     result.extend(serialize_fp2_fixed_len(modulus_len, &y)?);
     
     Ok(result)
@@ -170,7 +170,8 @@ pub(crate) fn serialize_g2_point_in_fp3<
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
-    let mut result = serialize_fp3_fixed_len(modulus_len, &x)?;
+    let mut result = Vec::with_capacity(6*modulus_len);
+    result.extend(serialize_fp3_fixed_len(modulus_len, &x)?);
     result.extend(serialize_fp3_fixed_len(modulus_len, &y)?);
     
     Ok(result)

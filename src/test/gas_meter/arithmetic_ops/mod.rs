@@ -1,5 +1,4 @@
-use crate::field::calculate_num_limbs;
-use crate::field::biguint_to_u64_vec;
+use crate::test::*;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
@@ -14,6 +13,7 @@ use crate::test::g2_ops::mnt6 as g2_mnt6;
 
 use super::*;
 
+#[derive(Clone, Debug)]
 pub(crate) struct ArithmeticReport {
     pub modulus_limbs: usize,
     pub group_limbs: usize,
@@ -24,7 +24,6 @@ pub(crate) struct ArithmeticReport {
     pub run_microseconds_mul: u64,
     pub run_microseconds_multiexp: u64,
 }
-
 
 pub(crate) fn encode_g1_point(point: (BigUint, BigUint), modulus_length: usize) -> Vec<u8> {
     let (g1_x, g1_y) = point;
@@ -82,6 +81,50 @@ use std::fs::File;
 
 pub(crate) struct ArithmeticReportWriter {
     writer: Writer<File>
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct MaxReportFilter {
+    current_max: Option<ArithmeticReport>
+}
+
+impl MaxReportFilter {
+    pub(crate) fn new() -> Self {
+        Self {
+            current_max: None
+        }
+    }
+
+    pub(crate) fn filter(&mut self, report: ArithmeticReport) {
+        if self.current_max.is_none() {
+            self.current_max = Some(report);
+        } else {
+            let mut current = self.current_max.take().unwrap();
+            assert_eq!(current.modulus_limbs, report.modulus_limbs, "current = {:?}, other = {:?}", current, report);
+            assert_eq!(current.group_limbs, report.group_limbs, "current = {:?}, other = {:?}", current, report);
+            assert_eq!(current.num_mul_pairs, report.num_mul_pairs, "current = {:?}, other = {:?}", current, report);
+            assert_eq!(current.a_is_zero, report.a_is_zero, "current = {:?}, other = {:?}", current, report);
+            assert_eq!(current.ext_degree, report.ext_degree, "current = {:?}, other = {:?}", current, report);
+
+            if current.run_microseconds_add < report.run_microseconds_add {
+                current.run_microseconds_add = report.run_microseconds_add;
+            }
+
+            if current.run_microseconds_mul < report.run_microseconds_mul {
+                current.run_microseconds_mul = report.run_microseconds_mul;
+            }
+
+            if current.run_microseconds_multiexp < report.run_microseconds_multiexp {
+                current.run_microseconds_multiexp = report.run_microseconds_multiexp;
+            }
+
+            self.current_max = Some(current);
+        }
+    }
+
+    pub(crate) fn get(self) -> Option<ArithmeticReport> {
+        self.current_max
+    }
 }
 
 impl ArithmeticReportWriter {
@@ -146,7 +189,7 @@ pub(crate) fn process_for_ext2(
     };
 
     let limbs = calculate_num_limbs(&curve.q).expect("must work");
-    let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+    let group_order_limbs = crate::test::num_units_for_group_order(&curve.r).expect("must work");
     let (common_g1_data, modulus_length, group_length) = g1_mnt4::assemble_single_curve_params(curve.clone());
     let (common_g2_data, _, _) = g2_mnt4::assemble_single_curve_params(curve.clone());
 
@@ -292,7 +335,7 @@ pub(crate) fn process_for_ext3(
     };
 
     let limbs = calculate_num_limbs(&curve.q).expect("must work");
-    let group_order_limbs = num_units_for_group_order(&curve.r).expect("must work");
+    let group_order_limbs = crate::test::num_units_for_group_order(&curve.r).expect("must work");
     let (common_g1_data, modulus_length, group_length) = g1_mnt6::assemble_single_curve_params(curve.clone());
     let (common_g2_data, _, _) = g2_mnt6::assemble_single_curve_params(curve.clone());
 
@@ -311,8 +354,7 @@ pub(crate) fn process_for_ext3(
         input_data.extend(p1);
 
         let now = Instant::now();
-        let _ = API::run(&input_data);
-        // let _ = API::run(&input_data).unwrap();
+        let _ = API::run(&input_data).unwrap();
         let elapsed = now.elapsed();
 
         elapsed

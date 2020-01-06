@@ -6,7 +6,7 @@ pub(crate) mod arithmetic_ops;
 
 mod monte_carlo;
 
-use crate::field::biguint_to_u64_vec;
+use crate::test::biguint_to_u64_vec;
 
 use num_bigint::BigUint;
 use num_traits::Zero;

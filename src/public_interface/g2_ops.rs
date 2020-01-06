@@ -1,5 +1,5 @@
 use crate::weierstrass::{Group, CurveOverFp2Parameters, CurveOverFp3Parameters};
-use crate::weierstrass::curve::WeierstrassCurve;
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
 use crate::representation::ElementRepr;
 use crate::multiexp::peppinger;
 
@@ -9,6 +9,7 @@ use super::decode_utils::*;
 use super::decode_g2::*;
 use super::decode_g1::*;
 use super::constants::*;
+use super::decode_fp::*;
 
 use crate::errors::ApiError;
 
@@ -35,13 +36,13 @@ pub struct G2ApiImplementationFp2<FE: ElementRepr> {
 impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_2, rest) = create_fp2_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
-        let (order_repr, _order_len, _, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(order_repr, a, b, &fp2_params).map_err(|_| {
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -70,18 +71,18 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_2, rest) = create_fp2_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
-        let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
+        let (order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params).map_err(|_| {
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
-        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
+        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order)?;
 
         if rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
@@ -100,13 +101,13 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_2, rest) = create_fp2_extension(&rest, modulus, modulus_len, &field, false)?;
+        let (extension_2, rest) = create_fp2_extension(&rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp2_from_encoding(&rest, modulus_len, &extension_2)?;
-        let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
+        let (order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp2_params).map_err(|_| {
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -123,7 +124,8 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         }
 
         let mut global_rest = rest;
-        let mut pairs = vec![];
+        let mut bases = Vec::with_capacity(num_pairs);
+        let mut scalars = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
@@ -132,8 +134,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
                     return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
                 }
             }
-            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
-            pairs.push((p, scalar));
+            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order)?;
+            bases.push(p);
+            scalars.push(scalar);
             global_rest = local_rest;
         }
 
@@ -141,7 +144,16 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
-        let result = peppinger(pairs);
+        if bases.len() != scalars.len() || bases.len() == 0 {
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
+            } else {
+                let result = CurvePoint::zero(&curve);
+                return serialize_g2_point_in_fp2(modulus_len, &result);
+            }
+        } 
+
+        let result = peppinger(&bases, scalars);
 
         serialize_g2_point_in_fp2(modulus_len, &result)   
     }
@@ -154,13 +166,13 @@ pub struct G2ApiImplementationFp3<FE: ElementRepr> {
 impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
     fn add_points(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_3, rest) = create_fp3_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_3, rest) = create_fp3_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp3_from_encoding(&rest, modulus_len, &extension_3)?;
-        let (order_repr, _order_len, _, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(order_repr, a, b, &fp3_params).map_err(|_| {
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp3_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -189,18 +201,18 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
     fn mul_point(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_3, rest) = create_fp3_extension(rest, modulus, modulus_len, &field, false)?;
+        let (extension_3, rest) = create_fp3_extension(rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp3_from_encoding(&rest, modulus_len, &extension_3)?;
-        let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
+        let (order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params).map_err(|_| {
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp3_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
-        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order, &order_repr)?;
+        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order)?;
 
         if rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
@@ -219,13 +231,13 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
 
     fn multiexp(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         let (field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
-        let (extension_3, rest) = create_fp3_extension(&rest, modulus, modulus_len, &field, false)?;
+        let (extension_3, rest) = create_fp3_extension(&rest, &modulus, modulus_len, &field, false)?;
         let (a, b, rest) = parse_ab_in_fp3_from_encoding(&rest, modulus_len, &extension_3)?;
-        let (order_repr, order_len, order, rest) = parse_group_order_from_encoding(rest)?;
+        let (order_len, order, rest) = parse_group_order_from_encoding(rest)?;
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
 
-        let curve = WeierstrassCurve::new(order_repr.clone(), a, b, &fp3_params).map_err(|_| {
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp3_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -242,7 +254,8 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         }
 
         let mut global_rest = rest;
-        let mut pairs = vec![];
+        let mut bases = Vec::with_capacity(num_pairs);
+        let mut scalars = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp3(global_rest, modulus_len, &curve)?;
@@ -251,8 +264,9 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
                     return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
                 }
             }
-            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order, &order_repr)?;
-            pairs.push((p, scalar));
+            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order)?;
+            bases.push(p);
+            scalars.push(scalar);
             global_rest = local_rest;
         }
 
@@ -260,7 +274,16 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
         }
 
-        let result = peppinger(pairs);
+        if bases.len() != scalars.len() || bases.len() == 0 {
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
+            } else {
+                let result = CurvePoint::zero(&curve);
+                return serialize_g2_point_in_fp3(modulus_len, &result);
+            }
+        } 
+
+        let result = peppinger(&bases, scalars);
 
         serialize_g2_point_in_fp3(modulus_len, &result)   
     }

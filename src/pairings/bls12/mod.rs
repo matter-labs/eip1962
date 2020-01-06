@@ -29,7 +29,7 @@ pub struct Bls12Instance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub(crate) x: Vec<u64>,
+    pub(crate) x: &'a [u64],
     pub(crate) x_is_negative: bool,
     pub(crate) twist_type: TwistType,
     pub(crate) base_field: &'a F,
@@ -389,11 +389,17 @@ impl<
 
     fn pair<'b>
         (&self, points: &'b [CurvePoint<'a, CB>], twists: &'b [CurvePoint<'a, CTW>]) -> Option<Self::PairingResult> {
-            if points.len() == 0 || twists.len() == 0 || points.len() != twists.len() {
+            if points.len() != twists.len() {
                 return None;
             }
+
+            if !std::option_env!("GAS_METERING").is_some() {
+                if points.len() == 0 || twists.len() == 0 {
+                    return None;
+                }
+            }
             
-            let mut pairs = vec![];
+            let mut pairs = Vec::with_capacity(points.len());
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
             }
@@ -416,8 +422,9 @@ mod tests {
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::pairings::{PairingEngine};
-    use crate::field::{biguint_to_u64_vec};
+    use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
+    use crate::constants::MaxFieldUint;
 
     #[test]
     fn test_bls12_381_pairing() {
@@ -429,8 +436,10 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -441,10 +450,10 @@ mod tests {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue);
-        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U384Repr::from(4)).unwrap();
         let mut b_fp2 = Fp2::zero(&extension_2);
@@ -457,8 +466,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap().to_bytes_be();
@@ -496,7 +505,7 @@ mod tests {
         assert!(q.is_on_curve());
 
         let bls12_engine = super::Bls12Instance {
-            x: vec![0xd201000000010000],
+            x: &[0xd201000000010000],
             x_is_negative: true,
             twist_type: super::TwistType::M,
             base_field: &base_field,
@@ -526,8 +535,10 @@ mod tests {
         let mut fp_non_residue = Fp::from_repr(&base_field, fp_nonres_repr).unwrap();
         fp_non_residue.negate();
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -538,10 +549,10 @@ mod tests {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U384Repr::from(1)).unwrap();
         let mut b_fp2 = fp2_non_residue.clone().inverse().unwrap();
@@ -553,8 +564,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("008848defe740a67c8fc6225bf87ff5485951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef", 16).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("01914a69c5102eff1f674f5d30afeec4bd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6", 16).unwrap().to_bytes_be();
@@ -587,7 +598,7 @@ mod tests {
         assert!(q.is_on_curve());
 
         let bls12_engine = super::Bls12Instance {
-            x: vec![0x8508c00000000001],
+            x: &[0x8508c00000000001],
             x_is_negative: false,
             twist_type: super::TwistType::D,
             base_field: &base_field,

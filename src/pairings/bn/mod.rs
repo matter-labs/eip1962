@@ -29,8 +29,8 @@ pub struct BnInstance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub(crate) u: Vec<u64>,
-    pub(crate) six_u_plus_2: Vec<u64>,
+    pub(crate) u: &'a [u64],
+    pub(crate) six_u_plus_2: &'a [u64],
     pub(crate) u_is_negative: bool,
     pub(crate) twist_type: TwistType,
     pub(crate) base_field: &'a F,
@@ -490,11 +490,17 @@ impl<
 
     fn pair<'b>
         (&self, points: &'b [CurvePoint<'a, CB>], twists: &'b [CurvePoint<'a, CTW>]) -> Option<Self::PairingResult> {
-            if points.len() == 0 || twists.len() == 0 || points.len() != twists.len() {
+            if points.len() != twists.len() {
                 return None;
             }
+
+            if !std::option_env!("GAS_METERING").is_some() {
+                if points.len() == 0 || twists.len() == 0 {
+                    return None;
+                }
+            }
             
-            let mut pairs = vec![];
+            let mut pairs = Vec::with_capacity(points.len());
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
             }
@@ -518,8 +524,9 @@ mod tests {
     use crate::weierstrass::{CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
     use crate::pairings::{PairingEngine};
     use crate::representation::ElementRepr;
-    use crate::field::{biguint_to_u64_vec};
+    use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
+    use crate::constants::MaxFieldUint;
 
     #[test]
     fn test_bn254_pairing() {
@@ -531,8 +538,10 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -546,10 +555,10 @@ mod tests {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -562,8 +571,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -626,9 +635,9 @@ mod tests {
         // println!("Expected coeff = {:x}", BigUint::from_str_radix("2813988028633040066320201189843971639620433430176492766961373503539074898364", 10).unwrap());
 
         let engine = super::BnInstance {
-            u: vec![4965661367192848881],
+            u: &[4965661367192848881],
             u_is_negative: false,
-            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
+            six_u_plus_2: &six_u_plus_2.0[..2],
             twist_type: super::TwistType::D,
             base_field: &base_field,
             curve: &curve,
@@ -654,8 +663,12 @@ mod tests {
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
 
+        let modulus_biguint = modulus.clone();
+
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).expect("must work");
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -669,10 +682,10 @@ mod tests {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -685,8 +698,8 @@ mod tests {
         let fp_params = CurveOverFpParameters::new(&base_field);
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
-        let curve = WeierstrassCurve::new(group_order.clone(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(group_order.clone(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
@@ -738,9 +751,9 @@ mod tests {
         six_u_plus_2.add_nocarry(&two);
 
         let engine = super::BnInstance {
-            u: vec![4965661367192848881],
+            u: &[4965661367192848881],
             u_is_negative: false,
-            six_u_plus_2: six_u_plus_2.0[..2].to_vec(),
+            six_u_plus_2: &six_u_plus_2.0[..2],
             twist_type: super::TwistType::D,
             base_field: &base_field,
             curve: &curve,
@@ -761,11 +774,11 @@ mod tests {
 
         let final_exp = engine.final_exponentiation(&fp12).unwrap();
 
-        use crate::field::biguint_to_u64_vec;
+        use crate::test::biguint_to_u64_vec;
         let one = BigUint::from(1u64);
         let mut power = BigUint::from(1u64);
         for _ in 0..12 {
-            power = power * modulus.clone();
+            power = power * modulus_biguint.clone();
         }
         power = power - one;
         power = power / r;

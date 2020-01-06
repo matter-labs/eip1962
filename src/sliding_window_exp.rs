@@ -41,7 +41,7 @@ impl<F: FieldElement> WindowExpBase<F> {
     }
 
     pub fn exponentiate<W: IntoWindows>(&self, scalars: &[W]) -> Vec<F> {
-        let mut result = vec![];
+        let mut result = Vec::with_capacity(scalars.len());
         for s in scalars.iter() {
             let wnaf = s.windows(self.window_size as u32);
 

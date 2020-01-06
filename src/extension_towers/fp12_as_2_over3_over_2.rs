@@ -412,9 +412,18 @@ pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
-use num_bigint::BigUint;
-use num_integer::Integer;
-use num_traits::Zero;
+// impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2Over3Over2<'a, E, F> {
+//     fn clone(&self) -> Self {
+//         Self {
+//             field: self.field,
+//             non_residue: self.non_residue.clone(),
+//             frobenius_coeffs_c1: self.frobenius_coeffs_c1.clone(),
+//             frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
+//         }
+//     }
+// }
+
+use crate::constants::*;
 use crate::sliding_window_exp::{WindowExpBase};
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a, E, F> {
@@ -435,55 +444,56 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
 
     pub(crate) fn calculate_frobenius_coeffs(
         &mut self,
-        modulus: BigUint,
+        modulus: &MaxFieldUint,
         base: &WindowExpBase<Fp2<'a, E, F>>
-    ) -> Result<(), ()> {
-        use crate::field::biguint_to_u64_vec;
-        use crate::constants::ONE_BIGUINT;
-        use crate::constants::SIX_BIGUINT;
-    
-        // Fq2(u + 1)**(((q^0) - 1) / 6)
+    ) -> Result<(), ()> {    
+        // NON_RES**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);
 
-        // Fq2(u + 1)**(((q^1) - 1) / 6)
-        let mut powers = vec![];
+        // NON_RES**(((q^1) - 1) / 6)
+        let mut powers = Vec::with_capacity(4);
 
-        let mut q_power = modulus.clone();
+        let modulus = MaxFrobeniusFp12::from(modulus.as_ref());
+        let mut q_power = modulus;
+        let one = MaxFrobeniusFp12::from(1u64);
+        let six = MaxFrobeniusFp12::from(6u64);
 
         // 1
         {
-            let power = q_power.clone() - &*ONE_BIGUINT;
-            let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(six);
             if !rem.is_zero() {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(());
                 }
             }
-            powers.push(biguint_to_u64_vec(power));
+            powers.push(Vec::from(power.as_ref()));
         }
         // 2 & 3
         for _ in 1..3 {
-            q_power *= &modulus;
-            let power = q_power.clone() - &*ONE_BIGUINT;
-            let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+            q_power = q_power.adaptive_multiplication(modulus);
+            // q_power *= modulus;
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(six);
             if !rem.is_zero() {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(());
                 }
             }
-            powers.push(biguint_to_u64_vec(power));
+            powers.push(Vec::from(power.as_ref()));
         }
         // 6
         {
-            q_power *= q_power.clone();
-            let power = q_power.clone() - &*ONE_BIGUINT;
-            let (power, rem) = power.div_rem(&*SIX_BIGUINT);
+            q_power = q_power.adaptive_multiplication(q_power);
+            // q_power *= q_power;
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(six);
             if !rem.is_zero() {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(());
                 }
             }
-            powers.push(biguint_to_u64_vec(power));
+            powers.push(Vec::from(power.as_ref()));
         }
 
         let mut result = base.exponentiate(&powers);

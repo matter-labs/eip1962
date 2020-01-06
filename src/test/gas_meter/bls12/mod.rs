@@ -1,5 +1,4 @@
-use crate::field::calculate_num_limbs;
-use crate::field::biguint_to_u64_vec;
+use crate::test::*;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
@@ -17,7 +16,7 @@ pub(crate) struct Bls12Report {
     group_limbs: usize,
     num_pairs: usize,
     x_is_negative: bool,
-    run_microseconds: u64,
+    pub(crate) run_microseconds: u64,
 }
 
 extern crate csv;
@@ -112,8 +111,8 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
     for x_is_negative in vec![true] {
         let mut new_curve = curve.clone();
         new_curve.x = (new_x.clone(), x_is_negative);
-        let limbs = calculate_num_limbs(&new_curve.q).expect("must work");
-        let group_order_limbs = num_units_for_group_order(&new_curve.r).expect("must work");
+        let limbs = crate::test::calculate_num_limbs(&new_curve.q).expect("must work");
+        let group_order_limbs = crate::test::num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(new_curve, num_pairs);
         if calldata.is_err() {
@@ -121,6 +120,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
         };
         let calldata = calldata.unwrap();
         input_data.extend(calldata);
+        // println!("{}", hex::encode(&input_data));
         let now = Instant::now();
         let res = API::run(&input_data);
         let elapsed = now.elapsed();

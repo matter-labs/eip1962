@@ -29,3 +29,34 @@ pub const OPERATION_G2_MUL: u8 = 0x05;
 pub const OPERATION_G2_MULTIEXP: u8 = 0x06;
 
 pub const OPERATION_PAIRING: u8 = 0x07;
+
+pub const NUM_LIMBS_MIN: usize = 4;
+pub const NUM_LIMBS_MAX: usize = 16;
+pub const NUM_GROUP_LIMBS_MIN: usize = 1;
+pub const NUM_GROUP_LIMBS_MAX: usize = 16;
+
+pub const MAX_MODULUS_BYTE_LEN: usize = 128;
+pub const MAX_GROUP_BYTE_LEN: usize = 128;
+
+use static_assertions::const_assert;
+use crate::constants::*;
+
+const_assert!(MAX_MODULUS_BYTE_LEN == NUM_LIMBS_MAX * 8);
+
+const_assert!(MAX_GROUP_BYTE_LEN == NUM_GROUP_LIMBS_MAX * 8);
+
+const_assert!(std::mem::size_of::<MaxFieldUint>() >= NUM_LIMBS_MAX * 8);
+const_assert!(std::mem::size_of::<MaxFieldSquaredUint>() >= NUM_LIMBS_MAX * 8 * 2);
+
+const_assert!(std::mem::size_of::<MaxGroupSizeUint>() >= NUM_GROUP_LIMBS_MAX * 8);
+
+const_assert!(std::mem::size_of::<MaxFrobeniusFp3>() >= NUM_LIMBS_MAX * 8 * 2);
+
+// only up to q^2 is used for Fp4
+const_assert!(std::mem::size_of::<MaxFrobeniusFp4>() >= NUM_LIMBS_MAX * 8 * 2);
+
+// only up to q^3 is used for Fp6
+const_assert!(std::mem::size_of::<MaxFrobeniusFp6>() >= NUM_LIMBS_MAX * 8 * 3);
+
+// only up to q^6 is used for Fp12
+const_assert!(std::mem::size_of::<MaxFrobeniusFp12>() >= NUM_LIMBS_MAX * 8 * 6);

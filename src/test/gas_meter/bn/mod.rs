@@ -1,5 +1,4 @@
-use crate::field::calculate_num_limbs;
-use crate::field::biguint_to_u64_vec;
+use crate::test::*;
 use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
@@ -86,8 +85,8 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
         let mut new_curve = curve.clone();
         new_curve.x = (new_x.clone(), x_is_negative);
         let (_six_u_plus_two, six_u_plus_two_bit_length, six_u_plus_two_hamming) = six_u_plus_two(&new_x, !x_is_negative);
-        let limbs = calculate_num_limbs(&new_curve.q).expect("must work");
-        let group_order_limbs = num_units_for_group_order(&new_curve.r).expect("must work");
+        let limbs = crate::test::calculate_num_limbs(&new_curve.q).expect("must work");
+        let group_order_limbs = crate::test::num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(new_curve, num_pairs);
         if calldata.is_err() {

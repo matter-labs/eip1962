@@ -1,0 +1,9 @@
+[package]
+name = "fixed_width_field"
+version = "0.1.0"
+authors = ["Alex Vlasov <alex.m.vlasov@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+# uint = {package = "uint_butchered", version = "0.8", path = "../uint", default-features = false, features = ["unroll"] }
+uint = {package = "simple_uint", version = "0.1", path = "../simple_fixed_uint", default-features = false, features = ["unroll"] }

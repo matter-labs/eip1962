@@ -1,5 +1,6 @@
 use num_bigint::BigUint;
 use num_traits::Num;
+use num_traits::Zero;
 
 extern crate serde;
 extern crate serde_json;
@@ -559,7 +560,6 @@ pub(crate) fn prepend_0x(input: &str) -> String {
 }
 
 pub(crate) fn apply_sign(value: (BigUint, bool), modulus: &BigUint) -> BigUint {
-    use crate::num_traits::Zero;
     
     let (val, is_positive) = value;
     if val.is_zero() {

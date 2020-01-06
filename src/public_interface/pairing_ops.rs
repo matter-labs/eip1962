@@ -24,11 +24,10 @@ use crate::pairings::mnt4::{MNT4Instance};
 use crate::pairings::mnt6::{MNT6Instance};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
-use crate::field::biguint_to_u64_vec;
 use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
 use crate::fp::Fp;
-use crate::num_traits::Zero;
+use crate::constants::*;
 
 use super::decode_g1::*;
 use super::decode_utils::*;
@@ -36,9 +35,6 @@ use super::decode_fp::*;
 use super::decode_g2::*;
 use super::constants::*;
 use super::sane_limits::*;
-
-// #[macro_use]
-// use super::api_specialization_macro::*;
 
 use crate::errors::ApiError;
 
@@ -61,7 +57,7 @@ pub trait PairingApi {
     fn pair(bytes: &[u8]) -> Result<Vec<u8>, ApiError>;
 }
 
-struct PairingApiImplementation<FE: ElementRepr> {
+pub(crate) struct PairingApiImplementation<FE: ElementRepr> {
     _marker_fe: std::marker::PhantomData<FE>,
 }
 
@@ -90,7 +86,7 @@ impl<FE: ElementRepr> PairingApi for PairingApiImplementation<FE> {
 }
 
 impl<FE: ElementRepr>PairingApiImplementation<FE> {
-    fn pair_bls12(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_bls12(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
         use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
@@ -100,9 +96,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BLS12 curve".to_owned()));
         }
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -119,7 +115,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
+            let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
@@ -129,14 +125,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         {
-            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, modulus.clone(), 6u64);
+            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
@@ -159,7 +155,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         {
-            extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
@@ -167,7 +163,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
         {
-            extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
@@ -192,7 +188,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let a_fp2 = Fp2::zero(&extension_2);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp2, b_fp2, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -200,8 +196,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
-        let x = biguint_to_u64_vec(x);
-        if calculate_hamming_weight(&x) > MAX_BLS12_X_HAMMING {
+        // let x = slice_to_fixed_size_array(x);
+        if calculate_hamming_weight(&x.as_ref()) > MAX_BLS12_X_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
 
@@ -218,7 +214,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -271,7 +269,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = Bls12Instance {
-            x: x,
+            x: &x.as_ref(),
             x_is_negative: x_is_negative,
             twist_type: twist_type,
             base_field: &base_field,
@@ -299,7 +297,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         Ok(result)
     }
 
-    fn pair_bn(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_bn(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
         use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
@@ -309,9 +307,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if !a_fp.is_zero() {
             return Err(ApiError::UnknownParameter("A parameter must be zero for BN curve".to_owned()));
         }
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp, b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -329,7 +327,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_square = is_non_nth_root(&fp_non_residue, modulus.clone(), 2u64);
+            let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
@@ -339,14 +337,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         {
-            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, modulus.clone(), 6u64);
+            let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
@@ -369,7 +367,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
 
         {
-            extension_6.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
@@ -377,7 +375,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
 
         {
-            extension_12.calculate_frobenius_coeffs(modulus.clone(), &exp_base).map_err(|_| {
+            extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
@@ -402,7 +400,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let a_fp2 = Fp2::zero(&extension_2);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp2, b_fp2, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -419,32 +417,36 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
-        use crate::constants::*;
+        let two = MaxLoopParametersUint::from(2u64);
+        let six = MaxLoopParametersUint::from(6u64);
+
         // we need only absolute value of 6u+2, so manually handle negative and positive U
         let six_u_plus_two = if u_is_negative {
-            let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) - &*TWO_BIGUINT;
+            let six_u_plus_two = (six * u) - two;
 
             six_u_plus_two
         } else {
-            let six_u_plus_two = ((*SIX_BIGUINT).clone() * &u) + &*TWO_BIGUINT;
+            let six_u_plus_two = (six * u) + two;
 
             six_u_plus_two
         };
 
-        let six_u_plus_two = biguint_to_u64_vec(six_u_plus_two);
-        if calculate_hamming_weight(&six_u_plus_two) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
+        // let six_u_plus_two = slice_to_fixed_size_array(six_u_plus_two.as_ref());
+        if calculate_hamming_weight(&six_u_plus_two.as_ref()) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
             return Err(ApiError::InputError("|6*U + 2| has too large hamming weight".to_owned()));
         }
 
-        let p_minus_one_over_2 = (modulus.clone() - &*ONE_BIGUINT) >> 1;
+        let p_minus_one_over_2 = (modulus - MaxFieldUint::from(1u64)) >> 1;
 
-        let fp2_non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(&biguint_to_u64_vec(p_minus_one_over_2));
+        let fp2_non_residue_in_p_minus_one_over_2 = fp2_non_residue.pow(p_minus_one_over_2.as_ref());
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -497,8 +499,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = BnInstance {
-            u: biguint_to_u64_vec(u),
-            six_u_plus_2: six_u_plus_two,
+            u: &u.as_ref(),
+            six_u_plus_2: &six_u_plus_two.as_ref(),
             u_is_negative: u_is_negative,
             twist_type: twist_type,
             base_field: &base_field,
@@ -527,15 +529,15 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         Ok(result)
     }
 
-    fn pair_mnt6(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_mnt6(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp3::{Fp3, Extension3};
         use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -554,7 +556,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_root = is_non_nth_root(&fp_non_residue, modulus.clone(), 6u64);
+            let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 6u64);
             if !is_not_a_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
@@ -564,14 +566,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_3 = Extension3::new(fp_non_residue);
-        extension_3.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_3.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp3".to_owned())
         })?;
 
         let mut extension_6 = Extension2Over3::new(Fp3::zero(&extension_3));
 
         {
-            extension_6.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs(&modulus).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
@@ -594,7 +596,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         b_fp3.mul_by_fp(&b_fp);
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp3, b_fp3, &fp3_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp3, b_fp3, &fp3_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -602,8 +604,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate loop count parameters can not be zero".to_owned()));
         }
-        let x = biguint_to_u64_vec(x);
-        if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
+        // let x = slice_to_fixed_size_array(x);
+        if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
         let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
@@ -638,7 +640,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -691,10 +695,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = MNT6Instance {
-            x: x,
+            x: &x.as_ref(),
             x_is_negative: x_is_negative,
-            exp_w0: biguint_to_u64_vec(exp_w0),
-            exp_w1: biguint_to_u64_vec(exp_w1),
+            exp_w0: exp_w0.as_ref(),
+            exp_w1: exp_w1.as_ref(),
             exp_w0_is_negative: exp_w0_is_negative,
             base_field: &base_field,
             curve: &g1_curve,
@@ -721,15 +725,15 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         Ok(result)
     }
 
-    fn pair_mnt4(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
+    pub(crate) fn pair_mnt4(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
         use crate::extension_towers::fp2::{Fp2, Extension2};
         use crate::extension_towers::fp4_as_2_over_2::{Fp4, Extension2Over2};
 
         let (base_field, modulus_len, modulus, rest) = parse_base_field_from_encoding::<FE>(&bytes)?;
         let (a_fp, b_fp, rest) = parse_ab_in_base_field_from_encoding(&rest, modulus_len, &base_field)?;
-        let (order_repr, _order_len, _order, rest) = parse_group_order_from_encoding(rest)?;
+        let (_order_len, order, rest) = parse_group_order_from_encoding(rest)?;
         let fp_params = CurveOverFpParameters::new(&base_field);
-        let g1_curve = WeierstrassCurve::new(order_repr.clone(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
+        let g1_curve = WeierstrassCurve::new(&order.as_ref(), a_fp.clone(), b_fp.clone(), &fp_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -748,7 +752,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
-            let is_not_a_root = is_non_nth_root(&fp_non_residue, modulus.clone(), 4u64);
+            let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 4u64);
             if !is_not_a_root {
                 if !std::option_env!("GAS_METERING").is_some() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
@@ -758,14 +762,14 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let mut extension_4 = Extension2Over2::new(Fp2::zero(&extension_2));
 
         {
-            extension_4.calculate_frobenius_coeffs(modulus.clone()).map_err(|_| {
+            extension_4.calculate_frobenius_coeffs(&modulus).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp4".to_owned())
             })?;
         }
@@ -788,7 +792,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         b_fp2.mul_by_fp(&b_fp);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
-        let g2_curve = WeierstrassCurve::new(order_repr, a_fp2, b_fp2, &fp2_params).map_err(|_| {
+        let g2_curve = WeierstrassCurve::new(&order.as_ref(), a_fp2, b_fp2, &fp2_params).map_err(|_| {
             ApiError::InputError("Curve shape is not supported".to_owned())
         })?;
 
@@ -796,8 +800,8 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate pairing loop count parameters can not be zero".to_owned()));
         }
-        let x = biguint_to_u64_vec(x);
-        if calculate_hamming_weight(&x) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
+        // let x = slice_to_fixed_size_array(x);
+        if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
 
@@ -832,7 +836,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let num_pairs = num_pairs_encoding[0] as usize;
 
         if num_pairs == 0 {
-            return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            if !std::option_env!("GAS_METERING").is_some() {
+                return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+            }
         }
 
         let mut global_rest = rest;
@@ -885,10 +891,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let engine = MNT4Instance {
-            x: x,
+            x: &x.as_ref(),
             x_is_negative: x_is_negative,
-            exp_w0: biguint_to_u64_vec(exp_w0),
-            exp_w1: biguint_to_u64_vec(exp_w1),
+            exp_w0: &exp_w0.as_ref(),
+            exp_w1: &exp_w1.as_ref(),
             exp_w0_is_negative: exp_w0_is_negative,
             base_field: &base_field,
             curve: &g1_curve,

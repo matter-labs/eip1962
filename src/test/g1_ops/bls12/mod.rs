@@ -130,6 +130,7 @@ use hex::{encode};
 use csv::{Writer};
 
 #[test]
+#[ignore]
 fn dump_g1_mul_vectors() {
     let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);

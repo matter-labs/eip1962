@@ -8,10 +8,6 @@ extern crate syn;
 #[macro_use]
 extern crate quote;
 
-extern crate num_bigint;
-extern crate num_integer;
-extern crate num_traits;
-
 use quote::TokenStreamExt;
 use std::str::FromStr;
 
@@ -242,7 +238,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         );
 
         gen.extend(quote!{
-            self.mont_reduce(modulus, mont_inv, #mont_calling);
+            self.mont_partial_reduce(modulus, mont_inv, #mont_calling);
         });
 
         gen
@@ -288,7 +284,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         );
 
         gen.extend(quote!{
-            self.mont_reduce(modulus, mont_inv, #mont_calling);
+            self.mont_partial_reduce(modulus, mont_inv, #mont_calling);
         });
 
         gen
@@ -306,8 +302,24 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         );
 
         impl #repr {
+            // #[inline(always)]
+            // fn mont_reduce(
+            //     &mut self,
+            //     modulus: &#repr,
+            //     mont_inv: u64,
+            //     #mont_paramlist
+            // )
+            // {
+            //     // The Montgomery reduction here is based on Algorithm 14.32 in
+            //     // Handbook of Applied Cryptography
+            //     // <http://cacr.uwaterloo.ca/hac/about/chap14.pdf>.
+
+            //     #montgomery_impl
+            //     self.reduce(modulus);
+            // }
+
             #[inline(always)]
-            fn mont_reduce(
+            fn mont_partial_reduce(
                 &mut self,
                 modulus: &#repr,
                 mont_inv: u64,
@@ -319,19 +331,6 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 // <http://cacr.uwaterloo.ca/hac/about/chap14.pdf>.
 
                 #montgomery_impl
-
-                self.reduce(&modulus);
-            }
-
-            #[inline(always)]
-            fn reduce(
-                &mut self,
-                modulus: &#repr
-            )
-            {
-                if *self >= *modulus {
-                    self.sub_noborrow(&modulus);
-                }
             }
         }
 
@@ -575,16 +574,41 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
                 self.reduce(modulus);
             }
 
+            #[inline]
+            fn mont_mul_assign_with_partial_reduction(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
+            {
+                #multiply_impl
+            }
+
+            #[inline]
+            fn mont_square_with_partial_reduction(&mut self, modulus: &#repr, mont_inv: u64)
+            {
+                #squaring_impl
+            }
+
             #[inline(always)]
             fn into_normal_repr(&self, modulus: &#repr, mont_inv: u64) -> #repr {
                 let mut r = *self;
-                r.mont_reduce(
+                r.mont_partial_reduce(
                     modulus,
                     mont_inv,
                     #into_normal_repr_params
                 );
 
+                r.reduce(modulus);
+
                 r
+            }
+
+            #[inline(always)]
+            fn reduce(
+                &mut self,
+                modulus: &#repr
+            )
+            {
+                if &*self >= modulus {
+                    self.sub_noborrow(&modulus);
+                }
             }
         }
     }

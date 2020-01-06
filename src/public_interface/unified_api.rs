@@ -25,6 +25,46 @@ pub enum OperationType {
     MNT6PAIR = 10,
 }
 
+impl OperationType {
+    pub fn from_u8(value: u8) -> Option<Self> {
+        match value {
+            G1ADD_OPERATION_RAW_VALUE => {
+                Some(OperationType::G1ADD)
+            },
+            G1MUL_OPERATION_RAW_VALUE => {
+                Some(OperationType::G1MUL)
+            },
+            G1MULTIEXP_OPERATION_RAW_VALUE => {
+                Some(OperationType::G1MULTIEXP)
+            },
+            G2ADD_OPERATION_RAW_VALUE => {
+                Some(OperationType::G2ADD)
+            },
+            G2MUL_OPERATION_RAW_VALUE => {
+                Some(OperationType::G2MUL)
+            },
+            G2MULTIEXP_OPERATION_RAW_VALUE => {
+                Some(OperationType::G2MULTIEXP)
+            },
+            BLS12PAIR_OPERATION_RAW_VALUE => {
+                Some(OperationType::BLS12PAIR)
+            },
+            BNPAI_OPERATION_RAW_VALUE => {
+                Some(OperationType::BNPAIR)
+            },
+            MNT4PAIR_OPERATION_RAW_VALUE => {
+                Some(OperationType::MNT4PAIR)
+            },
+            MNT6PAIR_OPERATION_RAW_VALUE => {
+                Some(OperationType::MNT6PAIR)
+            },
+            _ => {
+                None
+            }
+        }
+    }
+}
+
 pub const G1ADD_OPERATION_RAW_VALUE: u8 = OperationType::G1ADD as u8;
 pub const G1MUL_OPERATION_RAW_VALUE: u8 = OperationType::G1MUL as u8;
 pub const G1MULTIEXP_OPERATION_RAW_VALUE: u8 = OperationType::G1MULTIEXP as u8;
@@ -117,49 +157,21 @@ pub extern "C" fn c_perform_operation(
     let err_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(err, PREALLOCATE_FOR_ERROR_BYTES) };
     let mut err_out: &mut [u8] = unsafe { std::mem::transmute(err_out_i8) };
 
-    let operation = match op_u8 {
-        G1ADD_OPERATION_RAW_VALUE => {
-            OperationType::G1ADD
-        },
-        G1MUL_OPERATION_RAW_VALUE => {
-            OperationType::G1MUL
-        },
-        G1MULTIEXP_OPERATION_RAW_VALUE => {
-            OperationType::G1MULTIEXP
-        },
-        G2ADD_OPERATION_RAW_VALUE => {
-            OperationType::G2ADD
-        },
-        G2MUL_OPERATION_RAW_VALUE => {
-            OperationType::G2MUL
-        },
-        G2MULTIEXP_OPERATION_RAW_VALUE => {
-            OperationType::G2MULTIEXP
-        },
-        BLS12PAIR_OPERATION_RAW_VALUE => {
-            OperationType::BLS12PAIR
-        },
-        BNPAI_OPERATION_RAW_VALUE => {
-            OperationType::BNPAIR
-        },
-        MNT4PAIR_OPERATION_RAW_VALUE => {
-            OperationType::MNT4PAIR
-        },
-        MNT6PAIR_OPERATION_RAW_VALUE => {
-            OperationType::MNT6PAIR
-        },
-        _ => {
-            let written = err_out.write(b"Unknown operation type\0");
-            if let Ok(bytes_written) = written {
-                unsafe { *char_len = bytes_written as u32 };
-            } else {
-                unsafe { *char_len = 0u32 };
-            }
+    let operation = OperationType::from_u8(op_u8);
 
-            return 1u32;
+    if operation.is_none() {
+        let written = err_out.write(b"Unknown operation type\0");
+        if let Ok(bytes_written) = written {
+            unsafe { *char_len = bytes_written as u32 };
+        } else {
+            unsafe { *char_len = 0u32 };
         }
-    };
 
+        return 1u32;
+    }
+
+    let operation = operation.expect("is some");
+    
     let input_i8: & [i8] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
     let input: &[u8] = unsafe { std::mem::transmute(input_i8) };
 

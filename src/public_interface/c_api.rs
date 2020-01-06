@@ -1,4 +1,4 @@
-use super::unified_api::{OperationType, PREALLOCATE_FOR_ERROR_BYTES, ;
+use super::unified_api::{OperationType, PREALLOCATE_FOR_ERROR_BYTES, PREALLOCATE_FOR_RESULT_BYTES, perform_operation};
 
 // this is C interface
 #[no_mangle]

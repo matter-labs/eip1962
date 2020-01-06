@@ -3,6 +3,10 @@ mod utils;
 mod meter_arith;
 mod meter_pairing;
 
+extern crate serde;
+extern crate serde_json;
+extern crate once_cell;
+
 use crate::errors::ApiError;
 use crate::public_interface::decode_utils::*;
 use crate::public_interface::constants::*;

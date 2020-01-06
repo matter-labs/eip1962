@@ -2,7 +2,8 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use crate::errors::ApiError;
 
-use crate::once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
+use serde_json;
 
 pub(crate) trait ArithmeticAdditionParams {
     fn params(&self) -> &[(usize, u64)];
@@ -81,38 +82,38 @@ static G2_EXT_3_MULTIPLICATION_PARAMS_JSON: &'static str = include_str!("g2_mult
 static MULTIEXP_PARAMS_JSON: &'static str = include_str!("multiexp_discounts.json");
 
 pub(crate) static G1_ADDITION_PARAMS_INSTANCE: Lazy<G1G2AdditionParams> = Lazy::new(|| {
-    crate::serde_json::from_str(G1_ADDITION_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(G1_ADDITION_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static G2_EXT_2_ADDITION_PARAMS_INSTANCE: Lazy<G1G2AdditionParams> = Lazy::new(|| {
-    crate::serde_json::from_str(G2_EXT_2_ADDITION_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(G2_EXT_2_ADDITION_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static G2_EXT_3_ADDITION_PARAMS_INSTANCE: Lazy<G1G2AdditionParams> = Lazy::new(|| {
-    crate::serde_json::from_str(G2_EXT_3_ADDITION_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(G2_EXT_3_ADDITION_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static G1_MULTIPLICATION_PARAMS_INSTANCE: Lazy<G1G2MultiplicationParams> = Lazy::new(|| {
-    crate::serde_json::from_str(G1_MULTIPLICATION_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(G1_MULTIPLICATION_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE: Lazy<G1G2MultiplicationParams> = Lazy::new(|| {
-    crate::serde_json::from_str(G2_EXT_2_MULTIPLICATION_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(G2_EXT_2_MULTIPLICATION_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static G2_EXT_3_MULTIPLICATION_PARAMS_INSTANCE: Lazy<G1G2MultiplicationParams> = Lazy::new(|| {
-    crate::serde_json::from_str(G2_EXT_3_MULTIPLICATION_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(G2_EXT_3_MULTIPLICATION_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static MULTIEXP_PARAMS_INSTANCE: Lazy<G1G2MultiexpParams> = Lazy::new(|| {
-    crate::serde_json::from_str(MULTIEXP_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(MULTIEXP_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) fn parse_tuple_usize_u64<'de, D>(deserializer: D) -> Result<Vec<(usize, u64)>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    use crate::serde_json::Value;
+    use serde_json::Value;
     use serde::de::{Visitor, SeqAccess};
 
     struct MyVisitor;
@@ -150,7 +151,7 @@ pub(crate) fn parse_hashmap_usize_u64<'de, D>(deserializer: D) -> Result<HashMap
 where
     D: Deserializer<'de>,
 {
-    use crate::serde_json::Value;
+    use serde_json::Value;
     use serde::de::{Visitor, SeqAccess};
 
     struct MyVisitor;

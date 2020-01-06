@@ -45,6 +45,7 @@ rayon = "1.*"
 indicatif = {version = "*", features = ["with_rayon"]}
 
 [features]
+default = ["gas_metering"]
 benchmarks = []
 gas_metering = ["serde", "serde_json", "once_cell"]
 

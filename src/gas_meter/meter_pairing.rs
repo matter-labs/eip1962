@@ -1,7 +1,8 @@
 use serde::{Deserialize};
 use crate::errors::ApiError;
 
-use crate::once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
+use serde_json;
 
 use super::meter_arith::*;
 use super::parsers::*;
@@ -65,19 +66,19 @@ static BLS12_PARAMS_JSON: &'static str = include_str!("bls12_model.json");
 static BN_PARAMS_JSON: &'static str = include_str!("bn_model.json");
 
 pub(crate) static MNT4_PARAMS_INSTANCE: Lazy<MntPairingParams> = Lazy::new(|| {
-    crate::serde_json::from_str(MNT4_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(MNT4_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static MNT6_PARAMS_INSTANCE: Lazy<MntPairingParams> = Lazy::new(|| {
-    crate::serde_json::from_str(MNT6_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(MNT6_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static BLS12_PARAMS_INSTANCE: Lazy<Bls12PairingParams> = Lazy::new(|| {
-    crate::serde_json::from_str(BLS12_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(BLS12_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) static BN_PARAMS_INSTANCE: Lazy<BnPairingParams> = Lazy::new(|| {
-    crate::serde_json::from_str(BN_PARAMS_JSON).expect("must deserialize parameters")
+    serde_json::from_str(BN_PARAMS_JSON).expect("must deserialize parameters")
 });
 
 pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_power: usize) -> Result<u64, ApiError> {

@@ -4,7 +4,6 @@ use crate::errors::ApiError;
 use once_cell::sync::Lazy;
 use serde_json;
 
-use super::meter_arith::*;
 use super::parsers::*;
 
 use crate::public_interface::decode_utils::*;

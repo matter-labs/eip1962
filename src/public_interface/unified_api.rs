@@ -50,7 +50,7 @@ impl OperationType {
             BLS12PAIR_OPERATION_RAW_VALUE => {
                 Some(OperationType::BLS12PAIR)
             },
-            BNPAI_OPERATION_RAW_VALUE => {
+            BNPAIR_OPERATION_RAW_VALUE => {
                 Some(OperationType::BNPAIR)
             },
             MNT4PAIR_OPERATION_RAW_VALUE => {
@@ -79,7 +79,7 @@ pub const G2MUL_OPERATION_RAW_VALUE: u8 = OperationType::G2MUL as u8;
 pub const G2MULTIEXP_OPERATION_RAW_VALUE: u8 = OperationType::G2MULTIEXP as u8;
 
 pub const BLS12PAIR_OPERATION_RAW_VALUE: u8 = OperationType::BLS12PAIR as u8;
-pub const BNPAI_OPERATION_RAW_VALUE: u8 = OperationType::BNPAIR as u8;
+pub const BNPAIR_OPERATION_RAW_VALUE: u8 = OperationType::BNPAIR as u8;
 pub const MNT4PAIR_OPERATION_RAW_VALUE: u8 = OperationType::MNT4PAIR as u8;
 pub const MNT6PAIR_OPERATION_RAW_VALUE: u8 = OperationType::MNT6PAIR as u8;
 

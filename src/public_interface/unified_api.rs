@@ -12,6 +12,7 @@ use static_assertions::const_assert;
 const_assert!(PREALLOCATE_FOR_RESULT_BYTES == crate::public_interface::constants::MAX_MODULUS_BYTE_LEN * 3 * 2);
 
 #[repr(u8)]
+#[derive(Copy, Clone, Debug)]
 pub enum OperationType {
     G1ADD = 1,
     G1MUL = 2,
@@ -62,6 +63,10 @@ impl OperationType {
                 None
             }
         }
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        *self as u8
     }
 }
 
@@ -198,9 +203,7 @@ pub extern "C" fn c_perform_operation(
             return 1u32;
         },
         Err(error) => {
-            use std::error::Error;
-
-            let err_description = error.description();
+            let err_description = error.to_string();
             let written = err_out.write(err_description.as_bytes());
             if let Ok(bytes_written) = written {
                 unsafe { *char_len = bytes_written as u32 };

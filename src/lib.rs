@@ -9,8 +9,12 @@ extern crate fixed_width_fp3_fp4;
 extern crate fixed_width_fp6;
 extern crate fixed_width_fp12;
 extern crate fixed_width_group_and_loop;
+
+#[cfg(feature = "gas_metering")]
 extern crate serde;
+#[cfg(feature = "gas_metering")]
 extern crate serde_json;
+#[cfg(feature = "gas_metering")]
 extern crate once_cell;
 
 mod arithmetics;
@@ -28,6 +32,8 @@ mod errors;
 mod constants;
 
 pub mod public_interface;
+
+#[cfg(feature = "gas_metering")]
 pub mod gas_meter;
 
 #[cfg(test)]

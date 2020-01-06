@@ -48,6 +48,7 @@ indicatif = {version = "*", features = ["with_rayon"]}
 default = ["gas_metering"]
 benchmarks = []
 gas_metering = ["serde", "serde_json", "once_cell"]
+c_api = []
 
 [profile.dev]
 incremental = false

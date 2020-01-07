@@ -7,7 +7,7 @@ use crate::constants::{MaxGroupSizeUint};
 
 use super::decode_fp::*;
 
-use super::decode_utils::split;
+use super::decode_utils::{split, decode_group_order_with_length};
 
 use crate::errors::ApiError;
 
@@ -15,8 +15,9 @@ pub(crate) fn parse_group_order_from_encoding<
     'a
     >(encoding: &'a [u8]) -> Result<(usize, MaxGroupSizeUint, &'a [u8]), ApiError>
 {
-    let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
-    let order = MaxGroupSizeUint::from_big_endian(&order);
+    let ((order, order_len), rest) = decode_group_order_with_length(&encoding)?;
+    // let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
+    // let order = MaxGroupSizeUint::from_big_endian(&order);
     if order.is_zero() {
         return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())))
     }
@@ -57,18 +58,6 @@ pub(crate) fn serialize_g1_point<
     result.extend(serialize_fp_fixed_len(modulus_len, &y)?);
 
     Ok(result)
-}
-
-pub(crate) fn get_g1_curve_params(bytes: &[u8]) -> Result<((&[u8], usize), &[u8]), ApiError> {
-    use crate::public_interface::constants::*;
-    let (order_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get group size length")?;
-    let order_len = order_len[0] as usize;
-    if order_len > MAX_GROUP_BYTE_LEN {
-        return Err(ApiError::InputError(format!("Group order length is too large, file {}, line {}", file!(), line!())));
-    }
-    let (order_encoding, rest) = split(rest, order_len, "Input is not long enough to get main group order size")?;
-
-    Ok(((order_encoding, order_len), rest))
 }
 
 pub(crate) fn decode_g1_point_from_xy<

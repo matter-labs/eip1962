@@ -85,6 +85,8 @@ pub const MNT6PAIR_OPERATION_RAW_VALUE: u8 = OperationType::MNT6PAIR as u8;
 
 // This is pure rust API
 pub fn perform_operation(operation: OperationType, input: &[u8]) -> Result<Vec<u8>, ApiError> {
+    assert!(std::option_env!("GAS_METERING").is_none(), "must be run only in production mode");
+
     match operation {
         OperationType::G1ADD => {
             PublicG1Api::add_points(&input)

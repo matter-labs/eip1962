@@ -23,7 +23,7 @@ pub(crate) fn decode_group_order_with_length<
     >
     (
         bytes: &'a [u8], 
-    ) -> Result<(MaxGroupSizeUint, &'a [u8]), ApiError>
+    ) -> Result<((MaxGroupSizeUint, usize), &'a [u8]), ApiError>
 {
     use crate::public_interface::constants::*;
 
@@ -35,7 +35,7 @@ pub(crate) fn decode_group_order_with_length<
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
     let x = MaxGroupSizeUint::from_big_endian(&be_encoding);
 
-    Ok((x, rest))
+    Ok( ((x, length), rest) )
 }
 
 

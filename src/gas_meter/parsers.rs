@@ -100,7 +100,7 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
     let ate_loop_hamming = calculate_hamming_weight(&x.as_ref());
 
     if ate_loop_hamming > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
-        return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
+        return Err(ApiError::InputError("Ate pairing loop has too large hamming weight".to_owned()));
     }
 
     let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;

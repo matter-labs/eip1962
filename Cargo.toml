@@ -49,6 +49,8 @@ default = ["gas_metering"]
 benchmarks = []
 gas_metering = ["serde", "serde_json", "once_cell"]
 c_api = []
+gas_metering_mode = []
+fuzzing_mode = []
 
 [profile.dev]
 incremental = false

@@ -370,8 +370,8 @@ fn eval_model(
         }
     }
 
-    if max_var_id +1 != variables.len() {
-        println!("Max variable ID (zero enumerated) {} is missing: coeffs = {:?}, variables = {:?}", max_var_id, coeffs_variables_and_powers, variables);
+    if max_var_id + 1 != variables.len() {
+        // println!("Max variable ID (zero enumerated) {} is missing: coeffs = {:?}, variables = {:?}", max_var_id, coeffs_variables_and_powers, variables);
         return Err(ApiError::MissingValue);
     }
 

@@ -54,12 +54,12 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         }
 
         if !p_0.is_on_curve() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
             }
         }
         if !p_1.is_on_curve() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
             }
         }
@@ -89,7 +89,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         }
 
         if !p_0.is_on_curve() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
             }
         }
@@ -130,7 +130,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp2(global_rest, modulus_len, &curve)?;
             if !p.is_on_curve() {
-                if !std::option_env!("GAS_METERING").is_some() {
+                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                     return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
                 }
             }
@@ -145,7 +145,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         }
 
         if bases.len() != scalars.len() || bases.len() == 0 {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
             } else {
                 let result = CurvePoint::zero(&curve);
@@ -184,12 +184,12 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         }
 
         if !p_0.is_on_curve() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
             }
         }
         if !p_1.is_on_curve() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
             }
         }
@@ -219,7 +219,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         }
 
         if !p_0.is_on_curve() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
             }
         }
@@ -260,7 +260,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         for _ in 0..num_pairs {
             let (p, local_rest) = decode_g2_point_from_xy_in_fp3(global_rest, modulus_len, &curve)?;
             if !p.is_on_curve() {
-                if !std::option_env!("GAS_METERING").is_some() {
+                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                     return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
                 }
             }
@@ -275,7 +275,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         }
 
         if bases.len() != scalars.len() || bases.len() == 0 {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
                 return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
             } else {
                 let result = CurvePoint::zero(&curve);

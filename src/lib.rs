@@ -23,6 +23,7 @@ mod pairings;
 mod sliding_window_exp;
 mod errors;
 mod constants;
+mod features;
 
 pub mod public_interface;
 

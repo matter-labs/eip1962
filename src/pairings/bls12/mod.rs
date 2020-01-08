@@ -393,7 +393,7 @@ impl<
                 return None;
             }
 
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() {
                 if points.len() == 0 || twists.len() == 0 {
                     return None;
                 }

@@ -22,7 +22,7 @@ mod one_off;
 #[test]
 #[ignore]
 fn run_pseudo_curves_monte_carlo() {
-    assert!(std::option_env!("GAS_METERING").is_some());
+    assert!(crate::features::in_gas_metering());
 
     use rand::{SeedableRng};
     use rand_xorshift::XorShiftRng;
@@ -170,7 +170,7 @@ fn run_pseudo_curves_monte_carlo() {
 #[test]
 #[ignore]
 fn run_bls12_bn_pseudo_curves_monte_carlo() {
-    assert!(std::option_env!("GAS_METERING").is_some());
+    assert!(crate::features::in_gas_metering());
 
     use rand::{SeedableRng};
     use rand_xorshift::XorShiftRng;
@@ -249,7 +249,7 @@ fn run_bls12_bn_pseudo_curves_monte_carlo() {
 #[test]
 #[ignore]
 fn run_mnt_pseudo_curves_monte_carlo() {
-    assert!(std::option_env!("GAS_METERING").is_some());
+    assert!(crate::features::in_gas_metering());
 
     use rand::{SeedableRng};
     use rand_xorshift::XorShiftRng;

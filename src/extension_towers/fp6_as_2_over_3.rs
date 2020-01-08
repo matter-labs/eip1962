@@ -342,7 +342,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
         let power = q_power - one;
         let (power, rem) = power.div_mod(six);
         if !rem.is_zero() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() {
                 return Err(());
             }
         }
@@ -357,7 +357,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
         let power = q_power - one;
         let (power, rem) = power.div_mod(six);
         if !rem.is_zero() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() {
                 return Err(());
             }
         }

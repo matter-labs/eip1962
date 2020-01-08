@@ -254,7 +254,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         let power = *modulus - one;
         let (power, rem) = power.div_mod(two);
         if !rem.is_zero() {
-            if !std::option_env!("GAS_METERING").is_some() {
+            if !crate::features::in_gas_metering() {
                 return Err(());
             }
         }

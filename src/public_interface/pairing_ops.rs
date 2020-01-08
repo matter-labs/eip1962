@@ -117,7 +117,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
-                if !crate::features::in_gas_metering() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
                 }
             }
@@ -134,7 +134,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
-                if !crate::features::in_gas_metering() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
                 }
             }
@@ -230,25 +230,25 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
             global_rest = rest;
             if !g1.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
                 }
             }
 
             if !g2.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
 
             if !g1.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
 
             if !g2.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
@@ -329,7 +329,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
-                if !crate::features::in_gas_metering() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue file {}, line {}", file!(), line!())));
                 }
             }
@@ -346,7 +346,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
-                if !crate::features::in_gas_metering() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is actually a residue, file {}, line {}", file!(), line!())));
                 }
             }
@@ -460,25 +460,25 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
             global_rest = rest;
             if !g1.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
                 }
             }
 
             if !g2.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
 
             if !g1.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
 
             if !g2.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
@@ -558,7 +558,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 6u64);
             if !is_not_a_root {
-                if !crate::features::in_gas_metering() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
                 }
             }
@@ -656,25 +656,25 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
             global_rest = rest;
             if !g1.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
                 }
             }
 
             if !g2.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
 
             if !g1.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
 
             if !g2.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
@@ -754,7 +754,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         {
             let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 4u64);
             if !is_not_a_root {
-                if !crate::features::in_gas_metering() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
                 }
             }
@@ -852,25 +852,25 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
             global_rest = rest;
             if !g1.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
                 }
             }
 
             if !g2.is_on_curve() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
 
             if !g1.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }
 
             if !g2.check_correct_subgroup() {
-                if !crate::features::in_gas_metering() && !crate::features::in_fuzzing() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
                 }
             }

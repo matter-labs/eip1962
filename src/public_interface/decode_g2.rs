@@ -41,7 +41,7 @@ pub(crate) fn create_fp2_extension<
     {
         let not_a_square = is_non_nth_root(&fp_non_residue, modulus, 2);
         if !not_a_square {
-            if !crate::features::in_gas_metering() {
+            if !crate::features::in_fuzzing_or_gas_metering() {
                 return Err(ApiError::InputError(format!("Non-residue for Fp2 is actually a residue, file {}, line {}", file!(), line!())));
             }
         }
@@ -83,7 +83,7 @@ pub(crate) fn create_fp3_extension<
     {
         let not_a_cube = is_non_nth_root(&fp_non_residue, modulus, 3);
         if !not_a_cube {
-            if !crate::features::in_gas_metering() {
+            if !crate::features::in_fuzzing_or_gas_metering() {
                 return Err(ApiError::InputError(format!("Non-residue for Fp3 is actually a residue, file {}, line {}", file!(), line!())));
             }
         }

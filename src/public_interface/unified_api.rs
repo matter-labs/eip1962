@@ -12,7 +12,7 @@ use static_assertions::const_assert;
 const_assert!(PREALLOCATE_FOR_RESULT_BYTES == crate::public_interface::constants::MAX_MODULUS_BYTE_LEN * 3 * 2);
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OperationType {
     G1ADD = 1,
     G1MUL = 2,

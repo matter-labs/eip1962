@@ -23,7 +23,7 @@ pub(crate) fn decode_group_order_with_length<
     >
     (
         bytes: &'a [u8], 
-    ) -> Result<((MaxGroupSizeUint, usize), &'a [u8]), ApiError>
+    ) -> Result<((usize, MaxGroupSizeUint), &'a [u8]), ApiError>
 {
     use crate::public_interface::constants::*;
 
@@ -35,29 +35,29 @@ pub(crate) fn decode_group_order_with_length<
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
     let x = MaxGroupSizeUint::from_big_endian(&be_encoding);
 
-    Ok( ((x, length), rest) )
+    Ok( ((length, x), rest) )
 }
 
 
-pub(crate) fn decode_loop_parameter_with_length<
-    'a
-    >
-    (
-        bytes: &'a [u8], 
-    ) -> Result<(MaxLoopParametersUint, &'a [u8]), ApiError>
-{
-    use super::sane_limits::MAX_LOOP_PARAMETERS_BYTE_LEN;
+// pub(crate) fn decode_loop_parameter_with_length<
+//     'a
+//     >
+//     (
+//         bytes: &'a [u8], 
+//     ) -> Result<(MaxLoopParametersUint, &'a [u8]), ApiError>
+// {
+//     use super::sane_limits::MAX_LOOP_PARAMETERS_BYTE_LEN;
 
-    let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
-    let length = length_encoding[0] as usize;
-    if length > MAX_LOOP_PARAMETERS_BYTE_LEN {
-        return Err(ApiError::InputError(format!("Encoded loop length is too large, file {}, line {}", file!(), line!())));
-    }
-    let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
-    let x = MaxLoopParametersUint::from_big_endian(&be_encoding);
+//     let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
+//     let length = length_encoding[0] as usize;
+//     if length > MAX_LOOP_PARAMETERS_BYTE_LEN {
+//         return Err(ApiError::InputError(format!("Encoded loop length is too large, file {}, line {}", file!(), line!())));
+//     }
+//     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
+//     let x = MaxLoopParametersUint::from_big_endian(&be_encoding);
 
-    Ok((x, rest))
-}
+//     Ok((x, rest))
+// }
 
 pub(crate) fn parse_modulus_and_length<
     'a

@@ -15,7 +15,7 @@ pub(crate) fn parse_group_order_from_encoding<
     'a
     >(encoding: &'a [u8]) -> Result<(usize, MaxGroupSizeUint, &'a [u8]), ApiError>
 {
-    let ((order, order_len), rest) = decode_group_order_with_length(&encoding)?;
+    let ((order_len, order), rest) = decode_group_order_with_length(&encoding)?;
     // let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
     // let order = MaxGroupSizeUint::from_big_endian(&order);
     if order.is_zero() {

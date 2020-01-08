@@ -16,7 +16,7 @@ use crate::public_interface::OperationType;
 pub struct GasMeter;
 
 // This is pure rust API
-pub fn perform_operation(operation: OperationType, input: &[u8]) -> Result<u64, ApiError> {
+pub fn meter_operation(operation: OperationType, input: &[u8]) -> Result<u64, ApiError> {
     match operation {
         OperationType::G1ADD => {
             meter_addition_g1(&input)

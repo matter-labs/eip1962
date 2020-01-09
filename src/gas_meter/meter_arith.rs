@@ -288,13 +288,13 @@ pub(crate) fn meter_multiexp<P: ArithmeticMultiplicationParams, M: ArithmeticMul
 
     let (discount_multiplier, (max_pairs, max_discount), discount_lookup) = multiexp_discounts.params();
 
-    if num_pairs > max_pairs {
-        return Ok(max_discount);
-    }
+    let discount = if num_pairs > max_pairs {
+        max_discount
+    } else {
+        *discount_lookup.get(&num_pairs).ok_or(ApiError::MissingValue)?
+    };
 
-    let discount = *discount_lookup.get(&num_pairs).ok_or(ApiError::MissingValue)?;
-
-    let mut result = per_pair.checked_mul(group_limbs as u64).ok_or(ApiError::Overflow)?;
+    let mut result = per_pair.checked_mul(num_pairs as u64).ok_or(ApiError::Overflow)?;
     result = result.checked_mul(discount).ok_or(ApiError::Overflow)?;
     result = result.checked_div(discount_multiplier).ok_or(ApiError::Overflow)?;
 

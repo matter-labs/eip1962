@@ -1,3 +1,4 @@
+#[allow(unreachable_code)]
 pub(crate) fn in_gas_metering() -> bool {
     #[cfg(feature = "gas_metering_mode")]
     return true;
@@ -5,6 +6,7 @@ pub(crate) fn in_gas_metering() -> bool {
     return std::option_env!("GAS_METERING").is_some();
 }
 
+#[allow(unreachable_code)]
 pub(crate) fn in_fuzzing() -> bool {
     #[cfg(feature = "fuzzing_mode")]
     return true;

@@ -158,11 +158,11 @@ pub(crate) fn num_units_for_group_order(order: &MaxGroupSizeUint) -> Result<usiz
     let limbs = (order.bits() + 63) / 64;
 
     if limbs < NUM_GROUP_LIMBS_MIN {
-        return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())));
+        return Err(ApiError::InputError(format!("Group has zero limbs, file {}, line {}", file!(), line!())));
     }
 
     if limbs > NUM_GROUP_LIMBS_MAX {
-        return Err(ApiError::InputError(format!("Group order is too large, file {}, line {}", file!(), line!())));
+        return Err(ApiError::InputError(format!("Group order has too many limbs, file {}, line {}", file!(), line!())));
     }
 
     Ok(limbs)

@@ -122,8 +122,8 @@ fn calculate_mnt_pairing_cost(
     const ATE_LOOP_HAMMING_INDEX: usize = 2;
     const EXP_W0_LOOP_BITS_INDEX: usize = 3;
     const EXP_W0_HAMMING_INDEX: usize = 4;
-    const EXP_W1_LOOP_BITS_INDEX: usize = 3;
-    const EXP_W1_HAMMING_INDEX: usize = 4;
+    const EXP_W1_LOOP_BITS_INDEX: usize = 5;
+    const EXP_W1_HAMMING_INDEX: usize = 6;
 
     debug_assert!(max_power == MNT4_MAX_MODULUS_POWER || max_power == MNT6_MAX_MODULUS_POWER);
 

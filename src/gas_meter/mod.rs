@@ -42,47 +42,12 @@ pub fn meter_operation(operation: OperationType, input: &[u8]) -> Result<u64, Ap
         OperationType::MNT6PAIR => {
             meter_mnt6(&input)
         },
-        _ => {
-            unimplemented!()
-        }
-        // OperationType::BLS12PAIR | OperationType::BNPAIR | OperationType::MNT4PAIR | OperationType::MNT6PAIR) => {
-        //     use crate::field::*;
-        //     use crate::public_interface::decode_utils::*;
-
-        //     let modulus_limbs = {
-        //         let (_, modulus, _) = parse_modulus_and_length(&input)?;
-        //         let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-
-        //         modulus_limbs
-        //     };
-
-        //     match operation {
-        //         OperationType::BLS12PAIR => {
-        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_bls12); 
-
-        //             result
-        //         },
-        //         OperationType::BNPAIR => {
-        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_bn); 
-
-        //             result
-        //         },
-        //         OperationType::MNT4PAIR => {
-        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_mnt4); 
-
-        //             result
-        //         },
-        //         OperationType::MNT6PAIR => {
-        //             let result: Result<Vec<u8>, ApiError> = expand_for_modulus_limbs!(modulus_limbs, PairingApiImplementation, input, pair_mnt6); 
-
-        //             result
-        //         },
-
-        //         _ => {
-        //             unreachable!()
-        //         }
-        //     }
-        // }
+        OperationType::BLS12PAIR => {
+            meter_bls12(&input)
+        },
+        OperationType::BNPAIR => {
+            meter_bn(&input)
+        } 
     }
 }
 
@@ -197,6 +162,14 @@ fn meter_multiexp_g2(input: &[u8]) -> Result<u64, ApiError> {
     meter_arith::meter_multiexp(modulus_limbs, order_limbs, num_pairs, params, discounts)
 }
 
+fn meter_bls12(input: &[u8]) -> Result<u64, ApiError> {
+    self::meter_pairing::meter_bls12_pairing(input, &*self::meter_pairing::BLS12_PARAMS_INSTANCE, self::meter_pairing::BLS12_MAX_MODULUS_POWER)
+}
+
+fn meter_bn(input: &[u8]) -> Result<u64, ApiError> {
+    self::meter_pairing::meter_bn_pairing(input, &*self::meter_pairing::BN_PARAMS_INSTANCE, self::meter_pairing::BN_MAX_MODULUS_POWER)
+}
+
 fn meter_mnt4(input: &[u8]) -> Result<u64, ApiError> {
     self::meter_pairing::meter_mnt_pairing(input, &*self::meter_pairing::MNT4_PARAMS_INSTANCE, self::meter_pairing::MNT4_MAX_MODULUS_POWER)
 }
@@ -233,10 +206,10 @@ impl GasMeter {
 
                 match curve_type[0] {
                     BLS12 => {
-                        unimplemented!()
+                        meter_bls12(&rest)
                     },
                     BN => {
-                        unimplemented!()
+                        meter_bn(&rest)
                     },
                     MNT4 => {
                         meter_mnt4(&rest)

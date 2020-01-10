@@ -38,6 +38,14 @@ use super::sane_limits::*;
 
 use crate::errors::ApiError;
 
+fn pairing_result_false() -> Vec<u8> {
+    vec![0u8]
+}
+
+fn pairing_result_true() -> Vec<u8> {
+    vec![1u8]
+}
+
 pub struct PublicPairingApi;
 
 impl PairingApi for PublicPairingApi {
@@ -265,7 +273,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(vec![1u8]);
+            return Ok(pairing_result_false());
         }
 
         let engine = Bls12Instance {
@@ -289,9 +297,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let one_fp12 = Fp12::one(&extension_12);
         let pairing_result = pairing_result.unwrap();
         let result = if pairing_result == one_fp12 {
-            vec![1u8]
+            pairing_result_true()
         } else {
-            vec![0u8]
+            pairing_result_false()
         };
 
         Ok(result)
@@ -495,7 +503,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(vec![1u8]);
+            return Ok(pairing_result_false());
         }
 
         let engine = BnInstance {
@@ -521,9 +529,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let one_fp12 = Fp12::one(&extension_12);
         let pairing_result = pairing_result.unwrap();
         let result = if pairing_result == one_fp12 {
-            vec![1u8]
+            pairing_result_true()
         } else {
-            vec![0u8]
+            pairing_result_false()
         };
 
         Ok(result)
@@ -691,7 +699,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(vec![1u8]);
+            return Ok(pairing_result_false());
         }
 
         let engine = MNT6Instance {
@@ -717,9 +725,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let one_fp6 = Fp6::one(&extension_6);
         let pairing_result = pairing_result.unwrap();
         let result = if pairing_result == one_fp6 {
-            vec![1u8]
+            pairing_result_true()
         } else {
-            vec![0u8]
+            pairing_result_false()
         };
 
         Ok(result)
@@ -887,7 +895,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(vec![1u8]);
+            return Ok(pairing_result_false());
         }
 
         let engine = MNT4Instance {
@@ -913,9 +921,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let one_fp4 = Fp4::one(&extension_4);
         let pairing_result = pairing_result.unwrap();
         let result = if pairing_result == one_fp4 {
-            vec![1u8]
+            pairing_result_true()
         } else {
-            vec![0u8]
+            pairing_result_false()
         };
 
         Ok(result)

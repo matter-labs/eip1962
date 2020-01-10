@@ -43,6 +43,9 @@ serde_json = { version = "1.0" }
 
 rayon = "1.*"
 indicatif = {version = "*", features = ["with_rayon"]}
+parity-crypto = {version = "0.4", features = ["publickey"]}
+ethereum-types = "0.8"
+keccak-hash = "0.4"
 
 [features]
 default = ["gas_metering"]

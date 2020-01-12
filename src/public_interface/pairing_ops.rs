@@ -24,7 +24,7 @@ use crate::pairings::mnt4::{MNT4Instance};
 use crate::pairings::mnt6::{MNT6Instance};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
-use crate::sliding_window_exp::WindowExpBase;
+// use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
 use crate::fp::Fp;
 use crate::constants::*;
@@ -158,23 +158,44 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
+        let base_precomp = Fp6Fp12FrobeniusBaseElements::construct(
+            &modulus, 
+            &fp2_non_residue
+        ).map_err(|_| {
+            ApiError::UnknownParameter("Can not make base precomputations for Fp6/Fp12 frobenius".to_owned())
+        })?;
+
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-
-        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
         {
-            extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-
         {
-            extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+            extension_12.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
+
+        // let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
+
+        // let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
+
+        // {
+        //     extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
+        //     })?;
+        // }
+
+        // let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
+
+        // {
+        //     extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+        //         ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
+        //     })?;
+        // }
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
 
@@ -370,23 +391,44 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             },
         };
 
+        let base_precomp = Fp6Fp12FrobeniusBaseElements::construct(
+            &modulus, 
+            &fp2_non_residue
+        ).map_err(|_| {
+            ApiError::UnknownParameter("Can not make base precomputations for Fp6/Fp12 frobenius".to_owned())
+        })?;
+
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-
-        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
         {
-            extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-
         {
-            extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+            extension_12.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
+
+        // let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
+
+        // let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
+
+        // {
+        //     extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
+        //     })?;
+        // }
+
+        // let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
+
+        // {
+        //     extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
+        //         ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
+        //     })?;
+        // }
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
 
@@ -572,19 +614,39 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             }
         }
 
+        let base_precomp = Fp3Fp6FrobeniusBaseElements::construct(
+            &modulus, &fp_non_residue
+        ).map_err(|_| {
+            ApiError::UnknownParameter("Can not make base precomputations for Fp3/Fp6 frobenius".to_owned())
+        })?;
+
         // build an extension field
         let mut extension_3 = Extension3::new(fp_non_residue);
-        extension_3.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+        extension_3.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp3".to_owned())
         })?;
 
         let mut extension_6 = Extension2Over3::new(Fp3::zero(&extension_3));
 
         {
-            extension_6.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+            extension_6.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
             })?;
         }
+
+        // // build an extension field
+        // let mut extension_3 = Extension3::new(fp_non_residue);
+        // extension_3.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+        //     ApiError::InputError("Failed to calculate Frobenius coeffs for Fp3".to_owned())
+        // })?;
+
+        // let mut extension_6 = Extension2Over3::new(Fp3::zero(&extension_3));
+
+        // {
+        //     extension_6.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
+        //     })?;
+        // }
 
         let one = Fp::one(&base_field);
 
@@ -768,19 +830,39 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             }
         }
 
+        let base_precomp = Fp2Fp4FrobeniusBaseElements::construct(
+            &modulus, &fp_non_residue
+        ).map_err(|_| {
+            ApiError::UnknownParameter("Can not make base precomputations for Fp3/Fp6 frobenius".to_owned())
+        })?;
+
         // build an extension field
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+        extension_2.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
             ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
         })?;
 
         let mut extension_4 = Extension2Over2::new(Fp2::zero(&extension_2));
 
         {
-            extension_4.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+            extension_4.calculate_frobenius_coeffs_with_precomp(&base_precomp).map_err(|_| {
                 ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp4".to_owned())
             })?;
         }
+
+        // // build an extension field
+        // let mut extension_2 = Extension2::new(fp_non_residue);
+        // extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+        //     ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
+        // })?;
+
+        // let mut extension_4 = Extension2Over2::new(Fp2::zero(&extension_2));
+
+        // {
+        //     extension_4.calculate_frobenius_coeffs(&modulus).map_err(|_| {
+        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp4".to_owned())
+        //     })?;
+        // }
 
         let one = Fp::one(&base_field);
 

@@ -238,6 +238,26 @@ fn test_bls12_pairings_from_vectors() {
     }
 }
 
+#[test]
+#[ignore]
+fn test_bench_bls12_pairings_from_vectors() {
+    let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
+    assert!(curves.len() != 0);
+    for (curve, _) in curves.into_iter() {
+        let calldata = assemble_single_curve_params(curve, 2).unwrap();
+        let start = std::time::Instant::now();
+        let result = call_pairing_engine(&calldata[..]);
+        println!("Taken {:?}", start.elapsed());
+
+        if !result.is_ok() {
+            println!("Error {}", result.err().unwrap());
+        } else {
+            let result = result.unwrap()[0];
+            assert!(result == 1u8);
+        }
+    }
+}
+
 extern crate hex;
 extern crate csv;
 

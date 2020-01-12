@@ -2,7 +2,7 @@ use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
 use super::fp2::{Fp2, Extension2};
-
+use super::Fp6Fp12FrobeniusBaseElements;
 
 // this implementation assumes extension using polynomial v^3 - xi = 0
 // multiply_by_non_residue function in the extension field actually depends
@@ -353,7 +353,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
-        debug_assert!(self.extension_field.frobenius_coeffs_are_calculated);
+        assert!(self.extension_field.frobenius_coeffs_are_calculated);
         match power {
             0 | 1 | 2 | 3 | 6 => {
 
@@ -449,6 +449,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
 
         let f_0_c2 = f_0.clone();
 
+        // These as a structure NON_RESIDUE**(2*((q^l) - 1) / 3)
+
         let mut f_1_c2 = f_1.clone();
         f_1_c2.square();
         let mut f_2_c2 = f_2.clone();
@@ -466,6 +468,126 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         Ok(())
     }
 
+    pub(crate) fn calculate_frobenius_coeffs_optimized(
+        &mut self,
+        modulus: &MaxFieldUint
+    ) -> Result<(), ()> {
+        // NON_RESIDUE**(((q^0) - 1) / 3)
+        let non_residue = &self.non_residue;
+        let f_0 = Fp2::one(self.field);
+
+        // then
+        // c1 = Fp2**( (q^1 - 1) / 3) has to be calculated
+        // c2 = Fp2**( (q^2 - 1) / 3) has to be calculated
+        // c3 = Fp2**( (q^3 - 1) / 3) = Fp2**(( (q^2 - 1) / 3) * q + (q - 1) / 3 ) =
+        // = Fp2**( ( (q^2 - 1) / 3) * q ) * Fp2**((q - 1) / 3) =
+        // = c2.frobenius(1) * c1
+
+        let modulus = MaxFieldSquaredUint::from(modulus.as_ref());
+        let mut q_power = modulus;
+        let one = MaxFieldSquaredUint::from(1u64);
+        let three = MaxFieldSquaredUint::from(3u64);
+
+        // 1
+        let f_1 = {
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(three);
+            if !rem.is_zero() {
+                if !crate::features::in_gas_metering() {
+                    return Err(());
+                }
+            }
+
+            non_residue.pow(power.as_ref())
+        };
+
+        // 2
+        let f_2 = {
+            q_power = q_power.adaptive_multiplication(modulus);
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(three);
+            if !rem.is_zero() {
+                if !crate::features::in_gas_metering() {
+                    return Err(());
+                }
+            }
+
+            non_residue.pow(power.as_ref())
+        };
+
+        let mut f_3 = f_2.clone();
+        f_3.frobenius_map(1);
+        f_3.mul_assign(&f_1);
+
+        let f_4 = Fp2::zero(self.field);
+        let f_5 = Fp2::zero(self.field);
+
+        let f_0_c2 = f_0.clone();
+
+        // These as a structure NON_RESIDUE**(2*((q^k) - 1) / 3)
+
+        let mut f_1_c2 = f_1.clone();
+        f_1_c2.square();
+        let mut f_2_c2 = f_2.clone();
+        f_2_c2.square();
+        let mut f_3_c2 = f_3.clone();
+        f_3_c2.square();
+
+        let f_4_c2 = f_4.clone();
+        let f_5_c2 = f_5.clone();
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3, f_4, f_5];
+        self.frobenius_coeffs_c2 = [f_0_c2, f_1_c2, f_2_c2, f_3_c2, f_4_c2, f_5_c2];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs_with_precomp(
+        &mut self,
+        precomp: &Fp6Fp12FrobeniusBaseElements<'a, E, F>
+    ) -> Result<(), ()> {
+        let f_0 = Fp2::one(self.field);
+        let mut f_1 = precomp.non_residue_in_q_minus_one_by_six.clone();
+        f_1.square();
+
+        let mut f_2 = precomp.non_residue_in_q_squared_minus_one_by_six.clone();
+        f_2.square();
+
+        // then
+        // c1 = Fp2**( (q^1 - 1) / 3) has to be calculated
+        // c2 = Fp2**( (q^2 - 1) / 3) has to be calculated
+        // c3 = Fp2**( (q^3 - 1) / 3) = Fp2**(( (q^2 - 1) / 3) * q + (q - 1) / 3 ) =
+        // = Fp2**( ( (q^2 - 1) / 3) * q ) * Fp2**((q - 1) / 3) =
+        // = c2.frobenius(1) * c1
+
+        let mut f_3 = f_2.clone();
+        f_3.frobenius_map(1);
+        f_3.mul_assign(&f_1);
+
+        let f_4 = Fp2::zero(self.field);
+        let f_5 = Fp2::zero(self.field);
+
+        let f_0_c2 = f_0.clone();
+
+        // These as a structure NON_RESIDUE**(2*((q^k) - 1) / 3)
+
+        let mut f_1_c2 = f_1.clone();
+        f_1_c2.square();
+        let mut f_2_c2 = f_2.clone();
+        f_2_c2.square();
+        let mut f_3_c2 = f_3.clone();
+        f_3_c2.square();
+
+        let f_4_c2 = f_4.clone();
+        let f_5_c2 = f_5.clone();
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3, f_4, f_5];
+        self.frobenius_coeffs_c2 = [f_0_c2, f_1_c2, f_2_c2, f_3_c2, f_4_c2, f_5_c2];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension3Over2<'a, E, F> {

@@ -418,7 +418,7 @@ mod test {
     }
 
     #[test]
-    fn test_calculate_example_prices() {
+    fn test_calculate_example_prices_ey_pendulum() {
         let ey_pendulum_gas_cost = super::calculate_mnt_pairing_cost(
             10, 
             5, 
@@ -431,5 +431,22 @@ mod test {
         ).unwrap();
 
         println!("EY pendulum cost for 4 pairs = {}", ey_pendulum_gas_cost);
+    }
+
+    #[test]
+    fn test_calculate_example_prices_bn254() {
+        let u_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0x44e992b44a6909f1]);
+        let six_u_plus_two_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0x9d797039be763ba8, 1]);
+        let bn_4_pairs_cost = super::calculate_bn_pairing_cost(
+            4, 
+            4, 
+            4, 
+            (65, six_u_plus_two_hamming as u64), 
+            (63, u_hamming as u64), 
+            &*super::BN_PARAMS_INSTANCE, 
+            6).unwrap();
+
+        println!("BN254 for 4 pairs = {}", bn_4_pairs_cost);
+        
     }
 }

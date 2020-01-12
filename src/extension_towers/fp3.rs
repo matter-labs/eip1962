@@ -2,6 +2,7 @@ use crate::fp::Fp;
 use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
+use super::Fp3Fp6FrobeniusBaseElements;
 
 // this implementation assumes extension using polynomial u^3 + m = 0
 pub struct Fp3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
@@ -304,7 +305,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
-        debug_assert!(self.extension_field.frobenius_coeffs_are_calculated);
+        assert!(self.extension_field.frobenius_coeffs_are_calculated);
         self.c1.mul_assign(&self.extension_field.frobenius_coeffs_c1[power % 3]);
         self.c2.mul_assign(&self.extension_field.frobenius_coeffs_c2[power % 3]);
     }
@@ -369,6 +370,89 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
             }
         }
         let f_2 = non_residue.pow(power.as_ref());
+
+        let f_0_c2 = f_0.clone();
+
+        let mut f_1_c2 = f_1.clone();
+        let mut f_2_c2 = f_2.clone();
+
+        f_1_c2.square();
+        f_2_c2.square();
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2];
+        self.frobenius_coeffs_c2 = [f_0_c2, f_1_c2, f_2_c2];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs_optimized(
+        &mut self,
+        modulus: &MaxFieldUint,
+    ) -> Result<(), ()> {
+        // NON_RESIDUE**(((q^0) - 1) / 3)
+        let non_residue = &self.non_residue;
+        let f_0 = Fp::one(self.field);
+
+        // use a fact that Fp ** (q - 1) == 1 and that 3 | q - 1
+
+        // then
+        // c1 = Fp**( (q^1 - 1) / 3) has to be calculated
+        // c2 = Fp**( (q^2 - 1) / 3) = Fp**( ((q - 1)/3) *(q+1)) = 
+        // = c1 * c1.frobenius(1)
+
+        let modulus = MaxFieldSquaredUint::from(modulus.as_ref());
+        let q_power = modulus;
+        let one = MaxFieldSquaredUint::from(1u64);
+        let three = MaxFieldSquaredUint::from(3u64);
+
+        // 1
+        let f_1 = {
+            let power = q_power - one;
+            let (power, rem) = power.div_mod(three);
+            if !rem.is_zero() {
+                if !crate::features::in_gas_metering() {
+                    return Err(());
+                }
+            }
+
+            non_residue.pow(power.as_ref())
+        };
+
+        // c1 * c1.frobenius(1) == c1^2
+        let mut f_2 = f_1.clone();
+        // f_2.frobenius_map(1); // we could leave it formally, but it's an identity
+        f_2.square();
+
+        let f_0_c2 = f_0.clone();
+
+        let mut f_1_c2 = f_1.clone();
+        let mut f_2_c2 = f_2.clone();
+
+        f_1_c2.square();
+        f_2_c2.square();
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2];
+        self.frobenius_coeffs_c2 = [f_0_c2, f_1_c2, f_2_c2];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs_with_precomp(
+        &mut self,
+        precomp: &Fp3Fp6FrobeniusBaseElements<'a, E, F>
+    ) -> Result<(), ()> {    
+        let f_0 = Fp::one(self.field);
+
+        // precomputation has is by 6, so square
+        let mut f_1 = precomp.non_residue_in_q_minus_one_by_six.clone();
+        f_1.square();
+        
+        // c1 * c1.frobenius(1) == c1^2
+        let mut f_2 = f_1.clone();
+        // f_2.frobenius_map(1); // we could leave it formally, but it's an identity
+        f_2.square();
 
         let f_0_c2 = f_0.clone();
 

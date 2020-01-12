@@ -3,6 +3,7 @@ use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
 use super::fp2::{Fp2, Extension2};
+use super::Fp2Fp4FrobeniusBaseElements;
 
 pub struct Fp4<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
     pub c0: Fp2<'a, E, F>,
@@ -253,7 +254,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp4<'a,
     }
 
     fn frobenius_map(&mut self, power: usize) {
-        debug_assert!(self.extension_field.frobenius_coeffs_are_calculated);
+        assert!(self.extension_field.frobenius_coeffs_are_calculated);
         match power {
             1 | 2 => {
 
@@ -337,6 +338,68 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
             }
         }
         let f_2 = non_residue.pow(power.as_ref());
+
+        let f_3 = Fp::zero(self.field.field);
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs_optimized(
+        &mut self,
+        modulus: &MaxFieldUint,
+    ) -> Result<(), ()> {    
+        use super::is_one_mod_four;
+
+        if !is_one_mod_four(modulus) {
+            if !crate::features::in_gas_metering() {
+                return Err(());
+            }
+        }
+
+        // use a fact that Fp ** (q - 1) == 1 and that 4 | q - 1
+
+        // then
+        // c1 = Fp**( (q^1 - 1) / 4) has to be calculated
+        // c2 = Fp**( (q^2 - 1) / 4) = Fp**( ((q - 1)/4) *(q+1)) = 
+        // = c1 * c1.frobenius(1)
+        // c3 is no calculated
+
+        // NON_REDISUE**(((q^0) - 1) / 4)
+        let non_residue = &self.field.non_residue;
+        let f_0 = Fp::one(self.field.field);
+
+        // NON_REDISUE**(((q^1) - 1) / 4)
+        let power = *modulus >> 2;
+        let f_1 = non_residue.pow(power.as_ref());
+
+        // c1 * c1.frobenius(1) == c1^2
+        let mut f_2 = f_1.clone();
+        // f_2.frobenius_map(1); // we could leave it formally, but it's an identity
+        f_2.square();
+
+        let f_3 = Fp::zero(self.field.field);
+
+        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3];
+        self.frobenius_coeffs_are_calculated = true;
+
+        Ok(())
+    }
+
+    pub(crate) fn calculate_frobenius_coeffs_with_precomp(
+        &mut self,
+        precomp: &Fp2Fp4FrobeniusBaseElements<'a, E, F>
+    ) -> Result<(), ()> {    
+        let f_0 = Fp::one(self.field.field);
+
+        let f_1 = precomp.non_residue_in_q_minus_one_by_four.clone();
+    
+        // c1 * c1.frobenius(1) == c1^2
+        let mut f_2 = f_1.clone();
+        // f_2.frobenius_map(1); // we could leave it formally, but it's an identity
+        f_2.square();
 
         let f_3 = Fp::zero(self.field.field);
 

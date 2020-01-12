@@ -326,4 +326,14 @@ mod test {
         let t = &*super::MULTIEXP_PARAMS_INSTANCE;
         println!("Multiexp discounts = {:?}", t);
     }
+
+    #[test]
+    fn test_calculate_example_arithmetic_prices_bn254() {
+        let addition_price = super::meter_addition(4, &*super::G1_ADDITION_PARAMS_INSTANCE).unwrap();
+        let mul_price = super::meter_multiplication(4, 4, &*super::G1_MULTIPLICATION_PARAMS_INSTANCE).unwrap();
+
+        println!("BN254 addition price = {}", addition_price);
+        println!("BN254 multiplication price = {}", mul_price);
+        
+    }
 }

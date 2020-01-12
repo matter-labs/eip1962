@@ -380,7 +380,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
         unreachable!();
     }
 
+    #[inline]
     fn frobenius_map(&mut self, _power: usize) {
-        unreachable!();
+        // unreachable!();
     }
 }

@@ -387,20 +387,21 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
         // then
         // c1 = Fp**( (q^1 - 1) / 6) has to be calculated
         // c2 = Fp**( (q^2 - 1) / 6) = Fp**( ((q - 1)/6) * (q+1)) = 
-        // = c1 * c1.frobenius(1) = c1 ^ 2 but c2 is not used
+        // = c1 * c1.frobenius(1) = c1 ** 2 but c2 is not used
 
         // c3 = Fp**( (q^3 - 1) / 6) = Fp**(( (q - 1) / 6) * (q^2 + q + 1) ) =
         // = c1 * c1.frobenius(2) * c1.frobenius(1) = c2 * c1.frobenius(2)
-        // c4 is not calculated
-        // c5 is not calculated
+        // c4 = Fp**( (q^4 - 1) / 6) == c1 ** (q^3 + q^2 + q + 1) = 
+        // = c1 ** 4 but c4 is not calculated
+        // c5 = Fp**( (q^5 - 1) / 6) == c1 ** 5 but c5 is not calculated
 
         // alternative c3 = Fp**( (q^3 - 1) / 6) = Fp**(( (q - 1) / 6) * (q^2 + q + 1) ) =
         // == Fp**(( (q - 1) / 6) * ((q-1)(q + 2) + 3) ) = c1 ** 3
 
-        let modulus = MaxFieldSquaredUint::from(modulus.as_ref());
+        let modulus = MaxFieldUint::from(modulus.as_ref());
         let q_power = modulus;
-        let one = MaxFieldSquaredUint::from(1u64);
-        let six = MaxFieldSquaredUint::from(6u64);
+        let one = MaxFieldUint::from(1u64);
+        let six = MaxFieldUint::from(6u64);
 
         // 1
         let f_1 = {

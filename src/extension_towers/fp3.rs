@@ -399,12 +399,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         // then
         // c1 = Fp**( (q^1 - 1) / 3) has to be calculated
         // c2 = Fp**( (q^2 - 1) / 3) = Fp**( ((q - 1)/3) *(q+1)) = 
-        // = c1 * c1.frobenius(1)
+        // = c1 * c1.frobenius(1) = c1 ** 2
 
-        let modulus = MaxFieldSquaredUint::from(modulus.as_ref());
+        let modulus = MaxFieldUint::from(modulus.as_ref());
         let q_power = modulus;
-        let one = MaxFieldSquaredUint::from(1u64);
-        let three = MaxFieldSquaredUint::from(3u64);
+        let one = MaxFieldUint::from(1u64);
+        let three = MaxFieldUint::from(3u64);
 
         // 1
         let f_1 = {
@@ -421,7 +421,6 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
 
         // c1 * c1.frobenius(1) == c1^2
         let mut f_2 = f_1.clone();
-        // f_2.frobenius_map(1); // we could leave it formally, but it's an identity
         f_2.square();
 
         let f_0_c2 = f_0.clone();

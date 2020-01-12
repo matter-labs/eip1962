@@ -603,7 +603,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         let f_1 = precomp.non_residue_in_q_minus_one_by_six.clone();
         let f_2 = precomp.non_residue_in_q_squared_minus_one_by_six.clone();
 
-        // use a fact that Fp2 ** (q^2 - 1) == 1 and that 6 | q^2 - 1
+        // use a fact that Fp2 ** (q^2 - 1) == 1 and that 6 | q^2 - 1 and that 6 | q - 1
 
         // then
         // c1 = Fp2**( (q^1 - 1) / 6) has to be calculated
@@ -611,9 +611,15 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         // c3 = Fp2**( (q^3 - 1) / 6) = Fp2**(( (q^2 - 1) / 6) * q + (q - 1) / 6 ) =
         // = Fp2**( ( (q^2 - 1) / 6) * q ) * Fp2**((q - 1) / 6) =
         // = c2.frobenius(1) * c1
-        // c4 is not calculated
-        // c5 is not calculated
+        // c4 = c2.frobenius(0) ** 2
+        // c5 = c1 * (c2.frobenius(1) ** 2)
         // c6 = Fp2**( (q^6 - 1) / 6) = Fp2**( (q^2 - 1)/6 * 3) = c2 ** 3
+        // c7 = c1 * (c2.frobenius(1) ** 3)
+        // c8 = c2.frobenius(0) ** 4
+        // c9 = c1 * (c2.frobenius(1) ** 4)
+        // c10 = Fp2**( (q^11 - 1) / 6) = c2 ** (q^8 + q^6 + q^4 + q^2 + 1) = c2.frobenius(0) ** 5
+        // c11 = Fp2**( (q^11 - 1) / 6) = Fp2**((q - 1) / 6) * c2 ** (q^9 + q^7 + q^5 + q^3 + q) =
+        // = c1 * (c2.frobenius(1) ** 5)
 
         let mut f_3 = f_2.clone();
         f_3.frobenius_map(1);

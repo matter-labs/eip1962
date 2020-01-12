@@ -482,6 +482,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         // c3 = Fp2**( (q^3 - 1) / 3) = Fp2**(( (q^2 - 1) / 3) * q + (q - 1) / 3 ) =
         // = Fp2**( ( (q^2 - 1) / 3) * q ) * Fp2**((q - 1) / 3) =
         // = c2.frobenius(1) * c1
+        // c4 = c2.frobenius(0) ** 2
+        // c5 = c1 * (c2.frobenius(1) ** 2)
 
         let modulus = MaxFieldSquaredUint::from(modulus.as_ref());
         let mut q_power = modulus;

@@ -364,8 +364,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         // then
         // c1 = Fp**( (q^1 - 1) / 4) has to be calculated
         // c2 = Fp**( (q^2 - 1) / 4) = Fp**( ((q - 1)/4) *(q+1)) = 
-        // = c1 * c1.frobenius(1)
-        // c3 is no calculated
+        // = c1 * c1.frobenius(1) = c1 ** 2
+        // c3 = c1**3 is not calculated
 
         // NON_REDISUE**(((q^0) - 1) / 4)
         let non_residue = &self.field.non_residue;

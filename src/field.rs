@@ -104,28 +104,6 @@ pub(crate) fn slice_to_u64_vec<S: AsRef<[u64]>>(v: S) -> Vec<u64> {
     ret
 }
 
-// use crate::arrayvec::{ArrayVec, Array};
-
-// pub(crate) fn slice_to_fixed_size_array<S: AsRef<[u64]>, A: Array<Item = u64>>(v: S) -> ArrayVec<A> {
-//     let as_ref = v.as_ref();
-
-//     let mut num_words = as_ref.len();
-//     for v in as_ref.iter().rev() {
-//         if *v == 0 {
-//             num_words -= 1;
-//         } else {
-//             break;
-//         }
-//     }
-
-//     debug_assert!(num_words <= A::CAPACITY);
-
-//     let mut ret = ArrayVec::<A>::new();
-//     ret.try_extend_from_slice(&as_ref[0..num_words]).expect("must extend with enough capacity");
-
-//     ret
-// }
-
 fn num_words(number: &MaxFieldSquaredUint) -> usize {
     let bits = number.bits();
 
@@ -197,6 +175,11 @@ pub(crate) fn calculate_num_limbs(bitlength: usize) -> Result<usize, ()> {
 }
 
 pub fn field_from_modulus<R: ElementRepr>(modulus: &MaxFieldUint) -> Result<PrimeField<R>, ()> {
+    if modulus.low_u64() & 1 == 0 {
+        // modulus is even
+        return Err(());
+    }
+
     let bitlength = modulus.bits();
     let num_limbs = calculate_num_limbs(bitlength)?;
 
@@ -211,7 +194,12 @@ pub fn field_from_modulus<R: ElementRepr>(modulus: &MaxFieldUint) -> Result<Prim
         return Err(());
     }
 
-    let r2 = (r * r) % modulus;
+    let r2 = r.adaptive_multiplication(r);
+    let r2 = r2 % modulus;
+
+    // debug_assert!((r * r) % modulus == r2);
+
+    // let r2 = (r * r) % modulus;
     if num_words(&r2) > R::NUM_LIMBS {
         return Err(());
     }
@@ -262,4 +250,64 @@ pub(crate) fn new_field<R: ElementRepr>(modulus: &str, radix: usize) -> Result<P
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     field_from_modulus(&modulus)
+}
+
+#[cfg(test)]
+mod test {
+    use num_bigint::BigUint;
+
+    #[test]
+    fn test_64_subs_vs_division() {
+        use crate::constants::*;
+        use num_traits::Num;
+
+        let modulus_biguint = BigUint::from_str_radix("90478214930942163331059450080490962782645063145694412829751296064846357295922334563151067188227020604570222293387098730257627925580549709781572499823579422083606813980978533736029952476604411769448188461808725324994973770830757245236797352800919619593992035038055539141605771028907859068447994637683496172821", 10).unwrap();
+
+        assert_eq!(modulus_biguint.bits(), 1024);
+
+        let modulus = MaxFieldSquaredUint::from_big_endian(&modulus_biguint.to_bytes_be());
+
+        let num_limbs = 16;
+
+        let t = MaxFieldSquaredUint::one() << ((num_limbs * 64) as u32);
+
+        const REPEATS: usize = 10000;
+        
+        let start = std::time::Instant::now();
+
+        let mut i = 0;
+        for _ in 0..REPEATS {
+            let _ = t % modulus;
+            i += 1;
+        }
+
+        println!("Time for one division is {} ns", start.elapsed().as_nanos() / (REPEATS as u128));
+
+        assert!(i == REPEATS);
+    }
+
+    #[test]
+    fn test_field_construction_speed() {
+        use crate::constants::*;
+        use num_traits::Num;
+
+        let modulus_biguint = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        assert_eq!(modulus_biguint.bits(), 381);
+
+        let modulus = MaxFieldUint::from_big_endian(&modulus_biguint.to_bytes_be());
+
+        const REPEATS: usize = 10000;
+        
+        let start = std::time::Instant::now();
+
+        let mut i = 0;
+        for _ in 0..REPEATS {
+            let _ = super::field_from_modulus::<super::U384Repr>(&modulus).unwrap();
+            i += 1;
+        }
+
+        println!("Time to construct 381 field is {} ns", start.elapsed().as_nanos() / (REPEATS as u128));
+
+        assert!(i == REPEATS);
+    }
 }

@@ -7,8 +7,6 @@ Features (WIP):
 - [x] Weierstrass curves implementation
   - [x] a = 0
   - [x] generic case (a != 0, b != 0)
-  - [ ] b = 0 (most likely will not be implemented to avoid point (0,0) being on curve)
-  - [ ] a = -3 (not a priority, can be covered by generic case w/o much performance hit and with simpler gas cost schedule)
 - [x] Extension towers
   - [x] Fp2
   - [x] Fp3
@@ -16,12 +14,12 @@ Features (WIP):
   - [x] Fp6 as 2 over 3
   - [x] Fp6 as 3 over 2
   - [x] Fp12 as 2 over 3 over 2
-- [ ] Pairings
+- [x] Pairings
   - [x] BLS12 curves family
   - [x] BN family
   - [x] MNT6 family
   - [x] MNT4 family
-  - [ ] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing)
+  - [x] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing)
     - [x] Test over a single k=6 curve from Zexe 
 
 # ABI interface
@@ -30,10 +28,8 @@ See [ABI.md](ABI.md).
 
 # Performance testing
 
-- [ ] Find a way to save on precomputations
-  - [x] Implement windowed exponentiation and don't create elements that are neven used 
-- [ ] Find more test vectors to fit quadratic gas schedules
-- [ ] Benchmark Peppinger
+- [x] Find a way to save on precomputations
+- [x] Benchmark Peppinger
 
 # Contributors
 

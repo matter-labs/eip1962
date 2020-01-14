@@ -4,6 +4,8 @@ Gas schedule is actually the most challenging part of this EIP.
 
 Metering was performed for various operation using either worst case variants (e.g. for point multiplication operation where for a certain number of `uint64` "words" in the group order representation all those "words" are filled with maximum values that gives maximum bit length and maximum hamming weight) or Monte-Carlo method (for pairing operations) where some validity checks were disabled (performed, but computation is not stopped if it fails).
 
+Metering was performed on the machine that has `35 MGas/second` performance based on `ecrecover` precompile or `23 MGas/second` based on the current `PAIRING` precompile. Decision was made to use an average of `29 MGas/second` for concrete model estimations. Models for different operations when evaluated give results in `gas` units.
+
 ## Calculation of various parameters used in formulas below
 
 - `num_limbs` is a number of limbs required to represent a modulus (affects base arithmetic performance). If `bits` is a bit width of the modulus, than it is calculated as `bits / 64 + 1` (so we do not use top bit and use 5 limbs for 256 bit modulus for ease of implementation)

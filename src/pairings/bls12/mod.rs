@@ -249,6 +249,114 @@ impl<
         }
     }
 
+    pub fn prepare_naf(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
+        debug_assert!(twist_point.is_normalized());
+
+        let mut two_inv = Fp::one(self.base_field);
+        two_inv.double();
+        let two_inv = two_inv.inverse().expect("inverse of 2 is guaranteed to exist");
+
+        if twist_point.is_zero() {
+            return PreparedTwistPoint {
+                ell_coeffs: vec![],
+                is_infinity:   true,
+            };
+        }
+
+        let mut ell_coeffs = vec![];
+
+        let mut twist_point_negated = twist_point.clone();
+        twist_point_negated.negate();
+
+        let naf = crate::pairings::into_ternary_wnaf(&self.x);
+
+        if naf.len() < 2 {
+            return PreparedTwistPoint {
+                ell_coeffs: vec![],
+                is_infinity:   true,
+            };
+        }
+
+        let mut r = CurvePoint::<CTW>::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
+
+        let mut it = naf.into_iter().rev();
+
+        let first = it.next().expect("naf has enough coefficients");
+        assert_eq!(first, 1);
+        
+        for i in it {
+            ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
+            
+            if i != 0 {
+                if i > 0 {
+                    ell_coeffs.push(self.addition_step(&mut r, &twist_point));
+                } else {
+                    ell_coeffs.push(self.addition_step(&mut r, &twist_point_negated));
+                }
+            }
+        }
+
+        PreparedTwistPoint {
+            ell_coeffs,
+            is_infinity: false,
+        }
+    }
+
+    fn miller_loop_naf<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
+    where 'a: 'b,
+        I: IntoIterator<
+            Item = &'b (&'b CurvePoint<'a, CB>, 
+                &'b CurvePoint<'a, CTW>)
+        >
+    {
+        let mut g1_references = vec![];
+        let mut prepared_coeffs = vec![];
+
+        for (p, q) in i.into_iter() {
+            if !p.is_zero() && !q.is_zero() {
+                let coeffs = self.prepare_naf(&q.clone());
+                let ell_coeffs = coeffs.ell_coeffs;
+                prepared_coeffs.push(ell_coeffs);
+                g1_references.push(p);
+            }
+        }
+
+        let mut prepared_coeffs: Vec<_> = prepared_coeffs.into_iter().map(|el| el.into_iter()).collect();
+
+        let mut f = Fp12::one(self.fp12_extension);
+
+        let naf = crate::pairings::into_ternary_wnaf(&self.x);
+
+        if naf.len() < 1 {
+            return f;
+        }
+
+        let mut it = naf.into_iter().rev();
+
+        let first = it.next().expect("naf has enough coefficients");
+        assert_eq!(first, 1);
+
+        for i in it {
+            f.square();
+
+            for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
+                self.ell(&mut f, &coeffs.next().expect("next miller loop element for doubling step"), p);
+            }
+
+            if i != 0 {
+                for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
+                    self.ell(&mut f, &coeffs.next().expect("next miller loop element for addition step"), p);
+                }
+            }
+        }
+
+        if self.x_is_negative {
+            f.conjugate();
+        }
+
+        f
+    }
+
     fn miller_loop<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
     where 'a: 'b,
         I: IntoIterator<
@@ -276,12 +384,12 @@ impl<
             f.square();
 
             for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
-                self.ell(&mut f, &coeffs.next().unwrap(), p);
+                self.ell(&mut f, &coeffs.next().expect("next miller loop element for doubling step"), p);
             }
 
             if i {
                 for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
-                    self.ell(&mut f, &coeffs.next().unwrap(), p);
+                    self.ell(&mut f, &coeffs.next().expect("next miller loop element for addition step"), p);
                 }
             }
         }
@@ -403,7 +511,10 @@ impl<
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
             }
-            let loop_result = self.miller_loop(&pairs[..]);
+
+            // let loop_result = self.miller_loop(&pairs[..]);
+
+            let loop_result = self.miller_loop_naf(&pairs[..]);
 
             self.final_exponentiation(&loop_result)
         }   
@@ -506,6 +617,7 @@ mod tests {
 
         let bls12_engine = super::Bls12Instance {
             x: &[0xd201000000010000],
+            // x: &[1],
             x_is_negative: true,
             twist_type: super::TwistType::M,
             base_field: &base_field,

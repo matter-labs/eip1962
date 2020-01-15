@@ -21,7 +21,7 @@ pub(crate) trait PairingEngine: Sized {
     fn pair<'b> (&self, points: &'b [Self::G1], twists: &'b [Self::G2]) -> Option<Self::PairingResult>;
 }
 
-pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
+pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i8> {
     fn is_zero(repr: &[u64]) -> bool {
         for el in repr.iter() {
             if *el != 0 {
@@ -74,25 +74,25 @@ pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i64> {
         return vec![];
     }
 
-    let mut res = vec![];
+    let mut res = Vec::with_capacity(repr.len() * 64 + 2);
     let mut e = repr.to_vec();
 
     const WINDOW: u64 = 1u64;
     const MIDPOINT: u64 = 1u64 << WINDOW;
-    const MIDPOINT_I64: i64 = MIDPOINT as i64;
+    const MIDPOINT_I8: i8 = MIDPOINT as i8;
     const MASK: u64 = 1u64 << (WINDOW + 1u64);
 
     while !is_zero(&e) {
-        let z: i64;
+        let z: i8;
         if is_odd(&e) {
-            z = MIDPOINT_I64 - ((e[0] % MASK) as i64);
+            z = MIDPOINT_I8 - ((e[0] % MASK) as i8);
             if z >= 0 {
                 sub_noborrow(&mut e, z as u64);
             } else {
                 add_nocarry(&mut e, (-z) as u64);
             }
         } else {
-            z = 0i64;
+            z = 0i8;
         }
         res.push(z);
         div2(&mut e);
@@ -307,5 +307,184 @@ mod test {
         // assert!(extension_6.frobenius_coeffs_c1 == extension_6_fast.frobenius_coeffs_c1);
     }
 
+    #[test]
+    fn test_ternary_wnaf_for_bn254_loop_len() {
+        use num_bigint::BigUint;
 
+        let reference: Vec<i64> = vec![
+            0, 0, 0, 1, 0, 1, 0, -1,
+            0, 0, 1, -1, 0, 0, 1, 0,
+            0, 1, 1, 0, -1, 0, 0, 1, 
+            0, -1, 0, 0, 0, 0, 1, 1,
+            1, 0, 0, -1, 0, 0, 1, 0, 
+            0, 0, 0, 0, -1, 0, 0, 1,
+            1, 0, 0, -1, 0, 0, 0, 1, 
+            1, 0, -1, 0, 0, 1, 0, 1, 
+            1];
+
+        let naf = super::into_ternary_wnaf(&vec![7u64]);
+        assert_eq!(naf.len(), 4);
+
+        let t = BigUint::from(7u64);
+
+        let mut base = BigUint::from(1u64) << (naf.len() - 1);
+        let two = BigUint::from(2u64);
+
+        let mut reconstruction = BigUint::from(0u64);
+
+        for i in naf.iter().rev() {
+            if *i > 0 {
+                reconstruction += &base;
+            } else if *i < 0 {
+                reconstruction -= &base;
+            }
+            base /= &two;
+        }
+
+        assert_eq!(t, reconstruction, "test case reconstruciton failed");
+
+        let six_u_plus_two = vec![0x9d797039be763ba8, 1];
+        let naf = super::into_ternary_wnaf(&six_u_plus_two);
+
+        let t = BigUint::from_str_radix("19d797039be763ba8", 16).unwrap();
+
+        // let mut base = BigUint::from(1u64) << (reference.len() - 1);
+        // assert_eq!(base.bits(), 65);
+
+        let one = BigUint::from(1u64);
+        let two = BigUint::from(2u64);
+
+        // let mut reconstruction = BigUint::from(0u64);
+
+        // for i in reference.iter().rev() {
+        //     if *i > 0 {
+        //         reconstruction += &base;
+        //     } else if *i < 0 {
+        //         reconstruction -= &base;
+        //     }
+        //     base /= &two;
+        // }
+
+        let mut reconstruction = BigUint::from(1u64);
+
+        for i in reference.iter().rev().skip(1) {
+            reconstruction *= &two;
+            if *i > 0 {
+                reconstruction += &one;
+            } else if *i < 0 {
+                reconstruction -= &one;
+            }
+        }
+
+        assert_eq!(reconstruction, t, "reconstruction using reference failed");
+
+        // let mut base = BigUint::from(1u64) << (naf.len() - 1);
+        // let two = BigUint::from(2u64);
+
+        // let mut reconstruction = BigUint::from(0u64);
+
+        // for i in naf.iter().rev() {
+        //     if *i > 0 {
+        //         reconstruction += &base;
+        //     } else if *i < 0 {
+        //         reconstruction -= &base;
+        //     }
+        //     base /= &two;
+        // }
+
+        let mut reconstruction = BigUint::from(1u64);
+
+        for i in naf.iter().rev().skip(1) {
+            reconstruction *= &two;
+            if *i > 0 {
+                reconstruction += &one;
+            } else if *i < 0 {
+                reconstruction -= &one;
+            }
+        }
+
+        assert_eq!(reconstruction, t, "reconstruction using naf failed");
+
+        let hamming_ref = {
+            let mut h = 0;
+            for i in reference.iter() {
+                if *i != 0 {
+                    h += 1;
+                }
+            }
+
+            h
+        };
+
+        let hamming_naf = {
+            let mut h = 0;
+            for i in naf.iter() {
+                if *i != 0 {
+                    h += 1;
+                }
+            }
+
+            h
+        };
+
+        println!("Reference hamming = {}, calculated hamming = {}", hamming_ref, hamming_naf);
+
+        println!("Ref = {:?}", reference);
+        println!("Calculated = {:?}", naf);
+    }
+
+    #[test]
+    fn test_print_naf_hamming() {
+        fn calculate(x: &[u64]) -> (usize, usize, usize, usize) {
+            fn bits(v: &[u64]) -> usize {
+                let mut b = v.len() * 64;
+    
+                if v.len() != 0 {
+                    b -= v[v.len() - 1].leading_zeros() as usize;
+                }
+    
+                b
+            }
+
+            let original_bits = bits(&x);
+            let original_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&x);
+    
+            let naf = super::into_ternary_wnaf(&x);
+            let hamming_naf = {
+                let mut h = 0;
+                for i in naf.iter() {
+                    if *i != 0 {
+                        h += 1;
+                    }
+                }
+    
+                h
+            };
+
+            (original_bits, original_hamming as usize, naf.len(), hamming_naf)
+        }
+
+        // BLS12-377
+        let x: Vec<u64> = vec![0x8508c00000000001];
+
+        println!("BLS12-377");
+
+        let (original_bits, original_hamming, naf_bits, hamming_naf) = calculate(&x);
+
+        println!("Original length = {}, original hamming = {}", original_bits, original_hamming);
+        println!("Naf length = {}, NAF hamming = {}", naf_bits, hamming_naf);
+
+        // BLS12-381
+        let x: Vec<u64> = vec![0xd201000000010000];
+        println!("BLS12-381");
+
+        let (original_bits, original_hamming, naf_bits, hamming_naf) = calculate(&x);
+
+        println!("Original length = {}, original hamming = {}", original_bits, original_hamming);
+        println!("Naf length = {}, NAF hamming = {}", naf_bits, hamming_naf);
+
+        
+
+
+    }
 }

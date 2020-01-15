@@ -56,14 +56,14 @@ c_api = []
 gas_metering_mode = []
 fuzzing_mode = []
 
-[profile.dev]
-incremental = false
+# [profile.dev]
+# incremental = false
 
-[profile.test]
-incremental = false
+# [profile.test]
+# incremental = false
 
 [profile.release]
 incremental = false
 
-[profile.bench]
-incremental = false
+# [profile.bench]
+# incremental = false

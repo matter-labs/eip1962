@@ -68,7 +68,7 @@ func Call(operation uint8, data []byte) ([]byte, error) {
 	errStringLen := uint32(0)
 
 	var (
-        op         = (C.char(operation))
+        op         = (C.char)(operation)
 		inputdata  = (*C.char)(unsafe.Pointer(&data[0]))
 		inputlen   = (C.uint32_t)(ilen)
 		outputdata = (*C.char)(unsafe.Pointer(&outputBytes[0]))

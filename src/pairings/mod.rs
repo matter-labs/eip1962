@@ -2,23 +2,59 @@
 use crate::traits::{FieldElement};
 use crate::weierstrass::Group;
 
-pub(crate) mod bls12;
-pub(crate) mod bn;
-pub(crate) mod mnt6;
-pub(crate) mod mnt4;
+pub mod bls12;
+pub mod bn;
+pub mod mnt6;
+pub mod mnt4;
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
-pub(crate) enum TwistType {
+pub enum TwistType {
     D,
     M
 }
 
-pub(crate) trait PairingEngine: Sized {
+pub trait PairingEngine: Sized {
     type PairingResult: FieldElement;
     type G1: Group;
     type G2: Group;
 
     fn pair<'b> (&self, points: &'b [Self::G1], twists: &'b [Self::G2]) -> Option<Self::PairingResult>;
+}
+
+pub(crate) fn calculate_hamming_weight(representation: &[u64]) -> u32 {
+    let mut weight = 0;
+    for el in representation.iter() {
+        weight += el.count_ones();
+    }
+
+    weight
+}
+
+pub(crate) fn calculate_bits(representation: &[u64]) -> u32 {
+    let mut b = (representation.len() * 64) as u32;
+
+    for &limb in representation.iter().rev() {
+        if limb == 0 {
+            b -= 64;
+        } else {
+            b -= limb.leading_zeros();
+            break;
+        }
+    }
+
+    b
+}
+
+
+pub(crate) fn calculate_naf_hamming_weight(naf: &[i8]) -> u32 {
+    let mut weight = 0;
+    for i in naf.iter() {
+        if *i != 0 {
+            weight += 1;
+        }
+    }
+
+    weight
 }
 
 pub(crate) fn into_ternary_wnaf(repr: &[u64]) -> Vec<i8> {
@@ -435,6 +471,7 @@ mod test {
 
     #[test]
     fn test_print_naf_hamming() {
+
         fn calculate(x: &[u64]) -> (usize, usize, usize, usize) {
             fn bits(v: &[u64]) -> usize {
                 let mut b = v.len() * 64;
@@ -477,6 +514,15 @@ mod test {
         // BLS12-381
         let x: Vec<u64> = vec![0xd201000000010000];
         println!("BLS12-381");
+
+        let (original_bits, original_hamming, naf_bits, hamming_naf) = calculate(&x);
+
+        println!("Original length = {}, original hamming = {}", original_bits, original_hamming);
+        println!("Naf length = {}, NAF hamming = {}", naf_bits, hamming_naf);
+
+        // BN-254
+        let x: Vec<u64> = vec![0x9d797039be763ba8, 1];
+        println!("BN-254");
 
         let (original_bits, original_hamming, naf_bits, hamming_naf) = calculate(&x);
 

@@ -18,13 +18,12 @@
 use crate::weierstrass::curve::WeierstrassCurve;
 use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters, CurveOverFp3Parameters};
 use crate::pairings::*;
-use crate::pairings::bls12::{Bls12Instance};
-use crate::pairings::bn::{BnInstance};
+use crate::pairings::bls12::{Bls12Instance, Bls12InstanceParams};
+use crate::pairings::bn::{BnInstance, BnInstanceParams};
 use crate::pairings::mnt4::{MNT4Instance};
 use crate::pairings::mnt6::{MNT6Instance};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
-// use crate::sliding_window_exp::WindowExpBase;
 use crate::extension_towers::*;
 use crate::fp::Fp;
 use crate::constants::*;
@@ -198,7 +197,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         // }
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
-
         let b_fp2 = match twist_type {
             TwistType::D => {
                 let mut b_fp2 = fp2_non_residue_inv.clone();
@@ -225,7 +223,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
-        // let x = slice_to_fixed_size_array(x);
+
         if calculate_hamming_weight(&x.as_ref()) > MAX_BLS12_X_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
@@ -297,7 +295,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Ok(pairing_result_false());
         }
 
-        let engine = Bls12Instance {
+        let engine_params = Bls12InstanceParams {
             x: &x.as_ref(),
             x_is_negative: x_is_negative,
             twist_type: twist_type,
@@ -307,7 +305,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             fp2_extension: &extension_2,
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
+            force_no_naf: false
         };
+
+        let engine = Bls12Instance::from_params(engine_params);
 
         let pairing_result = engine.pair(&g1_points, &g2_points);
 
@@ -481,7 +482,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             six_u_plus_two
         };
 
-        // let six_u_plus_two = slice_to_fixed_size_array(six_u_plus_two.as_ref());
         if calculate_hamming_weight(&six_u_plus_two.as_ref()) > MAX_BN_SIX_U_PLUS_TWO_HAMMING {
             return Err(ApiError::InputError("|6*U + 2| has too large hamming weight".to_owned()));
         }
@@ -548,7 +548,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Ok(pairing_result_false());
         }
 
-        let engine = BnInstance {
+        let engine_params = BnInstanceParams {
             u: &u.as_ref(),
             six_u_plus_2: &six_u_plus_two.as_ref(),
             u_is_negative: u_is_negative,
@@ -559,8 +559,11 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             fp2_extension: &extension_2,
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
-            non_residue_in_p_minus_one_over_2: fp2_non_residue_in_p_minus_one_over_2
+            non_residue_in_p_minus_one_over_2: fp2_non_residue_in_p_minus_one_over_2,
+            force_no_naf: false
         };
+
+        let engine = BnInstance::from_params(engine_params);
 
         let pairing_result = engine.pair(&g1_points, &g2_points);
 
@@ -674,7 +677,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate loop count parameters can not be zero".to_owned()));
         }
-        // let x = slice_to_fixed_size_array(x);
+
         if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
@@ -890,7 +893,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if x.is_zero() {
             return Err(ApiError::InputError("Ate pairing loop count parameters can not be zero".to_owned()));
         }
-        // let x = slice_to_fixed_size_array(x);
+
         if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }

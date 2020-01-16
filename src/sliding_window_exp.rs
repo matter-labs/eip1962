@@ -130,9 +130,10 @@ mod tests {
     use super::IntoWindows;
 
     #[test]
-    fn test_into_wnaf() {
-        let repr = vec![7u64];
-        let res = repr.windows(2);
+    fn test_into_windows() {
+        let repr = vec![13u64];
+        // b1101
+        let res = repr.windows(3);
         println!("{:?}", res);
     }
 

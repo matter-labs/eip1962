@@ -423,11 +423,12 @@ pub(crate) fn assemble_single_bls12_377(num_point_pairs: usize) -> Vec<u8> {
     let modulus_len_encoded = vec![modulus_length as u8];
     let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
     let a_encoded = pad_for_len_be(BigUint::from(0u64).to_bytes_be(), modulus_length);
-    let b_encoded = pad_for_len_be(BigUint::from(4u64).to_bytes_be(), modulus_length);
+    let b_encoded = pad_for_len_be(BigUint::from(1u64).to_bytes_be(), modulus_length);
     let group_order_len = 32;
     let group_order = BigUint::from_str_radix("8444461749428370424248824938781546531375899335154063827935233455917409239041", 10).unwrap();
     let group_order_encoding = pad_for_len_be(group_order.to_bytes_be(), group_order_len);
-    let fp2_nonres_encoded = pad_for_len_be(BigUint::from(5u64).to_bytes_be(), modulus_length);
+    let minus_five = modulus.clone() - BigUint::from(5u64);
+    let fp2_nonres_encoded = pad_for_len_be(minus_five.to_bytes_be(), modulus_length);
     let fp6_nonres_encoded_c0 = pad_for_len_be(BigUint::from(0u64).to_bytes_be(), modulus_length);
     let fp6_nonres_encoded_c1 = pad_for_len_be(BigUint::from(1u64).to_bytes_be(), modulus_length);
     let twist_type = vec![TWIST_TYPE_D];
@@ -497,11 +498,23 @@ fn test_call_public_api_on_bls12_381() {
     let calldata = assemble_single(4);
     use crate::public_interface::PairingApi;
 
-    crate::public_interface::PublicPairingApi::pair(&calldata).unwrap();
+    let result = crate::public_interface::PublicPairingApi::pair(&calldata).unwrap();
+    assert!(result.len() == 1);
+    assert!(result[0] == 1);
 }
 
 #[test]
-// #[ignore]
+fn test_call_public_api_on_bls12_377() {
+    let calldata = assemble_single_bls12_377(4);
+    use crate::public_interface::PairingApi;
+
+    let result = crate::public_interface::PublicPairingApi::pair(&calldata).unwrap();
+    assert!(result.len() == 1);
+    assert!(result[0] == 1);
+}
+
+#[test]
+#[ignore]
 fn test_print_bls12_381_test_vector() {
     let calldata = assemble_single(4);
     // ignore curve type

@@ -308,7 +308,7 @@ fn dump_fuzzing_vectors() {
 //     });
 // }
 
-fn assemble_single() -> Vec<u8> {
+pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     /// - Curve type
     /// - Lengths of modulus (in bytes)
     /// - Field modulus
@@ -321,37 +321,38 @@ fn assemble_single() -> Vec<u8> {
     // - sign of X
     // - number of pairs
     // - list of encoded pairs
-
-    use num_traits::FromPrimitive;
-    use num_integer::Integer;
-    use num_traits::Zero;
     use num_traits::Num;
-    let modulus_length = 48;
-    let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-    let curve_type = vec![1u8];
-    let modulus_len_encoded = vec![48u8];
+    let modulus_length = 32;
+    let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    let curve_type = vec![BN];
+    let modulus_len_encoded = vec![modulus_length as u8];
     let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
     let a_encoded = pad_for_len_be(BigUint::from(0u64).to_bytes_be(), modulus_length);
-    let b_encoded = pad_for_len_be(BigUint::from(4u64).to_bytes_be(), modulus_length);
-    let fp2_nonres_encoded = pad_for_len_be((modulus.clone() - BigUint::from(1u64)).to_bytes_be(), modulus_length);
-    let fp6_nonres_encoded_c0 = pad_for_len_be(BigUint::from(1u64).to_bytes_be(), modulus_length);
+    let b_encoded = pad_for_len_be(BigUint::from(3u64).to_bytes_be(), modulus_length);
+    let group_order_len = 32;
+    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order_encoding = pad_for_len_be(group_order.to_bytes_be(), group_order_len);
+    let minus_one = modulus.clone() - BigUint::from(1u64);
+    let fp2_nonres_encoded = pad_for_len_be(minus_one.to_bytes_be(), modulus_length);
+    let fp6_nonres_encoded_c0 = pad_for_len_be(BigUint::from(9u64).to_bytes_be(), modulus_length);
     let fp6_nonres_encoded_c1 = pad_for_len_be(BigUint::from(1u64).to_bytes_be(), modulus_length);
-    let twist_type = vec![1u8]; // M
+    let twist_type = vec![TWIST_TYPE_D];
     let x_length = vec![8u8];
-    let x_encoded = pad_for_len_be(BigUint::from(0xd201000000010000 as u64).to_bytes_be(), 8); 
-    let x_sign = vec![1u8]; // negative x
-    let num_pairs = vec![2u8];
+    let x_encoded = pad_for_len_be(BigUint::from(4965661367192848881 as u64).to_bytes_be(), 8); 
+    let x_sign = vec![SIGN_PLUS];
+    let num_pairs = vec![num_point_pairs as u8];
     // first pair
-    let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap().to_bytes_be();
-    let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap().to_bytes_be();
+    let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
+    let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
     let mut g1_0_encoding: Vec<u8> = vec![];
     g1_0_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
     g1_0_encoding.extend(pad_for_len_be(p_y, modulus_length).into_iter());
 
-    let q_x_0 = BigUint::from_str_radix("352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160", 10).unwrap().to_bytes_be();
-    let q_x_1 = BigUint::from_str_radix("3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758", 10).unwrap().to_bytes_be();
-    let q_y_0 = BigUint::from_str_radix("1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905", 10).unwrap().to_bytes_be();
-    let q_y_1 = BigUint::from_str_radix("927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582", 10).unwrap().to_bytes_be();
+    let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
+    let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
+    let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
+    let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+
     let mut g2_0_encoding = vec![];
     g2_0_encoding.extend(pad_for_len_be(q_x_0.clone(), modulus_length).into_iter());
     g2_0_encoding.extend(pad_for_len_be(q_x_1.clone(), modulus_length).into_iter());
@@ -359,7 +360,7 @@ fn assemble_single() -> Vec<u8> {
     g2_0_encoding.extend(pad_for_len_be(q_y_1.clone(), modulus_length).into_iter());
 
     // second pair 
-    let y = modulus.clone() - BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap();
+    let y = modulus.clone() - BigUint::from_str_radix("2", 10).unwrap();
 
     let mut g1_1_encoding: Vec<u8> = vec![];
     g1_1_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
@@ -373,6 +374,8 @@ fn assemble_single() -> Vec<u8> {
     calldata.extend(modulus_encoded.into_iter());
     calldata.extend(a_encoded.into_iter());
     calldata.extend(b_encoded.into_iter());
+    calldata.extend(vec![group_order_len as u8]);
+    calldata.extend(group_order_encoding.into_iter());
     calldata.extend(fp2_nonres_encoded.into_iter());
     calldata.extend(fp6_nonres_encoded_c0.into_iter());
     calldata.extend(fp6_nonres_encoded_c1.into_iter());
@@ -381,15 +384,29 @@ fn assemble_single() -> Vec<u8> {
     calldata.extend(x_encoded.into_iter());
     calldata.extend(x_sign.into_iter());
     calldata.extend(num_pairs.into_iter());
-    calldata.extend(g1_0_encoding.into_iter());
-    calldata.extend(g2_0_encoding.into_iter());
-    calldata.extend(g1_1_encoding.into_iter());
-    calldata.extend(g2_1_encoding.into_iter());
+
+    for i in 0..num_point_pairs {
+        if i % 2 == 0 {
+            calldata.extend(g1_0_encoding.clone().into_iter());
+            calldata.extend(g2_0_encoding.clone().into_iter());
+        } else {
+            calldata.extend(g1_1_encoding.clone().into_iter());
+            calldata.extend(g2_1_encoding.clone().into_iter());
+        }
+    }
 
     calldata
 }
 
+#[test]
+fn test_call_public_api_on_bn254() {
+    let calldata = assemble_bn254(4);
+    use crate::public_interface::PairingApi;
 
+    let result = crate::public_interface::PublicPairingApi::pair(&calldata).unwrap();
+    assert!(result.len() == 1);
+    assert!(result[0] == 1);
+}
 
 fn strip_0x(string: &str) -> String {
     let string = string.trim();

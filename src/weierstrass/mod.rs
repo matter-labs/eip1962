@@ -84,5 +84,3 @@ pub trait Group: Sized + Clone {
 }
 
 pub mod curve;
-// pub mod twist;
-// pub mod cubic_twist;

@@ -24,6 +24,7 @@ mod sliding_window_exp;
 mod errors;
 mod constants;
 mod features;
+mod wnaf;
 
 pub mod public_interface;
 
@@ -225,17 +226,28 @@ mod tests {
             one, 
             two);
 
-        let mut scalar = U256Repr::default();
-        let mut bytes = vec![0u8; 32];
-        // bytes[31] = 2u8;
-        rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+        for _ in 0..1000 {
+            let mut scalar = U256Repr::default();
+            let mut bytes = vec![0u8; 32];
+            rng.fill_bytes(&mut bytes[1..]);
+            scalar.read_be(& bytes[..]).unwrap();
 
-        let res_double_and_add  = point.clone().mul(scalar).into_xy();
-        let wnaf_res = point.wnaf_mul(scalar).into_xy();
+            let res_double_and_add  = point.clone().mul(scalar).into_xy();
+            let wnaf_res = point.wnaf_mul(scalar).into_xy();
 
-        assert!(res_double_and_add.0 == wnaf_res.0);
-        assert!(res_double_and_add.1 == wnaf_res.1);
+            assert!(res_double_and_add.0 == wnaf_res.0);
+            assert!(res_double_and_add.1 == wnaf_res.1);
+
+            let res_double_and_add  = point.clone().mul(scalar).into_xy();
+            let scalar_ref: &[u64] = scalar.as_ref();
+            let wnaf_res = point.wnaf_mul(scalar_ref).into_xy();
+
+            assert!(res_double_and_add.0 == wnaf_res.0);
+            assert!(res_double_and_add.1 == wnaf_res.1);
+        }
+
+        let should_be_zero = point.wnaf_mul(&group_order[..]);
+        assert!(should_be_zero.is_zero());
     }
 
     #[test]

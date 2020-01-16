@@ -10,16 +10,36 @@ use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2
 use crate::extension_towers::fp6_as_3_over_2::{Extension3Over2};
 use crate::pairings::PairingEngine;
 use crate::pairings::TwistType;
+use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
 
-pub struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    is_infinity: bool,
-    pub ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
+pub(crate) struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub(crate) is_infinity: bool,
+    pub(crate) ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
 }
 
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, FE, F> {
-    pub fn is_zero(&self) -> bool {
+    pub(crate) fn is_zero(&self) -> bool {
         self.is_infinity
     }
+}
+
+pub struct Bls12InstanceParams<
+'a, 
+    FE: ElementRepr, 
+    F: SizedPrimeField<Repr = FE>, 
+    CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+    CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+> {
+    pub x: &'a [u64],
+    pub x_is_negative: bool,
+    pub twist_type: TwistType,
+    pub base_field: &'a F,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub fp2_extension: &'a Extension2<'a, FE, F>,
+    pub fp6_extension: &'a Extension3Over2<'a, FE, F>,
+    pub fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
+    pub force_no_naf: bool
 }
 
 pub struct Bls12Instance<
@@ -29,15 +49,66 @@ pub struct Bls12Instance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub(crate) x: &'a [u64],
-    pub(crate) x_is_negative: bool,
-    pub(crate) twist_type: TwistType,
-    pub(crate) base_field: &'a F,
-    pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
-    pub(crate) curve_twist: &'a WeierstrassCurve<'a, CTW>,
-    pub(crate) fp2_extension: &'a Extension2<'a, FE, F>,
-    pub(crate) fp6_extension: &'a Extension3Over2<'a, FE, F>,
-    pub(crate) fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
+    pub x: &'a [u64],
+    pub x_is_negative: bool,
+    pub twist_type: TwistType,
+    pub base_field: &'a F,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub fp2_extension: &'a Extension2<'a, FE, F>,
+    pub fp6_extension: &'a Extension3Over2<'a, FE, F>,
+    pub fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
+    pub prefer_naf: bool,
+    pub x_naf: Vec<i8>
+}
+
+impl<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+    > Bls12Instance<'a, FE, F, CB, CTW> 
+{
+    pub fn from_params(params: Bls12InstanceParams::<'a, FE, F, CB, CTW>) -> Self {
+        let naf_vec = into_ternary_wnaf(&params.x);
+        let original_bits = calculate_bits(&params.x);
+        let original_hamming = calculate_hamming_weight(&params.x);
+        let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
+        let naf_length = naf_vec.len() as u32;
+
+        let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
+            true
+        } else {
+            false
+        };
+
+        let prefer_naf = if params.force_no_naf {
+            false
+        } else {
+            naf_is_beneficial
+        };
+
+        let naf = if prefer_naf {
+            naf_vec
+        } else {
+            vec![]
+        };
+
+        Self {
+            x: params.x,
+            x_is_negative: params.x_is_negative,
+            twist_type: params.twist_type,
+            base_field: params.base_field,
+            curve: params.curve,
+            curve_twist: params.curve_twist,
+            fp2_extension: params.fp2_extension,
+            fp6_extension: params.fp6_extension,
+            fp12_extension: params.fp12_extension,
+            prefer_naf: prefer_naf,
+            x_naf: naf
+        }
+    }
 }
 
 impl<
@@ -218,7 +289,7 @@ impl<
         }
     }
 
-    pub fn prepare(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
+    fn prepare(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
 
         let mut two_inv = Fp::one(self.base_field);
@@ -249,7 +320,7 @@ impl<
         }
     }
 
-    pub fn prepare_naf(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
+    fn prepare_naf(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
 
         let mut two_inv = Fp::one(self.base_field);
@@ -268,23 +339,16 @@ impl<
         let mut twist_point_negated = twist_point.clone();
         twist_point_negated.negate();
 
-        let naf = crate::pairings::into_ternary_wnaf(&self.x);
-
-        if naf.len() < 2 {
-            return PreparedTwistPoint {
-                ell_coeffs: vec![],
-                is_infinity:   true,
-            };
-        }
-
         let mut r = CurvePoint::<CTW>::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
 
-        let mut it = naf.into_iter().rev();
-
-        let first = it.next().expect("naf has enough coefficients");
-        assert_eq!(first, 1);
+        let mut it = self.x_naf.iter().rev();
         
-        for i in it {
+        {
+            let first = it.next().expect("naf has enough coefficients");
+            assert_eq!(*first, 1);
+        }
+
+        for &i in it {
             ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
             
             if i != 0 {
@@ -325,18 +389,14 @@ impl<
 
         let mut f = Fp12::one(self.fp12_extension);
 
-        let naf = crate::pairings::into_ternary_wnaf(&self.x);
-
-        if naf.len() < 1 {
-            return f;
+        let mut it = self.x_naf.iter().rev();
+        
+        {
+            let first = it.next().expect("naf has enough coefficients");
+            assert_eq!(*first, 1);
         }
 
-        let mut it = naf.into_iter().rev();
-
-        let first = it.next().expect("naf has enough coefficients");
-        assert_eq!(first, 1);
-
-        for i in it {
+        for &i in it {
             f.square();
 
             for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
@@ -512,9 +572,16 @@ impl<
                 pairs.push((p, q));
             }
 
-            // let loop_result = self.miller_loop(&pairs[..]);
+            let loop_result = if self.prefer_naf {
+                let loop_result = self.miller_loop_naf(&pairs[..]);
+                debug_assert!(self.x_naf.len() > 0);
 
-            let loop_result = self.miller_loop_naf(&pairs[..]);
+                loop_result
+            } else {
+                let loop_result = self.miller_loop(&pairs[..]);
+
+                loop_result
+            };
 
             self.final_exponentiation(&loop_result)
         }   
@@ -615,9 +682,8 @@ mod tests {
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());
 
-        let bls12_engine = super::Bls12Instance {
+        let bls12_engine = super::Bls12InstanceParams {
             x: &[0xd201000000010000],
-            // x: &[1],
             x_is_negative: true,
             twist_type: super::TwistType::M,
             base_field: &base_field,
@@ -626,7 +692,10 @@ mod tests {
             fp2_extension: &extension_2,
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
+            force_no_naf: false
         };
+
+        let bls12_engine = super::Bls12Instance::from_params(bls12_engine);
 
         let pairing_result = bls12_engine.pair(&[p], &[q]).unwrap();
 
@@ -709,7 +778,7 @@ mod tests {
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());
 
-        let bls12_engine = super::Bls12Instance {
+        let bls12_engine = super::Bls12InstanceParams {
             x: &[0x8508c00000000001],
             x_is_negative: false,
             twist_type: super::TwistType::D,
@@ -719,7 +788,10 @@ mod tests {
             fp2_extension: &extension_2,
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
+            force_no_naf: false
         };
+
+        let bls12_engine = super::Bls12Instance::from_params(bls12_engine);
 
         let pairing_result = bls12_engine.pair(&[p], &[q]).unwrap();
 
@@ -763,6 +835,10 @@ mod tests {
         let mut b_fp2 = fp2_non_residue.clone().inverse().unwrap();
         b_fp2.mul_by_fp(&b_fp);
 
+        println!("Fp2 nonres = {}", fp2_non_residue);
+        println!("Fp2 nonres inv = {}", fp2_non_residue.clone().inverse().unwrap());
+        println!("B_fp2 = {}", b_fp2);
+
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);
 
@@ -802,7 +878,7 @@ mod tests {
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());
 
-        let bls12_engine = super::Bls12Instance {
+        let bls12_engine = super::Bls12InstanceParams {
             x: &[0x8508c00000000001],
             x_is_negative: false,
             twist_type: super::TwistType::D,
@@ -812,7 +888,10 @@ mod tests {
             fp2_extension: &extension_2,
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
+            force_no_naf: false
         };
+
+        let bls12_engine = super::Bls12Instance::from_params(bls12_engine);
 
         let pairing_result = bls12_engine.pair(&[p], &[q]).unwrap();
 

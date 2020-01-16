@@ -619,7 +619,8 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
     }
 
     fn check_correct_subgroup_impl(&self) -> bool {
-        let p = self.mul_impl(&self.curve.subgroup_order_repr);
+        // let p = self.mul_impl(&self.curve.subgroup_order_repr);
+        let p = self.wnaf_mul_impl(self.curve.subgroup_order_repr);
 
         p.is_zero_generic_impl()
     }

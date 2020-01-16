@@ -1,3 +1,5 @@
+pub(crate) use crate::pairings::calculate_hamming_weight;
+
 use crate::constants::{MaxFieldUint, MaxGroupSizeUint, MaxLoopParametersUint};
 
 use crate::public_interface::constants::*;
@@ -195,11 +197,3 @@ pub(crate) fn decode_loop_parameter_scalar_with_bit_limit<
     Ok((x, rest))
 }
 
-pub(crate) fn calculate_hamming_weight(representation: &[u64]) -> u32 {
-    let mut weight = 0;
-    for el in representation.iter() {
-        weight += el.count_ones();
-    }
-
-    weight
-}

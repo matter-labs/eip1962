@@ -216,6 +216,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
                     }
                 }
 
+                // u and v are not odd, so after subtraction one of them is even
+                // and we'll get into one of the loops above and iterations counter
+                // will increase
                 if v < u {
                     u.sub_noborrow(&v);
                     b.sub_assign(&c);

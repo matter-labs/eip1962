@@ -368,7 +368,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
     }
 
     fn inverse(&self) -> Option<Self> {
-        self.mont_inverse()
+        self.new_mont_inverse()
+        // self.mont_inverse()
+        // self.eea_inverse()
     }
 
     #[inline]

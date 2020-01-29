@@ -160,13 +160,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
 
             // r = (a ^ -1) 2*(k - m)
 
-            println!("Phase 1: r = {}", r);
-
             // phase 2
 
             let mont_power = self.field.mont_power();
             let modulus_bits_ceil = self.field.modulus_bits();
-            if modulus_bits_ceil <= k && k <= mont_power + modulus_bits_ceil {
+            let k_in_range = modulus_bits_ceil <= k && k <= mont_power + modulus_bits_ceil;
+            if !k_in_range {
+                return None;
+            }
+
+            // mul by 2^m: r = (a ^ -1) 2*(k) and adjust(!) k => k + m is if was not in range for the next step
+            if modulus_bits_ceil <= k && k <= mont_power {
                 let mut r_by_r2 = Self {
                     field: self.field,
                     repr: r
@@ -181,26 +185,25 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
 
                 r = r_by_r2.repr;
 
-                if k < mont_power {
-                    k += mont_power;
-                }
-            } else {
-                return None;
+                k += mont_power;
             }
 
             if k > 2*mont_power {
                 return None;
             }
 
-            // now we need montgomery(!) multiplication by 2^(2m - k)
-            let mut two_in_two_m_minus_k_repr = F::Repr::from(1);
-            for _ in 0..(2*mont_power - k) {
-                two_in_two_m_minus_k_repr.mul2();
-                if two_in_two_m_minus_k_repr >= modulus {
-                    two_in_two_m_minus_k_repr.sub_noborrow(&modulus);
-                }
+            if 2*mont_power - k > mont_power {
+                // we are not in range
+                return None;
             }
-            debug_assert!(two_in_two_m_minus_k_repr < modulus);
+
+            // mul by 2^(m - k):  r = (a ^ -1) 2^m  - it's an inverse in normal of input in montgomery form
+
+            // now we need montgomery(!) multiplication by 2^(2m - k)
+            // since 2^(2m - k) < 2^m then we are ok with a multiplication without preliminary reduction
+            // of the representation as montgomery multiplication will handle it for us
+            let mut two_in_two_m_minus_k_repr = F::Repr::from(1);
+            two_in_two_m_minus_k_repr.shl((2*mont_power - k) as u32);
 
             {
                 let mut r_by_two_in_two_m_minus_k = Self {
@@ -219,8 +222,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             }
 
             // now back into montgomery form
-            // let el = Fp::from_repr(self.field, r);
-            let el = Fp::from_raw_repr(self.field, r);
+            let el = Fp::from_repr(self.field, r);
             if el.is_err() {
                 println!("Representation is invalid");
                 return None;
@@ -279,7 +281,8 @@ mod tests {
             be_repr[0] = be_repr[0] & 0x1f;
             let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
             let inverse = element.eea_inverse().unwrap();
-            let mont_inverse = element.mont_inverse().unwrap();
+            // let mont_inverse = element.mont_inverse().unwrap();
+            let mont_inverse = element.new_mont_inverse().unwrap();
             assert_eq!(inverse, mont_inverse);
         }
     }
@@ -295,8 +298,8 @@ mod tests {
         let element = Fp::from_be_bytes(&field, &value_be_bytes[..], true).unwrap();
         let inverse = element.eea_inverse().expect("inverse must exist");
         println!("EEA inverse = {}", inverse);
-        let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
-        // let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
+        // let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
+        let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
         println!("Montgomery form inverse = {}", mont_inverse);
 
         let one = Fp::one(&field);
@@ -310,6 +313,39 @@ mod tests {
 
         assert!(may_be_one == one, "eea inverse is not an inverse");
         assert_eq!(inverse, mont_inverse);
+    }
+
+    #[test]
+    fn test_small_number_of_limbs_inverse_2() {
+        use crate::field::new_field;
+        use crate::traits::ZeroAndOne;
+
+        let field = new_field::<U256Repr>("63", 16).unwrap();
+        let value = BigUint::from_str_radix("48", 16).unwrap();
+        let value_be_bytes = value.to_bytes_be();
+        let element = Fp::from_be_bytes(&field, &value_be_bytes[..], true).unwrap();
+        if let Some(inverse) = element.eea_inverse() {
+            // println!("EEA inverse = {}", inverse);
+            // let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
+            let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
+            println!("Montgomery form inverse = {}", mont_inverse);
+
+            let one = Fp::one(&field);
+
+            let mut may_be_one = element.clone();
+            may_be_one.mul_assign(&mont_inverse);
+            assert!(may_be_one == one, "montgomery inverse is not an inverse");
+
+            let mut may_be_one = element.clone();
+            may_be_one.mul_assign(&inverse);
+
+            assert!(may_be_one == one, "eea inverse is not an inverse");
+            assert_eq!(inverse, mont_inverse);
+        } else {
+            assert!(element.new_mont_inverse().is_none(),"there should be no montgomery inverse too");
+            // assert!(element.mont_inverse().is_none(),"there should be no montgomery inverse too");
+        }
+        
     }
 
     #[test]

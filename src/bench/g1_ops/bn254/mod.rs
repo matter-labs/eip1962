@@ -357,7 +357,17 @@ fn bench_field_mont_inverse(b: &mut Bencher) {
 }
 
 #[bench]
-fn bench_behavior_of_inversion(b: &mut Bencher) {
+fn bench_field_new_mont_inverse(b: &mut Bencher) {
+    let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    let mut be_repr = vec![0u8; 32];
+    be_repr[31] = 7u8;
+    let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
+    
+    b.iter(|| element.new_mont_inverse().unwrap());
+}
+
+#[bench]
+fn bench_behavior_of_mont_inversion(b: &mut Bencher) {
     // make a ring using modulus that is two primes product
     let a = BigUint::from_str_radix("65689266139792731237813120905490767641", 10).unwrap();
     let c = BigUint::from_str_radix("17059670649062850132785761051500928741", 10).unwrap();
@@ -365,6 +375,17 @@ fn bench_behavior_of_inversion(b: &mut Bencher) {
     let field = new_field::<U256Repr>(&product.to_str_radix(10), 10).unwrap();
     let fe = Fp::from_be_bytes(&field, &c.to_bytes_be(), true).unwrap();
     b.iter(|| fe.mont_inverse());
+}
+
+#[bench]
+fn bench_behavior_of_new_mont_inversion(b: &mut Bencher) {
+    // make a ring using modulus that is two primes product
+    let a = BigUint::from_str_radix("65689266139792731237813120905490767641", 10).unwrap();
+    let c = BigUint::from_str_radix("17059670649062850132785761051500928741", 10).unwrap();
+    let product = a * &c;
+    let field = new_field::<U256Repr>(&product.to_str_radix(10), 10).unwrap();
+    let fe = Fp::from_be_bytes(&field, &c.to_bytes_be(), true).unwrap();
+    b.iter(|| fe.new_mont_inverse());
 }
 
 #[bench]

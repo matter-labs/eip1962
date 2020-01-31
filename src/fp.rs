@@ -125,6 +125,19 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         }
     }
 
+    pub fn from_raw_repr(field: &'a F, repr: E) -> Result<Self, RepresentationDecodingError> {
+        if field.is_valid_repr(&repr) {
+            let r = Self {
+                field: field,
+                repr: repr
+            };
+
+            Ok(r)
+        } else {
+            Err(RepresentationDecodingError::NotInField(format!("{}", repr)))
+        }
+    }
+
     pub fn into_repr(&self) -> E {
         let modulus = self.field.modulus();
         let mont_inv = self.field.mont_inv();
@@ -171,16 +184,16 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
             let max_iterations = 2*self.field.mont_power();
             let mut found = false;
 
-            for _ in 0..max_iterations {
+            let mut iterations = 0;
+
+            while iterations < max_iterations {
                 if u == one || v == one {
                     found = true;
                     break;
                 }
 
-                for _ in 0..max_iterations {
-                    if !u.is_even() {
-                        break;
-                    }
+                while u.is_even() && iterations < max_iterations {
+                    iterations += 1;
                     u.div2();
 
                     if b.repr.is_even() {
@@ -191,10 +204,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
                     }
                 }
 
-                for _ in 0..max_iterations {
-                    if !v.is_even() {
-                        break;
-                    }
+                while v.is_even() && iterations < max_iterations {
+                    iterations += 1;
                     v.div2();
 
                     if c.repr.is_even() {
@@ -205,6 +216,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
                     }
                 }
 
+                // u and v are not odd, so after subtraction one of them is even
+                // and we'll get into one of the loops above and iterations counter
+                // will increase
                 if v < u {
                     u.sub_noborrow(&v);
                     b.sub_assign(&c);
@@ -213,6 +227,49 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
                     c.sub_assign(&b);
                 }
             }
+
+            // for _ in 0..max_iterations {
+            //     if u == one || v == one {
+            //         found = true;
+            //         break;
+            //     }
+
+            //     for _ in 0..max_iterations {
+            //         if !u.is_even() {
+            //             break;
+            //         }
+            //         u.div2();
+
+            //         if b.repr.is_even() {
+            //             b.repr.div2();
+            //         } else {
+            //             b.repr.add_nocarry(&modulus);
+            //             b.repr.div2();
+            //         }
+            //     }
+
+            //     for _ in 0..max_iterations {
+            //         if !v.is_even() {
+            //             break;
+            //         }
+            //         v.div2();
+
+            //         if c.repr.is_even() {
+            //             c.repr.div2();
+            //         } else {
+            //             c.repr.add_nocarry(&modulus);
+            //             c.repr.div2();
+            //         }
+            //     }
+
+            //     if v < u {
+            //         u.sub_noborrow(&v);
+            //         b.sub_assign(&c);
+            //     } else {
+            //         v.sub_noborrow(&u);
+            //         c.sub_assign(&b);
+            //     }
+            // }
 
             if !found {
                 return None;
@@ -314,7 +371,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
     }
 
     fn inverse(&self) -> Option<Self> {
-        self.mont_inverse()
+        self.new_mont_inverse()
+        // self.mont_inverse()
+        // self.eea_inverse()
     }
 
     #[inline]

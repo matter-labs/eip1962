@@ -4,7 +4,7 @@ pub(crate) mod decode_fp;
 pub(crate) mod decode_utils;
 
 #[macro_use]
-mod api_specialization_macro;
+pub(crate) mod api_specialization_macro;
 
 mod g1_ops;
 mod g2_ops;
@@ -19,14 +19,12 @@ pub use g2_ops::{G2Api, PublicG2Api};
 
 mod unified_api;
 pub use self::unified_api::{OperationType, perform_operation, PREALLOCATE_FOR_ERROR_BYTES, PREALLOCATE_FOR_RESULT_BYTES};
-
-use crate::errors::ApiError;
+pub use crate::errors::ApiError;
 
 #[cfg(feature = "c_api")]
 mod c_api;
 #[cfg(feature = "c_api")]
 pub use self::c_api::{c_perform_operation};
-
 
 pub struct API;
 

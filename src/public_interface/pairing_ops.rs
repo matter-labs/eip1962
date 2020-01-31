@@ -21,7 +21,7 @@ use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance, Bls12InstanceParams};
 use crate::pairings::bn::{BnInstance, BnInstanceParams};
 use crate::pairings::mnt4::{MNT4Instance, MNT4InstanceParams};
-use crate::pairings::mnt6::{MNT6Instance};
+use crate::pairings::mnt6::{MNT6Instance, MNT6InstanceParams};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
 use crate::extension_towers::*;
@@ -310,7 +310,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             fp2_extension: &extension_2,
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
-            force_no_naf: false
+            force_no_naf: true
         };
 
         let engine = Bls12Instance::from_params(engine_params);
@@ -387,15 +387,17 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             }
         }
 
-        let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
+        let (twist_type, rest) = decode_twist_type(&rest)?;
 
-        let twist_type = match twist_type_encoding[0] {
-            TWIST_TYPE_D => TwistType::D,
-            TWIST_TYPE_M => TwistType::M, 
-            _ => {
-                return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
-            },
-        };
+        // let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
+
+        // let twist_type = match twist_type_encoding[0] {
+        //     TWIST_TYPE_D => TwistType::D,
+        //     TWIST_TYPE_M => TwistType::M, 
+        //     _ => {
+        //         return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
+        //     },
+        // };
 
         let base_precomp = Fp6Fp12FrobeniusBaseElements::construct(
             &modulus, 
@@ -515,7 +517,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         for _ in 0..num_pairs {
             let (g1, rest) = decode_g1_point_from_xy(&global_rest, modulus_len, &g1_curve)?;
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
-
             global_rest = rest;
             if !g1.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -568,7 +569,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
             non_residue_in_p_minus_one_over_2: fp2_non_residue_in_p_minus_one_over_2,
-            force_no_naf: false
+            force_no_naf: true
         };
 
         let engine = BnInstance::from_params(engine_params);
@@ -766,7 +767,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Ok(pairing_result_false());
         }
 
-        let engine = MNT6Instance {
+        let engine_params = MNT6InstanceParams {
             x: &x.as_ref(),
             x_is_negative: x_is_negative,
             exp_w0: exp_w0.as_ref(),
@@ -778,7 +779,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             twist: twist,
             fp3_extension: &extension_3,
             fp6_extension: &extension_6,
+            force_no_naf: true
         };
+
+        let engine = MNT6Instance::from_params(engine_params);
 
         let pairing_result = engine.pair(&g1_points, &g2_points);
 
@@ -998,7 +1002,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             twist: twist,
             fp2_extension: &extension_2,
             fp4_extension: &extension_4,
-            force_no_naf: false
+            force_no_naf: true
         };
 
         let engine = MNT4Instance::from_params(engine);

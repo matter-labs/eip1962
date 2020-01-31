@@ -62,28 +62,26 @@ impl<
     > MNT4Instance<'a, FE, F, CB, CTW> 
 {
     pub fn from_params(params: MNT4InstanceParams::<'a, FE, F, CB, CTW>) -> Self {
-        let naf_vec = into_ternary_wnaf(&params.x);
-        let original_bits = calculate_bits(&params.x);
-        let original_hamming = calculate_hamming_weight(&params.x);
-        let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
-        let naf_length = naf_vec.len() as u32;
-
-        let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
-            true
+        let (prefer_naf, naf) = if params.force_no_naf {
+            (false, vec![])
         } else {
-            false
-        };
+            let naf_vec = into_ternary_wnaf(&params.x);
+            let original_bits = calculate_bits(&params.x);
+            let original_hamming = calculate_hamming_weight(&params.x);
+            let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
+            let naf_length = naf_vec.len() as u32;
 
-        let prefer_naf = if params.force_no_naf {
-            false
-        } else {
-            naf_is_beneficial
-        };
+            let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
+                true
+            } else {
+                false
+            };
 
-        let naf = if prefer_naf {
-            naf_vec
-        } else {
-            vec![]
+            if naf_is_beneficial {
+                (true, naf_vec)
+            } else {
+                (false, vec![])
+            }
         };
 
         Self {

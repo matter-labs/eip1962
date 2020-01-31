@@ -71,28 +71,26 @@ impl<
     > Bls12Instance<'a, FE, F, CB, CTW> 
 {
     pub fn from_params(params: Bls12InstanceParams::<'a, FE, F, CB, CTW>) -> Self {
-        let naf_vec = into_ternary_wnaf(&params.x);
-        let original_bits = calculate_bits(&params.x);
-        let original_hamming = calculate_hamming_weight(&params.x);
-        let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
-        let naf_length = naf_vec.len() as u32;
-
-        let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
-            true
+        let (prefer_naf, naf) = if params.force_no_naf {
+            (false, vec![])
         } else {
-            false
-        };
+            let naf_vec = into_ternary_wnaf(&params.x);
+            let original_bits = calculate_bits(&params.x);
+            let original_hamming = calculate_hamming_weight(&params.x);
+            let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
+            let naf_length = naf_vec.len() as u32;
 
-        let prefer_naf = if params.force_no_naf {
-            false
-        } else {
-            naf_is_beneficial
-        };
+            let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
+                true
+            } else {
+                false
+            };
 
-        let naf = if prefer_naf {
-            naf_vec
-        } else {
-            vec![]
+            if naf_is_beneficial {
+                (true, naf_vec)
+            } else {
+                (false, vec![])
+            }
         };
 
         Self {
@@ -605,7 +603,7 @@ mod tests {
     use crate::constants::MaxFieldUint;
 
     #[test]
-    fn test_bls12_381_pairing() {
+    fn test_bls12_381_pairing_against_ref() {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         // let scalar_field = new_field::<U256Repr>("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
@@ -703,6 +701,117 @@ mod tests {
         
         assert!(format!("{}",pairing_result.c0.c0.c0) == "0x1250ebd871fc0a92a7b2d83168d0d727272d441befa15c503dd8e90ce98db3e7b6d194f60839c508a84305aaca1789b6");
         // println!("Res = {}", pairing_result);
+    }
+
+    #[test]
+    fn test_bls12_381_pairing_bilinearity() {
+        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        // let scalar_field = new_field::<U256Repr>("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+        let group_order = BigUint::from_str_radix("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+        let group_order = biguint_to_u64_vec(group_order);
+        let mut fp_non_residue = Fp::one(&base_field);
+        fp_non_residue.negate(); // non-residue is -1
+
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+
+        let mut extension_2 = Extension2::new(fp_non_residue);
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
+
+        let one = Fp::one(&base_field);
+
+        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        fp2_non_residue.c0 = one.clone();
+        fp2_non_residue.c1 = one.clone();
+
+        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
+
+        let mut extension_6 = Extension3Over2::new(fp2_non_residue);
+        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+
+        let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
+        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+
+        let b_fp = Fp::from_repr(&base_field, U384Repr::from(4)).unwrap();
+        let mut b_fp2 = Fp2::zero(&extension_2);
+        b_fp2.c0 = b_fp.clone();
+        b_fp2.c1 = b_fp.clone();
+
+        let a_fp = Fp::zero(&base_field);
+        let a_fp2 = Fp2::zero(&extension_2);
+
+        let fp_params = CurveOverFpParameters::new(&base_field);
+        let fp2_params = CurveOverFp2Parameters::new(&extension_2);
+
+        let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
+        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
+
+        let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap().to_bytes_be();
+        let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap().to_bytes_be();
+
+        let q_x_0 = BigUint::from_str_radix("352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160", 10).unwrap().to_bytes_be();
+        let q_x_1 = BigUint::from_str_radix("3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758", 10).unwrap().to_bytes_be();
+        let q_y_0 = BigUint::from_str_radix("1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905", 10).unwrap().to_bytes_be();
+        let q_y_1 = BigUint::from_str_radix("927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582", 10).unwrap().to_bytes_be();
+
+        let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
+        let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
+
+        let q_x_0 = Fp::from_be_bytes(&base_field, &q_x_0, true).unwrap();
+        let q_x_1 = Fp::from_be_bytes(&base_field, &q_x_1, true).unwrap();
+        let q_y_0 = Fp::from_be_bytes(&base_field, &q_y_0, true).unwrap();
+        let q_y_1 = Fp::from_be_bytes(&base_field, &q_y_1, true).unwrap();
+
+        let mut q_x = Fp2::zero(&extension_2);
+        q_x.c0 = q_x_0;
+        q_x.c1 = q_x_1;
+
+        let mut q_y = Fp2::zero(&extension_2);
+        q_y.c0 = q_y_0;
+        q_y.c1 = q_y_1;
+
+        let p = CurvePoint::point_from_xy(&curve, p_x, p_y);
+        // println!("P.x = {}", p.x.into_repr());
+        let q = CurvePoint::point_from_xy(&twist, q_x, q_y);
+
+        // let x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap();
+        // println!("x = {}", x);
+        // println!("x = {:x}", x);
+
+        assert!(p.is_on_curve());
+        assert!(q.is_on_curve());
+
+        let bls12_engine = super::Bls12InstanceParams {
+            x: &[0xd201000000010000],
+            x_is_negative: true,
+            twist_type: super::TwistType::M,
+            base_field: &base_field,
+            curve: &curve,
+            curve_twist: &twist,
+            fp2_extension: &extension_2,
+            fp6_extension: &extension_6,
+            fp12_extension: &extension_12,
+            force_no_naf: false
+        };
+
+        let bls12_engine = super::Bls12Instance::from_params(bls12_engine);
+
+        use crate::weierstrass::Group;
+        let mut p2 = p.mul(vec![12345678]);
+        p2.normalize();
+
+        let mut q2 = q.mul(vec![12345678]);
+        q2.normalize();
+
+        // let pairing_result = engine.pair(&[p.clone()], &[q.clone()]).unwrap();
+
+        let ans1 = bls12_engine.pair(&[p.clone()], &[q2]).unwrap();
+        let ans2 = bls12_engine.pair(&[p2], &[q.clone()]).unwrap();
+        let ans3 = bls12_engine.pair(&[p], &[q]).unwrap();
+        let ans3 = ans3.pow(&vec![12345678]);
+
+        assert!(ans1 == ans2);
+        assert!(ans1 == ans3);
     }
 
     #[test]

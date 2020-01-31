@@ -7,6 +7,28 @@ use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::extension_towers::fp3::{Fp3, Extension3};
 use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 use crate::pairings::PairingEngine;
+use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
+
+pub struct MNT6InstanceParams<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp3<'a, FE, F>>
+    > {
+    pub x: &'a [u64],
+    pub x_is_negative: bool,
+    pub exp_w0: &'a [u64],
+    pub exp_w1: &'a [u64],
+    pub exp_w0_is_negative: bool,
+    pub base_field: &'a F,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub twist: Fp3<'a, FE, F>,
+    pub fp3_extension: &'a Extension3<'a, FE, F>,
+    pub fp6_extension: &'a Extension2Over3<'a, FE, F>,    
+    pub force_no_naf: bool
+}
 
 pub struct MNT6Instance<
         'a, 
@@ -15,17 +37,69 @@ pub struct MNT6Instance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp3<'a, FE, F>>
     > {
-    pub(crate) x: &'a [u64],
-    pub(crate) x_is_negative: bool,
-    pub(crate) exp_w0: &'a [u64],
-    pub(crate) exp_w1: &'a [u64],
-    pub(crate) exp_w0_is_negative: bool,
-    pub(crate) base_field: &'a F,
-    pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
-    pub(crate) curve_twist: &'a WeierstrassCurve<'a, CTW>,
-    pub(crate) twist: Fp3<'a, FE, F>,
-    pub(crate) fp3_extension: &'a Extension3<'a, FE, F>,
-    pub(crate) fp6_extension: &'a Extension2Over3<'a, FE, F>,
+    pub x: &'a [u64],
+    pub x_is_negative: bool,
+    pub exp_w0: &'a [u64],
+    pub exp_w1: &'a [u64],
+    pub exp_w0_is_negative: bool,
+    pub base_field: &'a F,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub twist: Fp3<'a, FE, F>,
+    pub fp3_extension: &'a Extension3<'a, FE, F>,
+    pub fp6_extension: &'a Extension2Over3<'a, FE, F>,
+    pub prefer_naf: bool,
+    pub x_naf: Vec<i8>
+}
+
+
+impl<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp3<'a, FE, F>>
+    > MNT6Instance<'a, FE, F, CB, CTW> 
+{
+    pub fn from_params(params: MNT6InstanceParams::<'a, FE, F, CB, CTW>) -> Self {
+        let (prefer_naf, naf) = if params.force_no_naf {
+            (false, vec![])
+        } else {
+            let naf_vec = into_ternary_wnaf(&params.x);
+            let original_bits = calculate_bits(&params.x);
+            let original_hamming = calculate_hamming_weight(&params.x);
+            let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
+            let naf_length = naf_vec.len() as u32;
+
+            let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
+                true
+            } else {
+                false
+            };
+
+            if naf_is_beneficial {
+                (true, naf_vec)
+            } else {
+                (false, vec![])
+            }
+        };
+
+        Self {
+            x: params.x,
+            x_is_negative: params.x_is_negative,
+            exp_w0: params.exp_w0,
+            exp_w1: params.exp_w1,
+            exp_w0_is_negative: params.exp_w0_is_negative,
+            base_field: params.base_field,
+            curve: params.curve,
+            curve_twist: params.curve_twist,
+            twist: params.twist,
+            fp3_extension: params.fp3_extension,
+            fp6_extension: params.fp6_extension,
+            prefer_naf: prefer_naf,
+            x_naf: naf
+        }
+    }
 }
 
 struct PrecomputedG1<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
@@ -606,7 +680,7 @@ mod tests {
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());
 
-        let engine = super::MNT6Instance {
+        let engine = super::MNT6InstanceParams {
             x: &x,
             x_is_negative: true,
             exp_w0: &[0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55],
@@ -618,7 +692,10 @@ mod tests {
             twist: twist,
             fp3_extension: &extension_3,
             fp6_extension: &extension_6,
+            force_no_naf: false
         };
+
+        let engine = super::MNT6Instance::from_params(engine);
 
         let pairing_result = engine.pair(&[p], &[q]).unwrap();
 
@@ -744,7 +821,7 @@ mod tests {
 
         // in this case w1 != 1
 
-        let engine = super::MNT6Instance {
+        let engine = super::MNT6InstanceParams {
             x: &x,
             x_is_negative: false,
             exp_w0: &biguint_to_u64_vec(w0),
@@ -756,7 +833,10 @@ mod tests {
             twist: twist,
             fp3_extension: &extension_3,
             fp6_extension: &extension_6,
+            force_no_naf: false,
         };
+
+        let engine = super::MNT6Instance::from_params(engine);
 
         let pairing_result = engine.pair(&[p], &[q]).unwrap();
 
@@ -871,7 +951,7 @@ mod tests {
 
         // in this case w1 != 1
 
-        let engine = super::MNT6Instance {
+        let engine = super::MNT6InstanceParams {
             x: &biguint_to_u64_vec(ate_loop_length),
             x_is_negative: false,
             exp_w0: &biguint_to_u64_vec(w0),
@@ -883,7 +963,10 @@ mod tests {
             twist: twist,
             fp3_extension: &extension_3,
             fp6_extension: &extension_6,
+            force_no_naf: false
         };
+
+        let engine = super::MNT6Instance::from_params(engine);
 
         let mut p0 = p.clone();
         p0.double();
@@ -1030,7 +1113,7 @@ mod tests {
 
         // in this case w1 != 1
 
-        let engine = super::MNT6Instance {
+        let engine = super::MNT6InstanceParams {
             x: &biguint_to_u64_vec(ate_loop_length),
             x_is_negative: false,
             exp_w0: &biguint_to_u64_vec(w0),
@@ -1042,7 +1125,10 @@ mod tests {
             twist: twist,
             fp3_extension: &extension_3,
             fp6_extension: &extension_6,
+            force_no_naf: false
         };
+
+        let engine = super::MNT6Instance::from_params(engine);
 
         let mut p0 = p.clone();
         p0.double();

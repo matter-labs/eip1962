@@ -31,6 +31,9 @@ pub mod public_interface;
 #[cfg(feature = "gas_metering")]
 pub mod gas_meter;
 
+#[cfg(feature = "external_tests")]
+pub mod external_tests;
+
 #[cfg(test)]
 mod test;
 

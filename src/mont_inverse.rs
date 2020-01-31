@@ -315,13 +315,17 @@ mod tests {
         assert_eq!(inverse, mont_inverse);
     }
 
-    #[test]
-    fn test_small_number_of_limbs_inverse_2() {
+    fn test_for_field_end_element(
+        field: &str,
+        radix: u32,
+        element: &str,
+        element_radix: u32
+    ) {
         use crate::field::new_field;
         use crate::traits::ZeroAndOne;
 
-        let field = new_field::<U256Repr>("63", 16).unwrap();
-        let value = BigUint::from_str_radix("48", 16).unwrap();
+        let field = new_field::<U256Repr>(field, radix as usize).unwrap();
+        let value = BigUint::from_str_radix(element, element_radix).unwrap();
         let value_be_bytes = value.to_bytes_be();
         let element = Fp::from_be_bytes(&field, &value_be_bytes[..], true).unwrap();
         if let Some(inverse) = element.eea_inverse() {
@@ -342,10 +346,10 @@ mod tests {
             assert!(may_be_one == one, "eea inverse is not an inverse");
             assert_eq!(inverse, mont_inverse);
         } else {
+            println!("Inverse does not exist");
             assert!(element.new_mont_inverse().is_none(),"there should be no montgomery inverse too");
             // assert!(element.mont_inverse().is_none(),"there should be no montgomery inverse too");
         }
-        
     }
 
     #[test]
@@ -359,8 +363,8 @@ mod tests {
         let element = Fp::from_be_bytes(&field, &value_be_bytes[..], true).unwrap();
         let inverse = element.eea_inverse().expect("inverse must exist");
         println!("EEA inverse = {}", inverse);
-        let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
-        // let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
+        // let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
+        let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
         println!("Montgomery form inverse = {}", mont_inverse);
 
         let one = Fp::one(&field);
@@ -376,5 +380,9 @@ mod tests {
         assert_eq!(inverse, mont_inverse);
     }
 
-    
+    #[test]
+    fn test_small_number_of_limbs_inverse_2() {
+        test_for_field_end_element("63", 16, "48", 16);
+        test_for_field_end_element("f3", 16, "e3", 16);
+    }
 }

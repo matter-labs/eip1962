@@ -386,7 +386,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         }
     }
 
-    fn mul_impl<S: AsRef<[u64]>>(&self, exp: S) -> Self {
+    pub(crate) fn mul_impl<S: AsRef<[u64]>>(&self, exp: S) -> Self {
         let one = C::BaseFieldElement::one(self.curve.params.params());
         if self.z == one {
             return self.mul_impl_mixed_addition(exp);
@@ -412,7 +412,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         res
     }
 
-    pub fn wnaf_mul_impl<S: crate::representation::IntoWnaf>(&self, exp: S) -> Self {
+    pub(crate) fn wnaf_mul_impl<S: crate::representation::IntoWnaf>(&self, exp: S) -> Self {
         // let one = Fp::<'a, FE, F>::one(&self.curve.field);
         // if self.z == one {
         //     return self.mul_impl_mixed_addition(exp);

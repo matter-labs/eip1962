@@ -55,6 +55,7 @@ gas_metering = ["serde", "serde_json", "once_cell"]
 c_api = []
 gas_metering_mode = []
 fuzzing_mode = []
+external_tests = []
 
 # [profile.dev]
 # incremental = false

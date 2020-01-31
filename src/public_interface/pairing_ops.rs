@@ -20,7 +20,7 @@ use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters, C
 use crate::pairings::*;
 use crate::pairings::bls12::{Bls12Instance, Bls12InstanceParams};
 use crate::pairings::bn::{BnInstance, BnInstanceParams};
-use crate::pairings::mnt4::{MNT4Instance};
+use crate::pairings::mnt4::{MNT4Instance, MNT4InstanceParams};
 use crate::pairings::mnt6::{MNT6Instance};
 use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
@@ -147,15 +147,17 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             }
         }
 
-        let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
+        let (twist_type, rest) = decode_twist_type(rest)?;
 
-        let twist_type = match twist_type_encoding[0] {
-            TWIST_TYPE_D => TwistType::D,
-            TWIST_TYPE_M => TwistType::M, 
-            _ => {
-                return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
-            },
-        };
+        // let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
+
+        // let twist_type = match twist_type_encoding[0] {
+        //     TWIST_TYPE_D => TwistType::D,
+        //     TWIST_TYPE_M => TwistType::M, 
+        //     _ => {
+        //         return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
+        //     },
+        // };
 
         let base_precomp = Fp6Fp12FrobeniusBaseElements::construct(
             &modulus, 
@@ -228,14 +230,17 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
 
-        let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
-        let x_is_negative = match x_sign[0] {
-            SIGN_PLUS => false,
-            SIGN_MINUS => true,
-            _ => {
-                return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
-            },
-        };
+        let (x_is_negative, rest) = decode_sign_is_negative(rest)?;
+
+        // let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
+
+        // let x_is_negative = match x_sign[0] {
+        //     SIGN_PLUS => false,
+        //     SIGN_MINUS => true,
+        //     _ => {
+        //         return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
+        //     },
+        // };
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -459,14 +464,17 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if u.is_zero() {
             return Err(ApiError::InputError("Loop count parameters can not be zero".to_owned()));
         }
-        let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get U sign encoding")?;
-        let u_is_negative = match u_sign[0] {
-            SIGN_PLUS => false,
-            SIGN_MINUS => true,
-            _ => {
-                return Err(ApiError::InputError("U sign is not encoded properly".to_owned()));
-            },
-        };
+
+        let (u_is_negative, rest) = decode_sign_is_negative(rest)?;
+
+        // let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get U sign encoding")?;
+        // let u_is_negative = match u_sign[0] {
+        //     SIGN_PLUS => false,
+        //     SIGN_MINUS => true,
+        //     _ => {
+        //         return Err(ApiError::InputError("U sign is not encoded properly".to_owned()));
+        //     },
+        // };
 
         let two = MaxLoopParametersUint::from(2u64);
         let six = MaxLoopParametersUint::from(6u64);
@@ -637,20 +645,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             })?;
         }
 
-        // // build an extension field
-        // let mut extension_3 = Extension3::new(fp_non_residue);
-        // extension_3.calculate_frobenius_coeffs(&modulus).map_err(|_| {
-        //     ApiError::InputError("Failed to calculate Frobenius coeffs for Fp3".to_owned())
-        // })?;
-
-        // let mut extension_6 = Extension2Over3::new(Fp3::zero(&extension_3));
-
-        // {
-        //     extension_6.calculate_frobenius_coeffs(&modulus).map_err(|_| {
-        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
-        //     })?;
-        // }
-
         let one = Fp::one(&base_field);
 
         let mut twist = Fp3::zero(&extension_3);
@@ -681,14 +675,17 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         if calculate_hamming_weight(&x.as_ref()) > MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
-        let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
-        let x_is_negative = match x_sign[0] {
-            SIGN_PLUS => false,
-            SIGN_MINUS => true,
-            _ => {
-                return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
-            },
-        };
+
+        let (x_is_negative, rest) = decode_sign_is_negative(rest)?;
+
+        // let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
+        // let x_is_negative = match x_sign[0] {
+        //     SIGN_PLUS => false,
+        //     SIGN_MINUS => true,
+        //     _ => {
+        //         return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
+        //     },
+        // };
 
         let (exp_w0, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
         if exp_w0.is_zero() {
@@ -700,14 +697,16 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Err(ApiError::InputError("Final exp w1 loop count parameters can not be zero".to_owned()));
         }
 
-        let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
-        let exp_w0_is_negative = match exp_w0_sign[0] {
-            SIGN_PLUS => false,
-            SIGN_MINUS => true,
-            _ => {
-                return Err(ApiError::InputError("Exp_w0 sign is not encoded properly".to_owned()));
-            },
-        };
+        let (exp_w0_is_negative, rest) = decode_sign_is_negative(rest)?;
+
+        // let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
+        // let exp_w0_is_negative = match exp_w0_sign[0] {
+        //     SIGN_PLUS => false,
+        //     SIGN_MINUS => true,
+        //     _ => {
+        //         return Err(ApiError::InputError("Exp_w0 sign is not encoded properly".to_owned()));
+        //     },
+        // };
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -898,14 +897,16 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Err(ApiError::InputError("X has too large hamming weight".to_owned()));
         }
 
-        let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
-        let x_is_negative = match x_sign[0] {
-            SIGN_PLUS => false,
-            SIGN_MINUS => true,
-            _ => {
-                return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
-            },
-        };
+        let (x_is_negative, rest) = decode_sign_is_negative(rest)?;
+
+        // let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
+        // let x_is_negative = match x_sign[0] {
+        //     SIGN_PLUS => false,
+        //     SIGN_MINUS => true,
+        //     _ => {
+        //         return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
+        //     },
+        // };
 
         let (exp_w0, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
         if exp_w0.is_zero() {
@@ -916,14 +917,16 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Err(ApiError::InputError("Final exp w1 loop count parameters can not be zero".to_owned()));
         }
 
-        let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
-        let exp_w0_is_negative = match exp_w0_sign[0] {
-            SIGN_PLUS => false,
-            SIGN_MINUS => true,
-            _ => {
-                return Err(ApiError::InputError("Exp_w0 sign is not encoded properly".to_owned()));
-            },
-        };
+        let (exp_w0_is_negative, rest) = decode_sign_is_negative(rest)?;
+
+        // let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
+        // let exp_w0_is_negative = match exp_w0_sign[0] {
+        //     SIGN_PLUS => false,
+        //     SIGN_MINUS => true,
+        //     _ => {
+        //         return Err(ApiError::InputError("Exp_w0 sign is not encoded properly".to_owned()));
+        //     },
+        // };
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -956,17 +959,17 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 }
             }
 
-            if !g1.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
-                }
-            }
+            // if !g1.check_correct_subgroup() {
+            //     if !crate::features::in_fuzzing_or_gas_metering() {
+            //         return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            //     }
+            // }
 
-            if !g2.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
-                }
-            }
+            // if !g2.check_correct_subgroup() {
+            //     if !crate::features::in_fuzzing_or_gas_metering() {
+            //         return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            //     }
+            // }
 
             if !g1.is_zero() && !g2.is_zero() {
                 g1_points.push(g1);
@@ -983,7 +986,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             return Ok(pairing_result_false());
         }
 
-        let engine = MNT4Instance {
+        let engine = MNT4InstanceParams {
             x: &x.as_ref(),
             x_is_negative: x_is_negative,
             exp_w0: &exp_w0.as_ref(),
@@ -995,7 +998,10 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
             twist: twist,
             fp2_extension: &extension_2,
             fp4_extension: &extension_4,
+            force_no_naf: false
         };
+
+        let engine = MNT4Instance::from_params(engine);
 
         let pairing_result = engine.pair(&g1_points, &g2_points);
 

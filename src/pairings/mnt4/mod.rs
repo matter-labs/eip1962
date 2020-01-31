@@ -7,6 +7,29 @@ use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::extension_towers::fp2::{Fp2, Extension2};
 use crate::extension_towers::fp4_as_2_over_2::{Fp4, Extension2Over2};
 use crate::pairings::PairingEngine;
+use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
+use crate::weierstrass::Group;
+
+pub struct MNT4InstanceParams<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+    > {
+    pub x: &'a [u64],
+    pub x_is_negative: bool,
+    pub exp_w0: &'a [u64],
+    pub exp_w1: &'a [u64],
+    pub exp_w0_is_negative: bool,
+    pub base_field: &'a F,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub twist: Fp2<'a, FE, F>,
+    pub fp2_extension: &'a Extension2<'a, FE, F>,
+    pub fp4_extension: &'a Extension2Over2<'a, FE, F>,    
+    pub force_no_naf: bool
+}
 
 pub struct MNT4Instance<
     'a, 
@@ -15,52 +38,105 @@ pub struct MNT4Instance<
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
         CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
     > {
-    pub(crate) x: &'a [u64],
-    pub(crate) x_is_negative: bool,
-    pub(crate) exp_w0: &'a [u64],
-    pub(crate) exp_w1: &'a [u64],
-    pub(crate) exp_w0_is_negative: bool,
-    pub(crate) base_field: &'a F,
-    pub(crate) curve: &'a WeierstrassCurve<'a, CB>,
-    pub(crate) curve_twist: &'a WeierstrassCurve<'a, CTW>,
-    pub(crate) twist: Fp2<'a, FE, F>,
-    pub(crate) fp2_extension: &'a Extension2<'a, FE, F>,
-    pub(crate) fp4_extension: &'a Extension2Over2<'a, FE, F>,
+    pub x: &'a [u64],
+    pub x_is_negative: bool,
+    pub exp_w0: &'a [u64],
+    pub exp_w1: &'a [u64],
+    pub exp_w0_is_negative: bool,
+    pub base_field: &'a F,
+    pub curve: &'a WeierstrassCurve<'a, CB>,
+    pub curve_twist: &'a WeierstrassCurve<'a, CTW>,
+    pub twist: Fp2<'a, FE, F>,
+    pub fp2_extension: &'a Extension2<'a, FE, F>,
+    pub fp4_extension: &'a Extension2Over2<'a, FE, F>,
+    pub prefer_naf: bool,
+    pub x_naf: Vec<i8>
+}
+
+impl<
+    'a, 
+        FE: ElementRepr, 
+        F: SizedPrimeField<Repr = FE>, 
+        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
+    > MNT4Instance<'a, FE, F, CB, CTW> 
+{
+    pub fn from_params(params: MNT4InstanceParams::<'a, FE, F, CB, CTW>) -> Self {
+        let naf_vec = into_ternary_wnaf(&params.x);
+        let original_bits = calculate_bits(&params.x);
+        let original_hamming = calculate_hamming_weight(&params.x);
+        let naf_hamming = calculate_naf_hamming_weight(&naf_vec);
+        let naf_length = naf_vec.len() as u32;
+
+        let naf_is_beneficial = if naf_length + naf_hamming < original_bits + original_hamming {
+            true
+        } else {
+            false
+        };
+
+        let prefer_naf = if params.force_no_naf {
+            false
+        } else {
+            naf_is_beneficial
+        };
+
+        let naf = if prefer_naf {
+            naf_vec
+        } else {
+            vec![]
+        };
+
+        Self {
+            x: params.x,
+            x_is_negative: params.x_is_negative,
+            exp_w0: params.exp_w0,
+            exp_w1: params.exp_w1,
+            exp_w0_is_negative: params.exp_w0_is_negative,
+            base_field: params.base_field,
+            curve: params.curve,
+            curve_twist: params.curve_twist,
+            twist: params.twist,
+            fp2_extension: params.fp2_extension,
+            fp4_extension: params.fp4_extension,
+            prefer_naf: prefer_naf,
+            x_naf: naf
+        }
+    }
 }
 
 struct PrecomputedG1<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub x: Fp<'a, FE, F>,
-    pub y: Fp<'a, FE, F>,
-    pub x_by_twist: Fp2<'a, FE, F>,
-    pub y_by_twist: Fp2<'a, FE, F>,
+    pub(crate) x: Fp<'a, FE, F>,
+    pub(crate) y: Fp<'a, FE, F>,
+    pub(crate) x_by_twist: Fp2<'a, FE, F>,
+    pub(crate) y_by_twist: Fp2<'a, FE, F>,
 }
 
 struct PrecomputedG2<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub x: Fp2<'a, FE, F>,
-    pub y: Fp2<'a, FE, F>,
-    pub x_over_twist: Fp2<'a, FE, F>,
-    pub y_over_twist: Fp2<'a, FE, F>,
-    pub double_coefficients: Vec<AteDoubleCoefficients<'a, FE, F>>,
-    pub addition_coefficients: Vec<AteAdditionCoefficients<'a, FE, F>>,
+    pub(crate) x: Fp2<'a, FE, F>,
+    pub(crate) y: Fp2<'a, FE, F>,
+    pub(crate) x_over_twist: Fp2<'a, FE, F>,
+    pub(crate) y_over_twist: Fp2<'a, FE, F>,
+    pub(crate) double_coefficients: Vec<AteDoubleCoefficients<'a, FE, F>>,
+    pub(crate) addition_coefficients: Vec<AteAdditionCoefficients<'a, FE, F>>,
 }
 
 struct AteDoubleCoefficients<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub c_h:  Fp2<'a, FE, F>,
-    pub c_4c: Fp2<'a, FE, F>,
-    pub c_j:  Fp2<'a, FE, F>,
-    pub c_l:  Fp2<'a, FE, F>,
+    pub(crate) c_h:  Fp2<'a, FE, F>,
+    pub(crate) c_4c: Fp2<'a, FE, F>,
+    pub(crate) c_j:  Fp2<'a, FE, F>,
+    pub(crate) c_l:  Fp2<'a, FE, F>,
 }
 
 struct AteAdditionCoefficients<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub c_l1: Fp2<'a, FE, F>,
-    pub c_rz: Fp2<'a, FE, F>,
+    pub(crate) c_l1: Fp2<'a, FE, F>,
+    pub(crate) c_rz: Fp2<'a, FE, F>,
 }
 
 struct ExtendedCoordinates<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub x: Fp2<'a, FE, F>,
-    pub y: Fp2<'a, FE, F>,
-    pub z: Fp2<'a, FE, F>,
-    pub t: Fp2<'a, FE, F>,
+    pub(crate) x: Fp2<'a, FE, F>,
+    pub(crate) y: Fp2<'a, FE, F>,
+    pub(crate) z: Fp2<'a, FE, F>,
+    pub(crate) t: Fp2<'a, FE, F>,
 }
 
 impl<
@@ -80,6 +156,21 @@ impl<
         let mut f = Fp4::one(self.fp4_extension);
         for (p, q) in i.into_iter() {
             f.mul_assign(&self.ate_pairing_loop(p, q)?);
+        }
+
+        Ok(f)
+    }
+
+    fn miller_loop_naf<'b, I>(&self, i: I) -> Result< Fp4<'a, FE, F>, () >
+    where 'a: 'b,
+        I: IntoIterator<
+            Item = &'b (&'b CurvePoint<'a, CB>, 
+                &'b CurvePoint<'a, CTW>)
+        >
+    {
+        let mut f = Fp4::one(self.fp4_extension);
+        for (p, q) in i.into_iter() {
+            f.mul_assign(&self.ate_pairing_loop_naf(p, q)?);
         }
 
         Ok(f)
@@ -319,6 +410,81 @@ impl<
         Ok(g2_p)
     }
 
+    fn precompute_g2_naf(&self, g2_point: &CurvePoint<'a, CTW>, twist_inv: &Fp2<'a, FE, F>) -> Result<PrecomputedG2<'a, FE, F>, ()> {
+        // not asserting normalization, it will be asserted in the loop
+        // precompute addition and doubling coefficients
+        let mut x_over_twist = g2_point.x.clone();
+        x_over_twist.mul_assign(&twist_inv);
+
+        let mut y_over_twist = g2_point.y.clone();
+        y_over_twist.mul_assign(&twist_inv);
+
+        let mut g2_p = PrecomputedG2 {
+            x: g2_point.x.clone(),
+            y: g2_point.y.clone(),
+            x_over_twist: x_over_twist,
+            y_over_twist: y_over_twist,
+            double_coefficients: vec![],
+            addition_coefficients: vec![],
+        };
+
+        let mut r = ExtendedCoordinates {
+            x: g2_point.x.clone(),
+            y: g2_point.y.clone(),
+            z: Fp2::one(&self.fp2_extension),
+            t: Fp2::one(&self.fp2_extension),
+        };
+
+        let mut g2_point_negated = g2_point.clone();
+        g2_point_negated.negate();
+
+        let mut it = self.x_naf.iter().rev();
+        
+        {
+            let first = it.next().expect("naf has enough coefficients");
+            assert_eq!(*first, 1);
+        }
+
+        for &i in it {
+            let coeff = self.doubling_step(&mut r);
+            g2_p.double_coefficients.push(coeff);
+
+            if i != 0 {
+                if i > 0 {
+                    let coeff = self.addition_step(&g2_point.x, &g2_point.y, &mut r);
+                    g2_p.addition_coefficients.push(coeff);
+                } else {
+                    let coeff = self.addition_step(&g2_point_negated.x, &g2_point_negated.y, &mut r);
+                    g2_p.addition_coefficients.push(coeff);
+                }
+            }
+        }
+
+        if self.x_is_negative {
+            let rz_inv = r.z.inverse().ok_or(())?;
+            let mut rz2_inv = rz_inv.clone();
+            rz2_inv.square();
+            let mut rz3_inv = rz_inv.clone();
+            rz3_inv.mul_assign(&rz2_inv);
+
+            let mut minus_r_affine_x = rz2_inv;
+            minus_r_affine_x.mul_assign(&r.x);
+            let mut minus_r_affine_y = rz3_inv;
+            minus_r_affine_y.mul_assign(&r.y);
+            minus_r_affine_y.negate();
+
+            let coeff = self.addition_step(
+                &minus_r_affine_x,
+                &minus_r_affine_y,
+                &mut r,
+            );
+
+            g2_p.addition_coefficients.push(coeff);
+        }
+
+        Ok(g2_p)
+    }
+
     fn ate_pairing_loop(
         &self, 
         point: &CurvePoint<'a, CB>, 
@@ -379,6 +545,108 @@ impl<
                 t1.mul_assign(&ac.c_rz);
                 t1.add_assign(&t);
                 t1.negate();
+
+                g_rq_at_p.c0 = t0;
+                g_rq_at_p.c1 = t1;
+
+                f.mul_assign(&g_rq_at_p);
+            }
+        }
+
+        if self.x_is_negative {
+            let ac = &q.addition_coefficients[add_idx];
+
+            let mut g_rnegr_at_p = Fp4::zero(&self.fp4_extension);
+
+            let mut t0 = ac.c_rz.clone();
+            t0.mul_assign(&p.y_by_twist);
+
+            let mut t = l1_coeff.clone();
+            t.mul_assign(&ac.c_l1);
+
+            let mut t1 = q.y_over_twist.clone();
+            t1.mul_assign(&ac.c_rz);
+            t1.add_assign(&t);
+            t1.negate();
+
+            g_rnegr_at_p.c0 = t0;
+            g_rnegr_at_p.c1 = t1;
+
+            f.mul_assign(&g_rnegr_at_p);
+            f = f.inverse().ok_or(())?;
+        }
+
+        Ok(f)
+    }
+
+    fn ate_pairing_loop_naf(
+        &self, 
+        point: &CurvePoint<'a, CB>, 
+        twist_point: &CurvePoint<'a, CTW> 
+    ) -> Result<Fp4<'a, FE, F>, ()> {
+        debug_assert!(point.is_normalized());
+        debug_assert!(twist_point.is_normalized());
+
+        let twist_inv = self.twist.inverse().ok_or(())?;
+
+        let p = self.precompute_g1(&point);
+        let q = self.precompute_g2_naf(&twist_point, &twist_inv)?;
+
+        let mut l1_coeff = Fp2::zero(&self.fp2_extension);
+        l1_coeff.c0 = p.x.clone();
+        l1_coeff.sub_assign(&q.x_over_twist);
+
+        let mut f = Fp4::one(self.fp4_extension);
+
+        let mut dbl_idx: usize = 0;
+        let mut add_idx: usize = 0;
+
+        let mut it = self.x_naf.iter().rev();
+        
+        {
+            let first = it.next().expect("naf has enough coefficients");
+            assert_eq!(*first, 1);
+        }
+
+        for &i in it {
+            let dc = &q.double_coefficients[dbl_idx];
+            dbl_idx += 1;
+
+            let mut g_rr_at_p = Fp4::zero(&self.fp4_extension);
+
+            let mut t0 = dc.c_j.clone();
+            t0.mul_assign(&p.x_by_twist);
+            t0.negate();
+            t0.add_assign(&dc.c_l);
+            t0.sub_assign(&dc.c_4c);
+
+            let mut t1 = dc.c_h.clone();
+            t1.mul_assign(&p.y_by_twist);
+
+            g_rr_at_p.c0 = t0;
+            g_rr_at_p.c1 = t1;
+
+            f.square();
+            f.mul_assign(&g_rr_at_p);
+
+            if i != 0 {
+                let ac = &q.addition_coefficients[add_idx];
+                add_idx += 1;
+
+                let mut g_rq_at_p = Fp4::zero(&self.fp4_extension);
+
+                let mut t0 = ac.c_rz.clone();
+                t0.mul_assign(&p.y_by_twist);
+
+                let mut t = l1_coeff.clone();
+                t.mul_assign(&ac.c_l1);
+
+                let mut t1 = q.y_over_twist.clone();
+                t1.mul_assign(&ac.c_rz);
+                t1.add_assign(&t);
+                if i > 0 {
+                    t1.negate();
+                }
 
                 g_rq_at_p.c0 = t0;
                 g_rq_at_p.c1 = t1;
@@ -482,7 +750,13 @@ impl<
             for (p, q) in points.iter().zip(twists.iter()) {
                 pairs.push((p, q));
             }
-            let loop_result = self.miller_loop(&pairs[..]);
+
+            let loop_result = if self.prefer_naf {
+                self.miller_loop_naf(&pairs[..])
+            } else {
+                self.miller_loop(&pairs[..])
+            };  
+
             if loop_result.is_err() {
                 return None;
             }
@@ -590,7 +864,7 @@ mod tests {
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());
 
-        let engine = super::MNT4Instance {
+        let engine = super::MNT4InstanceParams {
             x: &biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794944", 10).unwrap()),
             x_is_negative: false,
             exp_w0: &biguint_to_u64_vec(BigUint::from_str_radix("689871209842287392837045615510547309923794945", 10).unwrap()),
@@ -602,7 +876,10 @@ mod tests {
             twist: twist,
             fp2_extension: &extension_2,
             fp4_extension: &extension_4,
+            force_no_naf: false
         };
+
+        let engine = super::MNT4Instance::from_params(engine);
 
         let mut p2 = p.mul(vec![12345678]);
         p2.normalize();
@@ -726,7 +1003,7 @@ mod tests {
         assert!(q0.is_on_curve());
         assert!(q1.is_on_curve());
 
-        let engine = super::MNT4Instance {
+        let engine = super::MNT4InstanceParams {
             x: &biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470400", 10).unwrap()),
             x_is_negative: true,
             exp_w0: &biguint_to_u64_vec(BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470399", 10).unwrap()),
@@ -738,7 +1015,10 @@ mod tests {
             twist: twist,
             fp2_extension: &extension_2,
             fp4_extension: &extension_4,
+            force_no_naf: false
         };
+
+        let engine = super::MNT4Instance::from_params(engine);
 
         let mut p2 = p.mul(vec![12345678]);
         p2.normalize();

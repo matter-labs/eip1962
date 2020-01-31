@@ -16,8 +16,6 @@ pub(crate) fn parse_group_order_from_encoding<
     >(encoding: &'a [u8]) -> Result<(usize, MaxGroupSizeUint, &'a [u8]), ApiError>
 {
     let ((order_len, order), rest) = decode_group_order_with_length(&encoding)?;
-    // let ((order, order_len), rest) = get_g1_curve_params(&encoding)?;
-    // let order = MaxGroupSizeUint::from_big_endian(&order);
     if order.is_zero() {
         return Err(ApiError::InputError(format!("Group order is zero, file {}, line {}", file!(), line!())))
     }
@@ -86,12 +84,12 @@ pub(crate) fn decode_scalar_representation<
     (
         bytes: &'a [u8], 
         order_byte_len: usize,
-        order: &MaxGroupSizeUint,
+        _order: &MaxGroupSizeUint,
     ) -> Result<(MaxGroupSizeUint, &'a [u8]), ApiError>
 {
     let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
     let scalar = MaxGroupSizeUint::from_big_endian(&encoding);
-    if &scalar >= order {
+    if &scalar > _order {
         return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
     }
 

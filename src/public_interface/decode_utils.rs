@@ -31,35 +31,81 @@ pub(crate) fn decode_group_order_with_length<
 
     let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
     let length = length_encoding[0] as usize;
+    if length == 0 {
+        return Err(ApiError::InputError(format!("Encoded group length is zero, file {}, line {}", file!(), line!())));
+    }
     if length > MAX_GROUP_BYTE_LEN {
         return Err(ApiError::InputError(format!("Encoded group length is too large, file {}, line {}", file!(), line!())));
     }
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
+    let first_byte = be_encoding[0];
+    if first_byte == 0 {
+        return Err(ApiError::InputError(format!("Encoded group length has zero top byte, file {}, line {}", file!(), line!())));
+    }
     let x = MaxGroupSizeUint::from_big_endian(&be_encoding);
 
     Ok( ((length, x), rest) )
 }
 
+pub(crate) fn decode_sign_is_negative<
+    'a
+    >
+    (
+        bytes: &'a [u8], 
+    ) -> Result<(bool, &'a [u8]), ApiError>
+{
+    let (x_sign, rest) = split(bytes, SIGN_ENCODING_LENGTH, "Input is not long enough to get sign encoding")?;
+    let x_is_negative = match x_sign[0] {
+        SIGN_PLUS => false,
+        SIGN_MINUS => true,
+        _ => {
+            return Err(ApiError::InputError("sign is not encoded properly".to_owned()));
+        },
+    };
 
-// pub(crate) fn decode_loop_parameter_with_length<
-//     'a
-//     >
-//     (
-//         bytes: &'a [u8], 
-//     ) -> Result<(MaxLoopParametersUint, &'a [u8]), ApiError>
-// {
-//     use super::sane_limits::MAX_LOOP_PARAMETERS_BYTE_LEN;
+    Ok((x_is_negative, rest))
+}
 
-//     let (length_encoding, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
-//     let length = length_encoding[0] as usize;
-//     if length > MAX_LOOP_PARAMETERS_BYTE_LEN {
-//         return Err(ApiError::InputError(format!("Encoded loop length is too large, file {}, line {}", file!(), line!())));
-//     }
-//     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
-//     let x = MaxLoopParametersUint::from_big_endian(&be_encoding);
+use crate::pairings::TwistType;
 
-//     Ok((x, rest))
-// }
+pub(crate) fn decode_twist_type<
+    'a
+    >
+    (
+        bytes: &'a [u8], 
+    ) -> Result<(TwistType, &'a [u8]), ApiError>
+{
+    let (twist_type_encoding, rest) = split(bytes, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
+
+    let twist_type = match twist_type_encoding[0] {
+        TWIST_TYPE_D => TwistType::D,
+        TWIST_TYPE_M => TwistType::M, 
+        _ => {
+            return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
+        },
+    };
+
+    Ok((twist_type, rest))
+}
+
+pub(crate) fn decode_boolean<
+    'a
+    >
+    (
+        bytes: &'a [u8], 
+    ) -> Result<(bool, &'a [u8]), ApiError>
+{
+    let (boolean_encoding, rest) = split(bytes, BOOLEAN_ENCODING_LENGTH, "Input is not long enough to get boolean")?;
+    let boolean = match boolean_encoding[0] {
+        BOOLEAN_FALSE => false,
+        BOOLEAN_TRUE => true,
+        _ => {
+            return Err(ApiError::InputError("boolean is not encoded properly".to_owned()));
+        },
+    };
+
+    Ok((boolean, rest))
+}
 
 pub(crate) fn parse_modulus_and_length<
     'a

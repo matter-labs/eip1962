@@ -215,6 +215,132 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters
     Ok(calldata)
 }
 
+pub(crate) fn assemble_mnt4_753(num_point_pairs: usize) -> Vec<u8> {
+    /// - Curve type
+    /// - Lengths of modulus (in bytes)
+    /// - Field modulus
+    /// - Curve A
+    /// - Curve B
+    // - non-residue for Fp2
+    // - non-residue for Fp6
+    // - twist type M/D
+    // - parameter X
+    // - sign of X
+    // - number of pairs
+    // - list of encoded pairs
+    use num_traits::Num;
+    let modulus = BigUint::from_str_radix("41898490967918953402344214791240637128170709919953949071783502921025352812571106773058893763790338921418070971888253786114353726529584385201591605722013126468931404347949840543007986327743462853720628051692141265303114721689601", 10).unwrap();
+    let modulus_length = modulus.clone().to_bytes_be().len();
+    let curve_type = vec![MNT4];
+    let modulus_len_encoded = vec![modulus_length as u8];
+    let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
+    let a_encoded = pad_for_len_be(BigUint::from(2u64).to_bytes_be(), modulus_length);
+    let b_encoded = pad_for_len_be(BigUint::from_str_radix("28798803903456388891410036793299405764940372360099938340752576406393880372126970068421383312482853541572780087363938442377933706865252053507077543420534380486492786626556269083255657125025963825610840222568694137138741554679540", 10).unwrap().to_bytes_be(), modulus_length);
+
+    let group_order = BigUint::from_str_radix("41898490967918953402344214791240637128170709919953949071783502921025352812571106773058893763790338921418070971888458477323173057491593855069696241854796396165721416325350064441470418137846398469611935719059908164220784476160001", 10).unwrap();
+    let group_order_len = group_order.clone().to_bytes_be().len();
+    let group_order_encoding = pad_for_len_be(group_order.to_bytes_be(), group_order_len);
+
+    let non_res = BigUint::from(13u64);
+    let fp2_nonres_encoded = pad_for_len_be(non_res.to_bytes_be(), modulus_length);
+    
+    let x_encoded = BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470400", 10).unwrap().to_bytes_be();
+    let x_length = vec![x_encoded.len() as u8];
+    let x_sign = vec![SIGN_MINUS];
+
+    let w0_encoded = BigUint::from_str_radix("204691208819330962009469868104636132783269696790011977400223898462431810102935615891307667367766898917669754470399", 10).unwrap().to_bytes_be();
+    let w0_length = vec![w0_encoded.len() as u8];
+
+    let w1_encoded = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
+    let w1_length = vec![w1_encoded.len() as u8];
+
+    let w0_sign = vec![SIGN_MINUS];
+
+    let num_pairs = vec![num_point_pairs as u8];
+
+    // first pair
+    let p_x = BigUint::from_str_radix("23803503838482697364219212396100314255266282256287758532210460958670711284501374254909249084643549104668878996224193897061976788052185662569738774028756446662400954817676947337090686257134874703224133183061214213216866019444443", 10).unwrap().to_bytes_be();
+    let p_y = BigUint::from_str_radix("21091012152938225813050540665280291929032924333518476279110711148670464794818544820522390295209715531901248676888544060590943737249563733104806697968779796610374994498702698840169538725164956072726942500665132927942037078135054", 10).unwrap().to_bytes_be();
+
+    let mut g1_0_encoding: Vec<u8> = vec![];
+    g1_0_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
+    g1_0_encoding.extend(pad_for_len_be(p_y.clone(), modulus_length).into_iter());
+
+    let q_x_0 = BigUint::from_str_radix("22367666623321080720060256844679369841450849258634485122226826668687008928557241162389052587294939105987791589807198701072089850184203060629036090027206884547397819080026926412256978135536735656049173059573120822105654153939204", 10).unwrap().to_bytes_be();
+    let q_x_1 = BigUint::from_str_radix("19674349354065582663569886390557105215375764356464013910804136534831880915742161945711267871023918136941472003751075703860943205026648847064247080124670799190998395234694182621794580160576822167228187443851233972049521455293042", 10).unwrap().to_bytes_be();
+
+    let q_y_0 = BigUint::from_str_radix("6945425020677398967988875731588951175743495235863391886533295045397037605326535330657361771765903175481062759367498970743022872494546449436815843306838794729313050998681159000579427733029709987073254733976366326071957733646574", 10).unwrap().to_bytes_be();
+    let q_y_1 = BigUint::from_str_radix("17406100775489352738678485154027036191618283163679980195193677896785273172506466216232026037788788436442188057889820014276378772936042638717710384987239430912364681046070625200474931975266875995282055499803236813013874788622488", 10).unwrap().to_bytes_be();
+
+    let mut g2_0_encoding = vec![];
+    g2_0_encoding.extend(pad_for_len_be(q_x_0.clone(), modulus_length).into_iter());
+    g2_0_encoding.extend(pad_for_len_be(q_x_1.clone(), modulus_length).into_iter());
+    g2_0_encoding.extend(pad_for_len_be(q_y_0.clone(), modulus_length).into_iter());
+    g2_0_encoding.extend(pad_for_len_be(q_y_1.clone(), modulus_length).into_iter());
+
+    // second pair 
+    let y = modulus.clone() - BigUint::from_bytes_be(&p_y);
+
+    let mut g1_1_encoding: Vec<u8> = vec![];
+    g1_1_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
+    g1_1_encoding.extend(pad_for_len_be(y.to_bytes_be(), modulus_length).into_iter());
+
+    let g2_1_encoding = g2_0_encoding.clone();
+
+    let mut calldata = vec![];
+    calldata.extend(curve_type.into_iter());
+    calldata.extend(modulus_len_encoded.into_iter());
+    calldata.extend(modulus_encoded.into_iter());
+    calldata.extend(a_encoded.into_iter());
+    calldata.extend(b_encoded.into_iter());
+    calldata.extend(vec![group_order_len as u8]);
+    calldata.extend(group_order_encoding.into_iter());
+    calldata.extend(fp2_nonres_encoded.into_iter());
+    calldata.extend(x_length.into_iter());
+    calldata.extend(x_encoded.into_iter());
+    calldata.extend(x_sign.into_iter());
+
+    calldata.extend(w0_length.into_iter());
+    calldata.extend(w0_encoded.into_iter());
+
+    calldata.extend(w1_length.into_iter());
+    calldata.extend(w1_encoded.into_iter());
+    calldata.extend(w0_sign.into_iter());
+
+    calldata.extend(num_pairs.into_iter());
+
+    for i in 0..num_point_pairs {
+        if i % 2 == 0 {
+            calldata.extend(g1_0_encoding.clone().into_iter());
+            calldata.extend(g2_0_encoding.clone().into_iter());
+        } else {
+            calldata.extend(g1_1_encoding.clone().into_iter());
+            calldata.extend(g2_1_encoding.clone().into_iter());
+        }
+    }
+
+    calldata
+}
+
+
+#[test]
+fn test_call_public_api_on_mnt4_753() {
+    let calldata = assemble_mnt4_753(4);
+    use crate::public_interface::PairingApi;
+
+    let result = crate::public_interface::PublicPairingApi::pair(&calldata).unwrap();
+    assert!(result.len() == 1);
+    assert!(result[0] == 1);
+}
+
+#[test]
+#[ignore]
+fn test_print_mnt4_test_vector() {
+    let calldata = assemble_mnt4_753(4);
+    // ignore curve type
+    println!("{}", hex::encode(&calldata[0..]));
+}
+
 // #[test]
 // fn test_bn_pairings_from_vectors() {
 //     // let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/negative_u/");

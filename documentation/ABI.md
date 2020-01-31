@@ -291,7 +291,7 @@ Validations:
 - `num_pairs > 0`
 - all points are on the corresponding curves
 - all points are in the claimed subgroups (!)
-  
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.  
 
 Return value:
 
@@ -330,6 +330,7 @@ Validations:
 - `num_pairs > 0`
 - all points are on the corresponding curves
 - all points are in the claimed subgroups (!)
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
 
@@ -374,6 +375,7 @@ Validations:
 - `num_pairs > 0`
 - all points are on the corresponding curves
 - all points are in the claimed subgroups (!)
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
 
@@ -418,6 +420,7 @@ Validations:
 - `num_pairs > 0`
 - all points are on the corresponding curves
 - all points are in the claimed subgroups (!)
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
 

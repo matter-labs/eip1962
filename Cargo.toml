@@ -12,9 +12,9 @@ exclude = [
     "src/bench"
 ]
 
-#[lib]
-#name = "eth_pairings"
-#crate-type = ["rlib", "cdylib", "staticlib"]
+[lib]
+name = "eth_pairings"
+crate-type = ["rlib", "cdylib", "staticlib"]
 
 [dependencies]
 byteorder = "1.3"

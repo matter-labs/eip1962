@@ -230,3 +230,19 @@ impl GasMeter {
         result
     }
 }
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_calculate_example_prices_mnt4_753() {
+        use crate::test::pairings::mnt4::assemble_mnt4_753;
+        use crate::public_interface::OperationType;
+
+        let calldata = assemble_mnt4_753(4);
+
+        let price = super::meter_operation(OperationType::MNT4PAIR, &calldata[1..]).unwrap();
+
+        println!("MNT4-753 for 4 pairs = {}", price);
+        
+    }
+}

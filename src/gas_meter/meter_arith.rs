@@ -336,4 +336,11 @@ mod test {
         println!("BN254 multiplication price = {}", mul_price);
         
     }
+
+    #[test]
+    fn test_calculate_example_arithmetic_prices_mnt4_753() {
+        let mul_price = super::meter_multiplication(12, 12, &*super::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE).unwrap();
+
+        println!("MNT4-753 G2 multiplication price = {}", mul_price); 
+    }
 }

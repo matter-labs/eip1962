@@ -14,6 +14,10 @@ pub const SIGN_ENCODING_LENGTH: usize = 1;
 pub const SIGN_PLUS: u8 = 0x00;
 pub const SIGN_MINUS: u8 = 0x01;
 
+pub const BOOLEAN_ENCODING_LENGTH: usize = 1;
+pub const BOOLEAN_FALSE: u8 = 0x00;
+pub const BOOLEAN_TRUE: u8 = 0x01;
+
 pub const EXTENSION_DEGREE_ENCODING_LENGTH: usize = 1;
 pub const EXTENSION_DEGREE_2: u8 = 0x02;
 pub const EXTENSION_DEGREE_3: u8 = 0x03;

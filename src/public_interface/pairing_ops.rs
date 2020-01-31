@@ -122,6 +122,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
+            if fp_non_residue.is_zero() {
+                return Err(ApiError::InputError(format!("Non-residue for Fp2 is zero file {}, line {}", file!(), line!())));
+            }
             let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -139,6 +142,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         {
+            if fp2_non_residue.is_zero() {
+                return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is zero, file {}, line {}", file!(), line!())));
+            }
             let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -362,6 +368,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
+            if fp_non_residue.is_zero() {
+                return Err(ApiError::InputError(format!("Non-residue for Fp2 is zero file {}, line {}", file!(), line!())));
+            }
             let is_not_a_square = is_non_nth_root(&fp_non_residue, &modulus, 2u64);
             if !is_not_a_square {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -379,6 +388,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp2_non_residue, rest) = decode_fp2(&rest, modulus_len, &extension_2)?;
 
         {
+            if fp2_non_residue.is_zero() {
+                return Err(ApiError::InputError(format!("Non-residue for Fp6(12) is zero, file {}, line {}", file!(), line!())));
+            }
             let is_not_a_6th_root = is_non_nth_root_fp2(&fp2_non_residue, &modulus, 6u64);
             if !is_not_a_6th_root {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -618,6 +630,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
+            if fp_non_residue.is_zero() {
+                return Err(ApiError::InputError(format!("Non-residue for Fp3 is zero file {}, line {}", file!(), line!())));
+            }
             let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 6u64);
             if !is_not_a_root {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -828,6 +843,9 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let (fp_non_residue, rest) = decode_fp(&rest, modulus_len, &base_field)?;
 
         {
+            if fp_non_residue.is_zero() {
+                return Err(ApiError::InputError(format!("Non-residue for Fp2 is zero file {}, line {}", file!(), line!())));
+            }
             let is_not_a_root = is_non_nth_root(&fp_non_residue, &modulus, 4u64);
             if !is_not_a_root {
                 if !crate::features::in_fuzzing_or_gas_metering() {

@@ -256,7 +256,12 @@ pub(crate) fn meter_addition<P: ArithmeticAdditionParams>(modulus_limbs: usize, 
     return Ok(found)
 }
 
-pub(crate) fn meter_multiplication<P: ArithmeticMultiplicationParams>(modulus_limbs: usize, group_limbs: usize, parameters: &P) -> Result<u64, ApiError> {
+pub(crate) fn meter_multiplication<P: ArithmeticMultiplicationParams>(
+    modulus_limbs: usize, 
+    group_limbs: usize, 
+    parameters: &P,
+    include_base: bool
+) -> Result<u64, ApiError> {
     let (one_shot_params, per_limb_params) =  parameters.params();
     let mut one_shot_res: Vec<_> = one_shot_params.iter().filter(|(limbs, _)| *limbs == modulus_limbs).collect();
     if one_shot_res.len() != 1 {
@@ -272,7 +277,9 @@ pub(crate) fn meter_multiplication<P: ArithmeticMultiplicationParams>(modulus_li
     let per_limb = per_limb_coeff.pop().expect("result exists").1;
 
     let mut result = per_limb.checked_mul(group_limbs as u64).ok_or(ApiError::Overflow)?;
-    result = result.checked_add(one_shot).ok_or(ApiError::Overflow)?;
+    if include_base {
+        result = result.checked_add(one_shot).ok_or(ApiError::Overflow)?;
+    }
 
     return Ok(result)
 }
@@ -284,7 +291,7 @@ pub(crate) fn meter_multiexp<P: ArithmeticMultiplicationParams, M: ArithmeticMul
     parameters: &P, 
     multiexp_discounts: &M
 ) -> Result<u64, ApiError> {
-    let per_pair = meter_multiplication(modulus_limbs, group_limbs, parameters)?;
+    let per_pair = meter_multiplication(modulus_limbs, group_limbs, parameters, true)?;
 
     let (discount_multiplier, (max_pairs, max_discount), discount_lookup) = multiexp_discounts.params();
 
@@ -330,7 +337,7 @@ mod test {
     #[test]
     fn test_calculate_example_arithmetic_prices_bn254() {
         let addition_price = super::meter_addition(4, &*super::G1_ADDITION_PARAMS_INSTANCE).unwrap();
-        let mul_price = super::meter_multiplication(4, 4, &*super::G1_MULTIPLICATION_PARAMS_INSTANCE).unwrap();
+        let mul_price = super::meter_multiplication(4, 4, &*super::G1_MULTIPLICATION_PARAMS_INSTANCE, true).unwrap();
 
         println!("BN254 addition price = {}", addition_price);
         println!("BN254 multiplication price = {}", mul_price);
@@ -339,7 +346,7 @@ mod test {
 
     #[test]
     fn test_calculate_example_arithmetic_prices_mnt4_753() {
-        let mul_price = super::meter_multiplication(12, 12, &*super::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE).unwrap();
+        let mul_price = super::meter_multiplication(12, 12, &*super::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, true).unwrap();
 
         println!("MNT4-753 G2 multiplication price = {}", mul_price); 
     }

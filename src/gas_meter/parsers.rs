@@ -12,14 +12,14 @@ use crate::constants::*;
 /// eats up to the operation-specific parameters
 pub(crate) fn parse_g1_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     MaxFieldUint, 
-    MaxGroupSizeUint,
+    usize,
     &'a [u8]), ApiError> 
 {
     let ((modulus, modulus_len), rest) = get_base_field_params(&bytes)?;
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get A parameter")?;
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get B parameter")?;
 
-    let (_, order, rest) = parse_group_order_from_encoding(rest)?;
+    let (order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
     if rest.len() == 0 {
         return Err(ApiError::InputError("Input is not long enough".to_owned()));
@@ -28,7 +28,7 @@ pub(crate) fn parse_g1_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     Ok(
         (
             modulus,
-            order,
+            order_len,
             rest
         )
     )
@@ -42,7 +42,7 @@ pub(crate) fn parse_g1_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
 /// eats up to the operation-specific parameters
 pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     MaxFieldUint, 
-    MaxGroupSizeUint,
+    usize,
     u8,
     &'a [u8]), ApiError> 
 {
@@ -57,7 +57,7 @@ pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     let (_, rest) = split(rest, extension_field_element_len, "Input is not long enough to get A parameter")?;
     let (_, rest) = split(rest, extension_field_element_len, "Input is not long enough to get B parameter")?;
 
-    let (_, order, rest) = parse_group_order_from_encoding(rest)?;
+    let (order_len, _, rest) = parse_group_order_from_encoding(rest)?;
     if rest.len() == 0 {
         return Err(ApiError::InputError("Input is not long enough".to_owned()));
     }
@@ -65,7 +65,7 @@ pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     Ok(
         (
             modulus,
-            order,
+            order_len,
             extension_degree,
             rest
         )
@@ -74,11 +74,12 @@ pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
 
 pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
     MaxFieldUint, 
-    MaxGroupSizeUint,
+    usize,
     usize,
     (u64, u64),
     (u64, u64),
     (u64, u64),
+    (usize, usize),
     &'a [u8]), ApiError> 
 {
     use crate::public_interface::sane_limits::*;
@@ -87,7 +88,7 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get A parameter")?;
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get B parameter")?;
 
-    let (_, order, rest) = parse_group_order_from_encoding(rest)?;
+    let (order_len, _, rest) = parse_group_order_from_encoding(rest)?;
 
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get non-residue")?;
 
@@ -142,18 +143,44 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
         return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
     }
     
-    if rest.len() == 0 {
-        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+    let mut num_g1_subgroup_checks = 0;
+    let mut num_g2_subgroup_checks = 0;
+
+    let mut grobal_rest = rest;
+
+    if num_pairs == 0 {
+        return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
+    }
+
+    for _ in 0..num_pairs {
+        let (check_g1, rest) = decode_boolean(&grobal_rest)?;
+        let (_, rest) = split(rest, modulus_len*2, "input is not long enough to get G1 point encoding")?;
+        let (check_g2, rest) = decode_boolean(&rest)?;
+        let (_, rest) = split(rest, modulus_len*4, "input is not long enough to get G1 point encoding")?;
+        grobal_rest = rest;
+
+        if check_g1 {
+            num_g1_subgroup_checks += 1;
+        }
+
+        if check_g2 {
+            num_g2_subgroup_checks += 1;
+        }
+    }
+
+    if grobal_rest.len() != 0 {
+        return Err(ApiError::InputError("Input has garbaget at the end".to_owned()));
     }
 
     Ok(
         (
             modulus,
-            order,
+            order_len,
             num_pairs,
             (ate_loop_bits as u64, ate_loop_hamming as u64),
             (exp_w0_bits as u64, exp_w0_hamming as u64),
             (exp_w1_bits as u64, exp_w1_hamming as u64),
+            (num_g1_subgroup_checks, num_g2_subgroup_checks),
             rest
         )
     )
@@ -161,10 +188,11 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
 
 pub(crate) fn parse_bls12_bn_pairing_parameters<'a>(bytes: &'a [u8], max_x_bit_limit: usize) -> Result<(
     MaxFieldUint, 
-    MaxGroupSizeUint,
+    usize,
     usize,
     MaxLoopParametersUint,
     bool,
+    (usize, usize),
     &'a [u8]), ApiError> 
 {
     use crate::pairings::TwistType;
@@ -173,7 +201,7 @@ pub(crate) fn parse_bls12_bn_pairing_parameters<'a>(bytes: &'a [u8], max_x_bit_l
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get A parameter")?;
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get B parameter")?;
 
-    let (_, order, rest) = parse_group_order_from_encoding(rest)?;
+    let (order_len, _, rest) = parse_group_order_from_encoding(rest)?;
     
     let (_, rest) = split(rest, modulus_len, "Input is not long enough to get Fp2 non-residue")?;
     let (_, rest) = split(rest, modulus_len*2, "Input is not long enough to get Fp6/Fp12 non-residue")?;
@@ -205,21 +233,43 @@ pub(crate) fn parse_bls12_bn_pairing_parameters<'a>(bytes: &'a [u8], max_x_bit_l
     let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
     let num_pairs = num_pairs_encoding[0] as usize;
 
+    let mut num_g1_subgroup_checks = 0;
+    let mut num_g2_subgroup_checks = 0;
+
+    let mut grobal_rest = rest;
+
     if num_pairs == 0 {
         return Err(ApiError::InputError("Zero pairs encoded".to_owned()));
     }
-    
-    if rest.len() == 0 {
-        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+
+    for _ in 0..num_pairs {
+        let (check_g1, rest) = decode_boolean(&grobal_rest)?;
+        let (_, rest) = split(rest, modulus_len*2, "input is not long enough to get G1 point encoding")?;
+        let (check_g2, rest) = decode_boolean(&rest)?;
+        let (_, rest) = split(rest, modulus_len*4, "input is not long enough to get G1 point encoding")?;
+        grobal_rest = rest;
+
+        if check_g1 {
+            num_g1_subgroup_checks += 1;
+        }
+
+        if check_g2 {
+            num_g2_subgroup_checks += 1;
+        }
+    }
+
+    if grobal_rest.len() != 0 {
+        return Err(ApiError::InputError("Input has garbaget at the end".to_owned()));
     }
 
     Ok(
         (
             modulus,
-            order,
+            order_len,
             num_pairs,
             x,
             x_is_negative,
+            (num_g1_subgroup_checks, num_g2_subgroup_checks),
             rest
         )
     )

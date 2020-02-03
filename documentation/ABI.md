@@ -1,5 +1,12 @@
 # ABI interface
 
+## Breaking changes history
+
+- Encoding of group or order is new NOT required to be dense (so first byte is allowed to be zero)
+- This also means that group order is calculated from full encoded byte length. In principle one can prepend 8 zero bytes and pay higher price for operations.
+- Scalars for multiplication are now NOT required to be less or equal than the group order. This allows caller to have modular reduction "for free" and is already accounted in our pricing model
+- There is now an optional byte BEFORE G1 or G2 point encoding in pairing calls indicating whether this point must be subgroup checked or not
+
 ## Supported operations
 
 The precompile provides multiple elliptic curve operations. The full set of operations is defined as follows:
@@ -69,6 +76,21 @@ If after parsing the of all the parameters end of the byte string is not encount
 
 For reference implementations field elements were represented as a set of `N` 64-bit words where highest word (most significant) is underfilled (the highest bit of the highest word is unused) that allowed one to perform additions without extra overflow checks. Thus for `B` bits modulus one has to use `B/64 + 1` limbs (`/` is floor division) and such number of limbs is used for gas schedule that is described in the separate document.
 
+## Encoding of the `boolean` parameters
+
+- boolean `false` is encoded as a single byte `0x00`
+- boolean `true` is encoded as a single byte `0x01`
+
+## Encoding of the `sign` parameters
+
+- sign `+` is encoded as a single byte `0x00`
+- sign `-` is encoded as a single byte `0x01`
+
+## Encoding of the `twist type` parameters
+
+- twist type `M` is encoded as a single byte `0x01`
+- twist type `D` is encoded as a single byte `0x02`
+
 ## Precompile input (call data)
 
 It is expected that various precompile addresses will be exposed for different particular operations. For any operation an an input byte string will be interpreted as described below in the corresponding sections.
@@ -108,7 +130,7 @@ The following list of validation steps is performed during parsing:
 - `b != 0`
 - `group_order_length > 0`
 - `group_order_length < MAX_GROUP_BYTE_LEN`
-- top byte of `group_order` is non-zero (byte encoding is dense)
+- ~~top byte of `group_order` is non-zero (byte encoding is dense)~~
 - `group_order != 0`
 
 ### OPERATION_G1_ADD operands
@@ -136,7 +158,7 @@ Return value:
 Validations:
 - all coordinates encodings are `<base_field_modulus`
 - point is on curve
-- `rhs <= group_order` (note `<=` check)
+- ~~`rhs <= group_order` (note `<=` check)~~
 
 Return value:
 
@@ -166,7 +188,7 @@ Validations:
 - all coordinates encodings are `<base_field_modulus`
 - `num_pairs > 0`
 - all points are on curve
-- for each scalar: `scalar <= group_order` (note `<=` check)
+- ~~for each scalar: `scalar <= group_order` (note `<=` check)~~
 
 Return value:
 
@@ -275,7 +297,7 @@ Note that BLS12 is a family of curves that are parametrized by a single scalar `
 |x                  |`x_length` bytes          |                                             |
 |sign               |1 bytes                   |0 for plus, 1 for minus, sign of `x`         |
 |num_pairs          |1 bytes                   |Number of point pairs                        |
-|pairs              |`6*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
+|pairs              |`2 + 6*field_length*num_pairs`|Point pairs encoded as `(check_g1_boolean, G1_point, check_g2_boolean, G2_point)`|
 
 Validations:
 - All validations from G1 common prefix section
@@ -290,7 +312,8 @@ Validations:
 - hamming weight of `x` is smaller or equalt than `MAX_BLS12_X_HAMMING`
 - `num_pairs > 0`
 - all points are on the corresponding curves
-- all points are in the claimed subgroups (!)
+- ~~all points are in the claimed subgroups (!)~~
+- for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.  
 
 Return value:
@@ -314,7 +337,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |u                  |`x_length` bytes          |                                             |
 |sign               |1 bytes                   |0 for plus, 1 for minus, sign of `u`         |
 |num_pairs          |1 bytes                   |Number of point pairs                        |
-|pairs              |`6*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
+|pairs              |`2 + 6*field_length*num_pairs`|Point pairs encoded as `(check_g1_boolean, G1_point, check_g2_boolean, G2_point)`|
 
 Validations:
 - All validations from G1 common prefix section
@@ -329,7 +352,8 @@ Validations:
 - hamming weight of `|6u + 2|` is smaller or equalt than `MAX_BN_SIX_U_PLUS_TWO_HAMMING`
 - `num_pairs > 0`
 - all points are on the corresponding curves
-- all points are in the claimed subgroups (!)
+- ~~all points are in the claimed subgroups (!)~~
+- for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
@@ -357,7 +381,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |exp_w1                   |`exp_w1_byte_length` bytes          |                                             |
 |exp_w0_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `exp_w0`         |
 |num_pairs          |1 bytes                   |Number of point pairs                        |
-|pairs              |`6*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
+|pairs              |`2 + 6*field_length*num_pairs`|Point pairs encoded as `(check_g1_boolean, G1_point, check_g2_boolean, G2_point)`|
 
 Validations:
 - All validations from G1 common prefix section
@@ -374,7 +398,8 @@ Validations:
 - hamming weight of `exp_w1` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH`
 - `num_pairs > 0`
 - all points are on the corresponding curves
-- all points are in the claimed subgroups (!)
+- ~~all points are in the claimed subgroups (!)~~
+- for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
@@ -402,7 +427,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |exp_w1                   |`exp_w1_byte_length` bytes          |                                             |
 |exp_w0_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `exp_w0`         |
 |num_pairs          |1 bytes                   |Number of point pairs                        |
-|pairs              |`8*field_length*num_pairs`|Point pairs encoded as `(G1_point, G2_point)`|
+|pairs              |`2 + 8*field_length*num_pairs`|Point pairs encoded as `(check_g1_boolean, G1_point, check_g2_boolean, G2_point)`|
 
 Validations:
 - All validations from G1 common prefix section
@@ -419,7 +444,8 @@ Validations:
 - hamming weight of `exp_w1` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH`
 - `num_pairs > 0`
 - all points are on the corresponding curves
-- all points are in the claimed subgroups (!)
+- ~~all points are in the claimed subgroups (!)~~
+- for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:

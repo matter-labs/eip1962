@@ -90,7 +90,7 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
         (exp_w1_bits, exp_w1_hamming),
         (num_g1_subgroup_checks, num_g2_subgroup_checks),
         _
-    ) = parse_mnt_pairing_parameters(&input)?;
+    ) = parse_mnt_pairing_parameters(&input, ext_degree)?;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     // let order_limbs = num_units_for_group_order(&order)?;

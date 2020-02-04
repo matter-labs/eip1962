@@ -72,7 +72,7 @@ pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     )
 }
 
-pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
+pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8], ext_degree: usize) -> Result<(
     MaxFieldUint, 
     usize,
     usize,
@@ -156,7 +156,7 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
         let (check_g1, rest) = decode_boolean(&grobal_rest)?;
         let (_, rest) = split(rest, modulus_len*2, "input is not long enough to get G1 point encoding")?;
         let (check_g2, rest) = decode_boolean(&rest)?;
-        let (_, rest) = split(rest, modulus_len*4, "input is not long enough to get G1 point encoding")?;
+        let (_, rest) = split(rest, modulus_len*2*ext_degree, "input is not long enough to get G2 point encoding")?;
         grobal_rest = rest;
 
         if check_g1 {
@@ -169,7 +169,7 @@ pub(crate) fn parse_mnt_pairing_parameters<'a>(bytes: &'a [u8]) -> Result<(
     }
 
     if grobal_rest.len() != 0 {
-        return Err(ApiError::InputError("Input has garbaget at the end".to_owned()));
+        return Err(ApiError::InputError("Input has garbage at the end for MNT4/6 pairing".to_owned()));
     }
 
     Ok(
@@ -246,7 +246,7 @@ pub(crate) fn parse_bls12_bn_pairing_parameters<'a>(bytes: &'a [u8], max_x_bit_l
         let (check_g1, rest) = decode_boolean(&grobal_rest)?;
         let (_, rest) = split(rest, modulus_len*2, "input is not long enough to get G1 point encoding")?;
         let (check_g2, rest) = decode_boolean(&rest)?;
-        let (_, rest) = split(rest, modulus_len*4, "input is not long enough to get G1 point encoding")?;
+        let (_, rest) = split(rest, modulus_len*4, "input is not long enough to get G2 point encoding")?;
         grobal_rest = rest;
 
         if check_g1 {
@@ -259,7 +259,7 @@ pub(crate) fn parse_bls12_bn_pairing_parameters<'a>(bytes: &'a [u8], max_x_bit_l
     }
 
     if grobal_rest.len() != 0 {
-        return Err(ApiError::InputError("Input has garbaget at the end".to_owned()));
+        return Err(ApiError::InputError("Input has garbage at the end for BLS12/BN pairing".to_owned()));
     }
 
     Ok(

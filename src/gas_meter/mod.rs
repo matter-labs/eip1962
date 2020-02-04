@@ -53,7 +53,10 @@ pub fn meter_operation(operation: OperationType, input: &[u8]) -> Result<u64, Ap
 
 fn meter_addition_g1(input: &[u8]) -> Result<u64, ApiError> {
 
-    let (modulus, _, _) = parse_g1_curve_parameters(&input)?;
+    let (modulus, modulus_len, _, rest) = parse_g1_curve_parameters(&input)?;
+    if rest.len() != modulus_len * 4 {
+        return Err(ApiError::InputError("Input is either too short or contains garbage for g1 addition metering".to_owned()));
+    }
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
     let params = &*meter_arith::G1_ADDITION_PARAMS_INSTANCE;
@@ -63,8 +66,10 @@ fn meter_addition_g1(input: &[u8]) -> Result<u64, ApiError> {
 
 fn meter_addition_g2(input: &[u8]) -> Result<u64, ApiError> {
 
-    let (modulus, _, ext_degree, _) = parse_g2_curve_parameters(&input)?;
-
+    let (modulus, modulus_len, _, ext_degree, rest) = parse_g2_curve_parameters(&input)?;
+    if rest.len() != modulus_len * 4 * (ext_degree as usize) {
+        return Err(ApiError::InputError("Input is either too short or contains garbage for g2 addition metering".to_owned()));
+    }
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
     let params = if ext_degree == EXTENSION_DEGREE_2 {
@@ -80,8 +85,10 @@ fn meter_addition_g2(input: &[u8]) -> Result<u64, ApiError> {
 
 
 fn meter_multiplication_g1(input: &[u8]) -> Result<u64, ApiError> {
-
-    let (modulus, order_len, _) = parse_g1_curve_parameters(&input)?;
+    let (modulus, modulus_len, order_len, rest) = parse_g1_curve_parameters(&input)?;
+    if rest.len() != modulus_len * 2 + order_len {
+        return Err(ApiError::InputError("Input is either too short or contains garbage for g1 multiplication metering".to_owned()));
+    }
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     // let order_limbs = num_units_for_group_order(&order)?;
     let order_limbs = num_units_for_group_order_length(order_len)?;
@@ -92,8 +99,10 @@ fn meter_multiplication_g1(input: &[u8]) -> Result<u64, ApiError> {
 }
 
 fn meter_multiplication_g2(input: &[u8]) -> Result<u64, ApiError> {
-
-    let (modulus, order_len, ext_degree, _) = parse_g2_curve_parameters(&input)?;
+    let (modulus, modulus_len, order_len, ext_degree, rest) = parse_g2_curve_parameters(&input)?;
+    if rest.len() != modulus_len * 2 * (ext_degree as usize) + order_len {
+        return Err(ApiError::InputError("Input is either too short or contains garbage for g2 multiplication metering".to_owned()));
+    }
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     // let order_limbs = num_units_for_group_order(&order)?;
@@ -111,8 +120,7 @@ fn meter_multiplication_g2(input: &[u8]) -> Result<u64, ApiError> {
 }
 
 fn meter_multiexp_g1(input: &[u8]) -> Result<u64, ApiError> {
-
-    let (modulus, order_len, rest) = parse_g1_curve_parameters(&input)?;
+    let (modulus, modulus_len, order_len, rest) = parse_g1_curve_parameters(&input)?;
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     // let order_limbs = num_units_for_group_order(&order)?;
     let order_limbs = num_units_for_group_order_length(order_len)?;
@@ -124,8 +132,8 @@ fn meter_multiexp_g1(input: &[u8]) -> Result<u64, ApiError> {
         return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
     }
 
-    if rest.len() == 0 {
-        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+    if rest.len() != num_pairs * (modulus_len * 2 +  order_len) {
+        return Err(ApiError::InputError("Input is either too short or contains garbage for g1 multiexp metering".to_owned()));
     }
 
     let params = &*meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE;
@@ -135,8 +143,7 @@ fn meter_multiexp_g1(input: &[u8]) -> Result<u64, ApiError> {
 }
 
 fn meter_multiexp_g2(input: &[u8]) -> Result<u64, ApiError> {
-
-    let (modulus, order_len, ext_degree, rest) = parse_g2_curve_parameters(&input)?;
+    let (modulus, modulus_len, order_len, ext_degree, rest) = parse_g2_curve_parameters(&input)?;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     // let order_limbs = num_units_for_group_order(&order)?;
@@ -157,8 +164,8 @@ fn meter_multiexp_g2(input: &[u8]) -> Result<u64, ApiError> {
         return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
     }
 
-    if rest.len() == 0 {
-        return Err(ApiError::InputError("Input is not long enough".to_owned()));
+    if rest.len() != num_pairs * (modulus_len * 2 * (ext_degree as usize) +  order_len) {
+        return Err(ApiError::InputError("Input is either too short or contains garbage for g2 multiexp metering".to_owned()));
     }
 
     let discounts = &*meter_arith::MULTIEXP_PARAMS_INSTANCE;

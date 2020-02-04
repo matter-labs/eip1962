@@ -13,6 +13,7 @@ use crate::constants::*;
 pub(crate) fn parse_g1_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     MaxFieldUint, 
     usize,
+    usize,
     &'a [u8]), ApiError> 
 {
     let ((modulus, modulus_len), rest) = get_base_field_params(&bytes)?;
@@ -28,6 +29,7 @@ pub(crate) fn parse_g1_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     Ok(
         (
             modulus,
+            modulus_len,
             order_len,
             rest
         )
@@ -42,6 +44,7 @@ pub(crate) fn parse_g1_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
 /// eats up to the operation-specific parameters
 pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     MaxFieldUint, 
+    usize,
     usize,
     u8,
     &'a [u8]), ApiError> 
@@ -65,6 +68,7 @@ pub(crate) fn parse_g2_curve_parameters<'a>(bytes: &'a [u8]) -> Result<(
     Ok(
         (
             modulus,
+            modulus_len,
             order_len,
             extension_degree,
             rest

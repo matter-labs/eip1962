@@ -106,7 +106,7 @@ pub(crate) fn assemble_single_points_addition_pair(
 fn test_g1_mul_from_vectors() {
     let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    for (curve, _) in curves.into_iter() {
+    for (curve, filename) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g1_mul_vectors.into_iter() {
             let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
@@ -116,7 +116,7 @@ fn test_g1_mul_from_vectors() {
 
             let result = call_g1_engine_mul(&calldata[..]);
             if result.is_err() {
-                panic!("{}", result.err().unwrap());
+                panic!("Error for file {}: {}", filename, result.err().unwrap());
             }
             assert!(result.is_ok());
 

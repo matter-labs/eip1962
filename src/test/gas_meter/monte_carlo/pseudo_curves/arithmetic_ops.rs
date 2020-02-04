@@ -138,7 +138,7 @@ fn run_arithmetic_ops_pseudo_curves_monte_carlo() {
 
 
 #[test]
-// #[ignore]
+#[ignore]
 fn run_single_curve_arithmetic_ops() {
     assert!(crate::features::in_gas_metering());
 
@@ -650,7 +650,7 @@ fn run_deterministic_parallel_search_no_filtering() {
 
 
 #[test]
-// #[ignore]
+#[ignore]
 fn flame_one_off_field_and_curve_constuction_g2_ext3() {
     assert!(crate::features::in_gas_metering());
     const SAMPLES: usize = 10_000;

@@ -3,7 +3,7 @@ use crate::field::{SizedPrimeField};
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
 use crate::weierstrass::CurveParameters;
-use crate::constants::{MaxGroupSizeUint};
+use crate::integers::{MaxGroupSizeUint};
 
 use super::decode_fp::*;
 

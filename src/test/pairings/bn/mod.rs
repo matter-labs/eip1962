@@ -345,6 +345,7 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
     let mut g1_0_encoding: Vec<u8> = vec![];
+    g1_0_encoding.push(1u8);
     g1_0_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
     g1_0_encoding.extend(pad_for_len_be(p_y, modulus_length).into_iter());
 
@@ -354,6 +355,7 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
 
     let mut g2_0_encoding = vec![];
+    g2_0_encoding.push(1u8);
     g2_0_encoding.extend(pad_for_len_be(q_x_0.clone(), modulus_length).into_iter());
     g2_0_encoding.extend(pad_for_len_be(q_x_1.clone(), modulus_length).into_iter());
     g2_0_encoding.extend(pad_for_len_be(q_y_0.clone(), modulus_length).into_iter());
@@ -363,6 +365,7 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     let y = modulus.clone() - BigUint::from_str_radix("2", 10).unwrap();
 
     let mut g1_1_encoding: Vec<u8> = vec![];
+    g1_1_encoding.push(1u8);
     g1_1_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
     g1_1_encoding.extend(pad_for_len_be(y.to_bytes_be(), modulus_length).into_iter());
 

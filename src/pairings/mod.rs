@@ -153,7 +153,7 @@ mod test {
     use num_traits::Num;
     use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
-    use crate::constants::MaxFieldUint;
+    use crate::integers::MaxFieldUint;
 
     #[test]
     fn test_fp12_faster_frobenius() {
@@ -221,16 +221,13 @@ mod test {
 
         assert!(frob_6 == may_be_frob6);
 
-        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         assert_eq!(extension_12.frobenius_coeffs_c1[6], may_be_frob6);
-
     }
 
     #[test]
@@ -254,13 +251,11 @@ mod test {
         fp2_non_residue.c0 = fp_9.clone();
         fp2_non_residue.c1 = one.clone();
 
-        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let precomp_base = Fp6Fp12FrobeniusBaseElements::construct(&modulus, &fp2_non_residue).unwrap();
 
@@ -273,6 +268,50 @@ mod test {
         assert!(extension_6_fast.frobenius_coeffs_c1 == extension_6.frobenius_coeffs_c1);
         assert!(extension_6_fast.frobenius_coeffs_c2 == extension_6.frobenius_coeffs_c2);
         assert!(extension_12_fast.frobenius_coeffs_c1 == extension_12.frobenius_coeffs_c1);
+    }
+
+    #[test]
+    fn test_fp4_optimized_precomp() {
+        use crate::field::U768Repr;
+
+        let modulus_biguint = BigUint::from_str_radix("41898490967918953402344214791240637128170709919953949071783502921025352812571106773058893763790338921418070971888253786114353726529584385201591605722013126468931404347949840543007986327743462853720628051692141265303114721689601", 10).unwrap();
+        let base_field = new_field::<U768Repr>("41898490967918953402344214791240637128170709919953949071783502921025352812571106773058893763790338921418070971888253786114353726529584385201591605722013126468931404347949840543007986327743462853720628051692141265303114721689601", 10).unwrap();
+        let nonres_repr = U768Repr::from(13);
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+        
+        let modulus = MaxFieldUint::from_big_endian(&modulus_biguint.clone().to_bytes_be());
+
+        let mut extension_2 = Extension2::new(fp_non_residue.clone());
+        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
+
+        let fp2_non_residue = Fp2::zero(&extension_2);
+
+        let mut q_minus_one_by_four = modulus_biguint.clone();
+        q_minus_one_by_four -= BigUint::from(1u64);
+        q_minus_one_by_four /= BigUint::from(4u64);
+
+        let fp_in_1 = fp_non_residue.pow(&biguint_to_u64_vec(q_minus_one_by_four.clone()));
+
+        let mut q_squared_minus_one_by_four = modulus_biguint.clone();
+        q_squared_minus_one_by_four *= &modulus_biguint;
+        q_squared_minus_one_by_four -= BigUint::from(1u64);
+        q_squared_minus_one_by_four /= BigUint::from(4u64);
+
+        let fp_in_2 = fp_non_residue.pow(&biguint_to_u64_vec(q_squared_minus_one_by_four.clone()));
+
+        // let mut q_cubed_minus_one_by_four = modulus_biguint.clone();
+        // q_cubed_minus_one_by_four *= &modulus_biguint;
+        // q_cubed_minus_one_by_four *= &modulus_biguint;
+        // q_cubed_minus_one_by_four -= BigUint::from(1u64);
+        // q_cubed_minus_one_by_four /= BigUint::from(4u64);
+
+        // let fp_in_3 = fp_non_residue.pow(&biguint_to_u64_vec(q_cubed_minus_one_by_four.clone()));
+
+        let mut extension_4 = Extension2Over2::new(fp2_non_residue.clone());
+        extension_4.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
+
+        assert!(extension_4.frobenius_coeffs_c1[1] == fp_in_1);
+        assert!(extension_4.frobenius_coeffs_c1[2] == fp_in_2);
     }
 
     #[test]
@@ -293,7 +332,7 @@ mod test {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue.clone());
-        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_4.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let precomp_base = Fp2Fp4FrobeniusBaseElements::construct(&modulus, &fp_non_residue).unwrap();
 
@@ -318,13 +357,13 @@ mod test {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-        extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let mut fp3_non_residue = Fp3::zero(&extension_3);
         fp3_non_residue.c0 = fp_non_residue.clone();
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let precomp_base = Fp3Fp6FrobeniusBaseElements::construct(&modulus, &fp_non_residue).unwrap();
 

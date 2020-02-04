@@ -255,7 +255,7 @@ pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power
         (num_g1_subgroup_checks, num_g2_subgroup_checks),
         _
     ) = parse_bls12_bn_pairing_parameters(&input, MAX_BN_U_BIT_LENGTH)?;
-    use crate::constants::MaxLoopParametersUint;
+    use crate::integers::MaxLoopParametersUint;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
     // let order_limbs = num_units_for_group_order(&order)?;

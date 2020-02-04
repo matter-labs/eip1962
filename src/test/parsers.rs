@@ -550,6 +550,8 @@ pub(crate) fn pad_for_len_be(input: Vec<u8>, len: usize) -> Vec<u8> {
         res.resize(len, 0u8);
         res.reverse();
         return res;
+    } else if input.len() > len {
+        panic!("Can not pad, initial length is large than necessary");
     }
 
     input

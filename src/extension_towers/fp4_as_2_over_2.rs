@@ -287,7 +287,7 @@ pub struct Extension2Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
 //     }
 // }
 
-use crate::constants::*;
+use crate::integers::*;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F> {
     pub (crate) fn new(non_residue: Fp2<'a, E, F>) -> Self {
@@ -304,49 +304,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over2<'a, E, F
         }
     }
 
-    pub(crate) fn calculate_frobenius_coeffs(
-        &mut self,
-        modulus: &MaxFieldUint,
-    ) -> Result<(), ()> {    
-        // NON_REDISUE**(((q^0) - 1) / 4)
-        let non_residue = self.field.non_residue.clone();
-        let f_0 = Fp::one(self.field.field);
-
-        // NON_REDISUE**(((q^1) - 1) / 4)
-        let modulus = MaxFrobeniusFp4::from(modulus.as_ref());
-        let mut q_power = modulus;
-        let one = MaxFrobeniusFp4::from(1u64);
-        let four = MaxFrobeniusFp4::from(4u64);
-
-        let power = q_power - one;
-        let (power, rem) = power.div_mod(four);
-        if !rem.is_zero() {
-            if !crate::features::in_gas_metering() {
-                return Err(());
-            }
-        }
-        let f_1 = non_residue.pow(power.as_ref());
-
-        // NON_REDISUE**(((q^2) - 1) / 4)
-        // q_power *= modulus;
-        q_power = q_power.adaptive_multiplication(modulus);
-        let power = q_power - one;
-        let (power, rem) = power.div_mod(four);
-        if !rem.is_zero() {
-            if !crate::features::in_gas_metering() {
-                return Err(());
-            }
-        }
-        let f_2 = non_residue.pow(power.as_ref());
-
-        let f_3 = Fp::zero(self.field.field);
-
-        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3];
-        self.frobenius_coeffs_are_calculated = true;
-
-        Ok(())
-    }
-
+    #[allow(dead_code)]
     pub(crate) fn calculate_frobenius_coeffs_optimized(
         &mut self,
         modulus: &MaxFieldUint,

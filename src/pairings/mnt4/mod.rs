@@ -770,7 +770,7 @@ mod tests {
     use num_bigint::BigUint;
     use crate::field::{U320Repr, new_field};
     use crate::test::biguint_to_u64_vec;
-    use crate::constants::MaxFieldUint;
+    use crate::integers::MaxFieldUint;
     use crate::fp::Fp;
     use crate::traits::{FieldElement, ZeroAndOne};
     use crate::extension_towers::fp2::{Fp2, Extension2};
@@ -798,7 +798,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_4.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("423894536526684178289416011533888240029318103673896002803341544124054745019340795360841685", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -874,7 +874,7 @@ mod tests {
             twist: twist,
             fp2_extension: &extension_2,
             fp4_extension: &extension_4,
-            force_no_naf: false
+            force_no_naf: true
         };
 
         let engine = super::MNT4Instance::from_params(engine);
@@ -924,7 +924,7 @@ mod tests {
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_4.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("28798803903456388891410036793299405764940372360099938340752576406393880372126970068421383312482853541572780087363938442377933706865252053507077543420534380486492786626556269083255657125025963825610840222568694137138741554679540", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -1013,7 +1013,7 @@ mod tests {
             twist: twist,
             fp2_extension: &extension_2,
             fp4_extension: &extension_4,
-            force_no_naf: false
+            force_no_naf: true
         };
 
         let engine = super::MNT4Instance::from_params(engine);
@@ -1051,11 +1051,11 @@ mod tests {
 
         let one = Fp::one(&base_field);
 
-        let mut fp2_non_residue = Fp2::zero(&extension_2);
+        let fp2_non_residue = Fp2::zero(&extension_2);
         // fp2_non_residue.c0 = fp_non_residue;
 
         let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-        extension_4.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_4.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("22027092453322650", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();

@@ -57,7 +57,7 @@ struct U1024(U1024Repr);
 /// operations (mainly precompiled Montgommery constants)
 
 use crate::representation::{ElementRepr};
-use crate::constants::*;
+use crate::integers::*;
 
 pub(crate) fn slice_to_fixed_length_u64_vec<S: AsRef<[u64]>>(v: S, limbs: usize) -> Vec<u64> {
     let as_ref = v.as_ref();
@@ -258,7 +258,7 @@ mod test {
 
     #[test]
     fn test_64_subs_vs_division() {
-        use crate::constants::*;
+        use crate::integers::*;
         use num_traits::Num;
 
         let modulus_biguint = BigUint::from_str_radix("90478214930942163331059450080490962782645063145694412829751296064846357295922334563151067188227020604570222293387098730257627925580549709781572499823579422083606813980978533736029952476604411769448188461808725324994973770830757245236797352800919619593992035038055539141605771028907859068447994637683496172821", 10).unwrap();
@@ -288,7 +288,7 @@ mod test {
 
     #[test]
     fn test_field_construction_speed() {
-        use crate::constants::*;
+        use crate::integers::*;
         use num_traits::Num;
 
         let modulus_biguint = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();

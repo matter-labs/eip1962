@@ -586,7 +586,7 @@ mod tests {
     use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
     use crate::pairings::{PairingEngine};
     use crate::test::{biguint_to_u64_vec};
-    use crate::constants::MaxFieldUint;
+    use crate::integers::MaxFieldUint;
 
     #[test]
     fn test_mnt6_pairing() {
@@ -598,7 +598,7 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-        extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -606,7 +606,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-        extension_6.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("106700080510851735677967319632585352256454251201367587890185989362936000262606668469523074", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -719,7 +719,7 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-        extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -727,7 +727,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-        extension_6.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("17764315118651679038286329069295091506801468118146712649886336045535808055361274148466772191243305528312843236347777260247138934336850548243151534538734724191505953341403463040067571652261229308333392040104884438208594329793895206056414", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -862,7 +862,7 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-        extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -870,7 +870,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-        extension_6.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("5428247903343207843304490009542442997117969973913823318164330064320104021081180430153151788629347606889122435541645149581251622306618937027915190165889600280602116819284463614893841480114928247406042232431052188770336204942290254", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -1013,7 +1013,7 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-        extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -1021,7 +1021,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-        extension_6.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("3779136", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();
@@ -1175,7 +1175,7 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_3 = Extension3::new(fp_non_residue.clone());
-        extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let one = Fp::one(&base_field);
 
@@ -1183,7 +1183,7 @@ mod tests {
         fp3_non_residue.c0 = fp_non_residue;
 
         let mut extension_6 = Extension2Over3::new(fp3_non_residue);
-        extension_6.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = BigUint::from_str_radix("5428247903343207843304490009542442997117969973913823318164330064320104021081180430153151788629347606889122435541645149581251622306618937027915190165889600280602116819284463614893841480114928247406042232431052188770336204942290254", 10).unwrap().to_bytes_be();
         let b_fp = Fp::from_be_bytes(&base_field, &b_fp, true).unwrap();

@@ -7,7 +7,7 @@ use crate::representation::{ElementRepr};
 use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
 use crate::traits::FieldElement;
 use crate::weierstrass::CurveParameters;
-use crate::constants::MaxFieldUint;
+use crate::integers::MaxFieldUint;
 
 use super::decode_fp::*;
 use super::constants::*;
@@ -91,7 +91,7 @@ pub(crate) fn create_fp3_extension<
 
     let mut extension_3 = fp3::Extension3::new(fp_non_residue);
     if need_frobenius {
-        extension_3.calculate_frobenius_coeffs(modulus).map_err(|_| {
+        extension_3.calculate_frobenius_coeffs_optimized(modulus).map_err(|_| {
             ApiError::UnknownParameter("Failed to calculate Frobenius coeffs for Fp3".to_owned())
         })?;
     }

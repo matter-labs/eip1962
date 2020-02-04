@@ -1,6 +1,6 @@
 pub(crate) use crate::pairings::calculate_hamming_weight;
 
-use crate::constants::{MaxFieldUint, MaxGroupSizeUint, MaxLoopParametersUint};
+use crate::integers::{MaxFieldUint, MaxGroupSizeUint, MaxLoopParametersUint};
 
 use crate::public_interface::constants::*;
 
@@ -163,7 +163,7 @@ pub(crate) fn parse_modulus_and_extension_degree<'a>(bytes: &'a [u8]) -> Result<
 }
 
 pub(crate) fn get_base_field_params(bytes: &[u8]) -> Result<((MaxFieldUint, usize), &[u8]), ApiError> {
-    use crate::constants::*;
+    use crate::integers::*;
 
     let (modulus_len, rest) = split(bytes, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get modulus length")?;
     let modulus_len = modulus_len[0] as usize;

@@ -13,14 +13,7 @@ use crate::pairings::TwistType;
 use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
 
 pub(crate) struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) is_infinity: bool,
     pub(crate) ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
-}
-
-impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> PreparedTwistPoint<'a, FE, F> {
-    pub(crate) fn is_zero(&self) -> bool {
-        self.is_infinity
-    }
 }
 
 pub struct BnInstanceParams<
@@ -353,7 +346,6 @@ impl<
         if twist_point.is_zero() {
             return PreparedTwistPoint {
                 ell_coeffs: vec![],
-                is_infinity:   true,
             };
         }
 
@@ -390,7 +382,6 @@ impl<
 
         PreparedTwistPoint {
             ell_coeffs,
-            is_infinity: false,
         }
     }
 
@@ -404,7 +395,6 @@ impl<
         if twist_point.is_zero() {
             return PreparedTwistPoint {
                 ell_coeffs: vec![],
-                is_infinity:   true,
             };
         }
 
@@ -456,7 +446,6 @@ impl<
 
         PreparedTwistPoint {
             ell_coeffs,
-            is_infinity: false,
         }
     }
 
@@ -530,7 +519,7 @@ impl<
 
         for (p, q) in i.into_iter() {
             if !p.is_zero() && !q.is_zero() {
-                let coeffs = self.prepare(&q.clone());
+                let coeffs = self.prepare_naf(&q.clone());
                 let ell_coeffs = coeffs.ell_coeffs;
                 prepared_coeffs.push(ell_coeffs);
                 g1_references.push(p);
@@ -736,7 +725,7 @@ mod tests {
     use crate::representation::ElementRepr;
     use crate::test::{biguint_to_u64_vec};
     use crate::sliding_window_exp::WindowExpBase;
-    use crate::constants::MaxFieldUint;
+    use crate::integers::MaxFieldUint;
 
     #[test]
     fn test_bn254_pairing_against_ref() {
@@ -762,13 +751,11 @@ mod tests {
         fp2_non_residue.c0 = fp_9.clone();
         fp2_non_residue.c1 = one.clone();
 
-        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -889,13 +876,11 @@ mod tests {
         fp2_non_residue.c0 = fp_9.clone();
         fp2_non_residue.c1 = one.clone();
 
-        let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).expect("must work");
+        extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)

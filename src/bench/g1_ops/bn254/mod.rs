@@ -12,7 +12,7 @@ use crate::weierstrass::Group;
 use num_bigint::BigUint;
 use num_traits::Num;
 use crate::weierstrass::{CurveOverFpParameters, CurveOverFp2Parameters};
-use crate::constants::MaxGroupSizeUint;
+use crate::integers::MaxGroupSizeUint;
 use crate::test::biguint_to_u64_vec;
 
 const MULTIEXP_NUM_POINTS: usize = 100;

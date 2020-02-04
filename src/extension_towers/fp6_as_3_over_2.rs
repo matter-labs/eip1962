@@ -371,8 +371,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp6<'a,
     }
 }
 
-use crate::constants::*;
-use crate::sliding_window_exp::{WindowExpBase};
+use crate::integers::*;
 
 // For example, BLS12-381 has non-residue = 1 + u;
 pub struct Extension3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
@@ -399,75 +398,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         }
     }
 
-    pub(crate) fn calculate_frobenius_coeffs(
-        &mut self,
-        modulus: &MaxFieldUint,
-        base: &WindowExpBase<Fp2<'a, E, F>>
-    ) -> Result<(), ()> {
-        // NON_RESIDUE**(((q^0) - 1) / 3)
-        let f_0 = Fp2::one(self.field);
-
-        let mut powers = Vec::with_capacity(3);
-
-        let modulus = MaxFrobeniusFp6::from(modulus.as_ref());
-        let mut q_power = modulus;
-        let one = MaxFrobeniusFp6::from(1u64);
-        let three = MaxFrobeniusFp6::from(3u64);
-
-        {
-            let power = q_power - one;
-            let (power, rem) = power.div_mod(three);
-            if !rem.is_zero() {
-                if !crate::features::in_gas_metering() {
-                    return Err(());
-                }
-            }
-            powers.push(Vec::from(power.as_ref()));
-        }
-        for _ in 1..3 {
-            // q_power *= modulus;
-            q_power = q_power.adaptive_multiplication(modulus);
-            let power = q_power - one;
-            let (power, rem) = power.div_mod(three);
-            if !rem.is_zero() {
-                if !crate::features::in_gas_metering() {
-                    return Err(());
-                }
-            }
-            powers.push(Vec::from(power.as_ref()));
-        }
-
-        let mut result = base.exponentiate(&powers);
-        debug_assert!(result.len() == 3);
-
-        let f_3 = result.pop().expect("has enough elements");
-        let f_2 = result.pop().expect("has enough elements");
-        let f_1 = result.pop().expect("has enough elements");
-
-        let f_4 = Fp2::zero(self.field);
-        let f_5 = Fp2::zero(self.field);
-
-        let f_0_c2 = f_0.clone();
-
-        // These as a structure NON_RESIDUE**(2*((q^l) - 1) / 3)
-
-        let mut f_1_c2 = f_1.clone();
-        f_1_c2.square();
-        let mut f_2_c2 = f_2.clone();
-        f_2_c2.square();
-        let mut f_3_c2 = f_3.clone();
-        f_3_c2.square();
-
-        let f_4_c2 = f_4.clone();
-        let f_5_c2 = f_5.clone();
-
-        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3, f_4, f_5];
-        self.frobenius_coeffs_c2 = [f_0_c2, f_1_c2, f_2_c2, f_3_c2, f_4_c2, f_5_c2];
-        self.frobenius_coeffs_are_calculated = true;
-
-        Ok(())
-    }
-
+    #[allow(dead_code)]
     pub(crate) fn calculate_frobenius_coeffs_optimized(
         &mut self,
         modulus: &MaxFieldUint

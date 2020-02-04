@@ -309,7 +309,7 @@ pub struct Extension2Over3<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
 //     }
 // }
 
-use crate::constants::*;
+use crate::integers::*;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F> {
     pub (crate) fn new(non_residue: Fp3<'a, E, F>) -> Self {
@@ -326,53 +326,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3<'a, E, F
         }
     }
 
-    pub(crate) fn calculate_frobenius_coeffs(
-        &mut self,
-        modulus: &MaxFieldUint,
-    ) -> Result<(), ()> {
-    
-        // NON_REDISUE**(((q^0) - 1) / 6)
-        let non_residue = self.field.non_residue.clone();
-        let f_0 = Fp::one(self.field.field);
-
-        let modulus = MaxFrobeniusFp6::from(modulus.as_ref());
-        let mut q_power = modulus;
-        let one = MaxFrobeniusFp6::from(1u64);
-        let six = MaxFrobeniusFp6::from(6u64);
-
-        let power = q_power - one;
-        let (power, rem) = power.div_mod(six);
-        if !rem.is_zero() {
-            if !crate::features::in_gas_metering() {
-                return Err(());
-            }
-        }
-        let f_1 = non_residue.pow(power.as_ref());
-
-        // q_power *= modulus;
-        q_power = q_power.adaptive_multiplication(modulus);
-        let f_2 = Fp::zero(self.field.field);
-
-        // q_power *= modulus;
-        q_power = q_power.adaptive_multiplication(modulus);
-        let power = q_power - one;
-        let (power, rem) = power.div_mod(six);
-        if !rem.is_zero() {
-            if !crate::features::in_gas_metering() {
-                return Err(());
-            }
-        }
-        let f_3 = non_residue.pow(power.as_ref());
-
-        let f_4 = Fp::zero(self.field.field);
-        let f_5 = Fp::zero(self.field.field);
-
-        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3, f_4, f_5];
-        self.frobenius_coeffs_are_calculated = true;
-
-        Ok(())
-    }
-
+    #[allow(dead_code)]
     pub(crate) fn calculate_frobenius_coeffs_optimized(
         &mut self,
         modulus: &MaxFieldUint,

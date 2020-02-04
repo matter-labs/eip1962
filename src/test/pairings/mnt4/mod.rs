@@ -263,6 +263,7 @@ pub(crate) fn assemble_mnt4_753(num_point_pairs: usize) -> Vec<u8> {
     let p_y = BigUint::from_str_radix("21091012152938225813050540665280291929032924333518476279110711148670464794818544820522390295209715531901248676888544060590943737249563733104806697968779796610374994498702698840169538725164956072726942500665132927942037078135054", 10).unwrap().to_bytes_be();
 
     let mut g1_0_encoding: Vec<u8> = vec![];
+    g1_0_encoding.push(1u8); // subgroup check
     g1_0_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
     g1_0_encoding.extend(pad_for_len_be(p_y.clone(), modulus_length).into_iter());
 
@@ -273,6 +274,7 @@ pub(crate) fn assemble_mnt4_753(num_point_pairs: usize) -> Vec<u8> {
     let q_y_1 = BigUint::from_str_radix("17406100775489352738678485154027036191618283163679980195193677896785273172506466216232026037788788436442188057889820014276378772936042638717710384987239430912364681046070625200474931975266875995282055499803236813013874788622488", 10).unwrap().to_bytes_be();
 
     let mut g2_0_encoding = vec![];
+    g2_0_encoding.push(1u8); // subgroup check
     g2_0_encoding.extend(pad_for_len_be(q_x_0.clone(), modulus_length).into_iter());
     g2_0_encoding.extend(pad_for_len_be(q_x_1.clone(), modulus_length).into_iter());
     g2_0_encoding.extend(pad_for_len_be(q_y_0.clone(), modulus_length).into_iter());
@@ -282,6 +284,7 @@ pub(crate) fn assemble_mnt4_753(num_point_pairs: usize) -> Vec<u8> {
     let y = modulus.clone() - BigUint::from_bytes_be(&p_y);
 
     let mut g1_1_encoding: Vec<u8> = vec![];
+    g1_1_encoding.push(1u8); // subgroup check
     g1_1_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
     g1_1_encoding.extend(pad_for_len_be(y.to_bytes_be(), modulus_length).into_iter());
 

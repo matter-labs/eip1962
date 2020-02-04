@@ -10,7 +10,7 @@ use crate::field::{SizedPrimeField};
 use crate::traits::FieldElement;
 use crate::representation::{ElementRepr};
 use crate::traits::ZeroAndOne;
-use crate::constants::*;
+use crate::integers::*;
 
 
 pub(crate) struct Fp2Fp4FrobeniusBaseElements<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
@@ -198,6 +198,7 @@ pub(crate) fn is_one_mod_two
     modulus.low_u64() & 1u64 == 1u64
 }
 
+#[allow(dead_code)]
 pub(crate) fn is_one_mod_three
 (
     modulus: &MaxFieldUint,

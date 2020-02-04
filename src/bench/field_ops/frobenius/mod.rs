@@ -15,7 +15,7 @@ use crate::extension_towers::fp6_as_3_over_2;
 use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
 use num_traits::Num;
 use crate::pairings::*;
-use crate::constants::MaxFieldUint;
+use crate::integers::MaxFieldUint;
 
 use rust_test::Bencher;
 

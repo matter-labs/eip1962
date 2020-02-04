@@ -1,6 +1,7 @@
 use crate::traits::FieldElement;
 use crate::traits::LsbBitIterator;
 
+#[allow(dead_code)]
 pub(crate) fn calculate_window_table<F: FieldElement>(base: &F, window: usize) -> Vec<F> {
     let mut table: Vec<F> = vec![];
     table.reserve(1 << (window - 1));
@@ -20,12 +21,14 @@ pub(crate) fn calculate_window_table<F: FieldElement>(base: &F, window: usize) -
     table
 }
 
+#[allow(dead_code)]
 pub(crate) struct WindowExpBase<F: FieldElement> {
     pub bases: Vec<F>,
     pub window_size: usize,
     one: F
 }
 
+#[allow(dead_code)]
 impl<F: FieldElement> WindowExpBase<F> {
     pub fn new(base: &F, one: F, window: usize, _num_scalars: usize) -> Self {
         let recommended_window_size = window; // TODO

@@ -26,7 +26,7 @@ use crate::representation::{ElementRepr};
 use crate::traits::{FieldElement, ZeroAndOne};
 use crate::extension_towers::*;
 use crate::fp::Fp;
-use crate::constants::*;
+use crate::integers::*;
 
 use super::decode_g1::*;
 use super::decode_utils::*;

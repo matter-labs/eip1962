@@ -5,9 +5,6 @@
 extern crate byteorder;
 extern crate eth_pairings_repr_derive;
 extern crate fixed_width_field;
-extern crate fixed_width_fp3_fp4;
-extern crate fixed_width_fp6;
-extern crate fixed_width_fp12;
 extern crate fixed_width_group_and_loop;
 
 mod arithmetics;
@@ -22,7 +19,7 @@ mod extension_towers;
 mod pairings;
 mod sliding_window_exp;
 mod errors;
-mod constants;
+mod integers;
 mod features;
 mod wnaf;
 
@@ -58,8 +55,8 @@ mod tests {
     use crate::multiexp::{peppinger};
     use crate::weierstrass::Group;
     use crate::traits::ZeroAndOne;
-    use crate::weierstrass::{CurveParameters, CurveOverFpParameters};
-    use crate::constants::MaxGroupSizeUint;
+    use crate::weierstrass::{CurveOverFpParameters};
+    use crate::integers::MaxGroupSizeUint;
 
     fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
         let m = BigUint::from(1u64) << 64;
@@ -264,7 +261,7 @@ mod tests {
         // inverse should not exist
         let inverse = fe.eea_inverse();
         assert!(inverse.is_none());
-        let mont_inverse = fe.mont_inverse();
+        let mont_inverse = fe.new_mont_inverse();
         assert!(mont_inverse.is_none());
     }
 }

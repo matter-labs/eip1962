@@ -1,7 +1,7 @@
 use crate::weierstrass::Group;
 use crate::weierstrass::curve::CurvePoint;
 use crate::weierstrass::CurveParameters;
-use crate::constants::MaxGroupSizeUint;
+use crate::integers::MaxGroupSizeUint;
 
 pub(crate) fn peppinger<'a, C: CurveParameters>
     (bases: &[CurvePoint<'a, C>], mut scalars: Vec<MaxGroupSizeUint>) -> CurvePoint<'a, C>

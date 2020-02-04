@@ -6,44 +6,43 @@ use once_cell::sync::Lazy;
 use serde_json;
 
 pub(crate) trait ArithmeticAdditionParams {
-    fn params(&self) -> &[(usize, u64)];
+    fn params(&self) -> &HashMap<usize, u64>;
 }
 
 pub(crate) trait ArithmeticMultiplicationParams {
-    fn params(&self) -> (&[(usize, u64)], &[(usize, u64)]);
+    fn params(&self) -> (&HashMap<usize, u64>, &HashMap<usize, u64>);
 }
 
 pub(crate) trait ArithmeticMultiexpParams {
     fn params(&self) -> (u64, (usize, u64), &HashMap<usize, u64>);
 }
 
-
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct G1G2AdditionParams {
-    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
     #[serde(rename = "price")]
-    lookup_parameters: Vec<(usize, u64)>
+    lookup_parameters: HashMap<usize, u64>
 }
 
 impl ArithmeticAdditionParams for G1G2AdditionParams {
-    fn params(&self) -> &[(usize, u64)] {
+    fn params(&self) -> &HashMap<usize, u64> {
         &self.lookup_parameters
     }
 }
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct G1G2MultiplicationParams {
-    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
     #[serde(rename = "base")]
-    base: Vec<(usize, u64)>,
+    base: HashMap<usize, u64>,
 
-    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
     #[serde(rename = "per_limb")]
-    per_limb: Vec<(usize, u64)>
+    per_limb: HashMap<usize, u64>
 }
 
 impl ArithmeticMultiplicationParams for G1G2MultiplicationParams {
-    fn params(&self) -> (&[(usize, u64)], &[(usize, u64)]) {
+    fn params(&self) -> (&HashMap<usize, u64>, &HashMap<usize, u64>) {
         (&self.base, &self.per_limb)
     }
 }
@@ -110,83 +109,6 @@ pub(crate) static MULTIEXP_PARAMS_INSTANCE: Lazy<G1G2MultiexpParams> = Lazy::new
     serde_json::from_str(MULTIEXP_PARAMS_JSON).expect("must deserialize parameters")
 });
 
-pub(crate) fn parse_tuple_usize_u64<'de, D>(deserializer: D) -> Result<Vec<(usize, u64)>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use serde_json::Value;
-    use serde::de::{Visitor, SeqAccess};
-
-    struct MyVisitor;
-
-    impl<'de> Visitor<'de> for MyVisitor
-    {
-        type Value = Vec<(usize, u64)>;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("a nonempty sequence of numbers")
-        }
-
-        fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-        where
-            S: SeqAccess<'de>,
-        {
-            let mut results = Vec::with_capacity(seq.size_hint().unwrap_or(100));
-            while let Some(value) = seq.next_element::<[Value; 2]>()? {
-                let first = value[0].as_str().expect("is a string").parse::<usize>().expect(&format!("should be an integer {:?}", value[0]));
-                let second = value[1].as_str().expect("is a string").parse::<u64>().expect(&format!("should be an integer {:?}", value[1]));
-                results.push((first, second))
-            }
-
-            Ok(results)
-        }
-    }
-
-    let visitor = MyVisitor;
-    let result = deserializer.deserialize_seq(visitor)?;
-
-    Ok(result)
-}
-
-pub(crate) fn parse_hashmap_usize_u64<'de, D>(deserializer: D) -> Result<HashMap<usize, u64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use serde_json::Value;
-    use serde::de::{Visitor, SeqAccess};
-
-    struct MyVisitor;
-
-    impl<'de> Visitor<'de> for MyVisitor
-    {
-        type Value = HashMap<usize, u64>;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("a nonempty sequence of numbers")
-        }
-
-        fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-        where
-            S: SeqAccess<'de>,
-        {
-            let mut results = HashMap::with_capacity(seq.size_hint().unwrap_or(100));
-            while let Some(value) = seq.next_element::<[Value; 2]>()? {
-                let first = value[0].as_str().expect("is a string").parse::<usize>().expect(&format!("should be an integer {:?}", value[0]));
-                let second = value[1].as_str().expect("is a string").parse::<u64>().expect(&format!("should be an integer {:?}", value[1]));
-                results.insert(first, second);
-            }
-
-            Ok(results)
-        }
-    }
-
-    let visitor = MyVisitor;
-    let result = deserializer.deserialize_seq(visitor)?;
-
-    Ok(result)
-}
-
-
 pub(crate) fn parse_hashmap_usize_u64_from_ints<'de, D>(deserializer: D) -> Result<HashMap<usize, u64>, D::Error>
 where
     D: Deserializer<'de>,
@@ -225,33 +147,8 @@ where
     Ok(result)
 }
 
-pub(crate) fn parse_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let string_value = &String::deserialize(deserializer)?;
-    let value = string_value.parse::<usize>().expect("is integer");
-
-    Ok(value)
-}
-
-pub(crate) fn parse_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let string_value = &String::deserialize(deserializer)?;
-    let value = string_value.parse::<u64>().expect("is integer");
-
-    Ok(value)
-}
-
 pub(crate) fn meter_addition<P: ArithmeticAdditionParams>(modulus_limbs: usize, parameters: &P) -> Result<u64, ApiError> {
-    let mut res: Vec<_> = parameters.params().iter().filter(|(limbs, _)| *limbs == modulus_limbs).collect();
-    if res.len() != 1 {
-        return Err(ApiError::UnknownParameter(format!("Unknown number of limbs = {}", modulus_limbs)));
-    }
-
-    let found = res.pop().expect("result exists").1;
+    let found = *parameters.params().get(&modulus_limbs).ok_or(ApiError::MissingValue)?;
 
     return Ok(found)
 }
@@ -263,18 +160,8 @@ pub(crate) fn meter_multiplication<P: ArithmeticMultiplicationParams>(
     include_base: bool
 ) -> Result<u64, ApiError> {
     let (one_shot_params, per_limb_params) =  parameters.params();
-    let mut one_shot_res: Vec<_> = one_shot_params.iter().filter(|(limbs, _)| *limbs == modulus_limbs).collect();
-    if one_shot_res.len() != 1 {
-        return Err(ApiError::UnknownParameter(format!("Unknown number of limbs = {}", modulus_limbs)));
-    }
-
-    let mut per_limb_coeff: Vec<_> = per_limb_params.iter().filter(|(limbs, _)| *limbs == modulus_limbs).collect();
-    if per_limb_coeff.len() != 1 {
-        return Err(ApiError::UnknownParameter(format!("Unknown number of limbs = {}", modulus_limbs)));
-    }
-
-    let one_shot = one_shot_res.pop().expect("result exists").1;
-    let per_limb = per_limb_coeff.pop().expect("result exists").1;
+    let one_shot = *one_shot_params.get(&modulus_limbs).ok_or(ApiError::MissingValue)?;
+    let per_limb = *per_limb_params.get(&modulus_limbs).ok_or(ApiError::MissingValue)?;
 
     let mut result = per_limb.checked_mul(group_limbs as u64).ok_or(ApiError::Overflow)?;
     if include_base {

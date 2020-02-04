@@ -2,7 +2,7 @@ use crate::public_interface::decode_utils::*;
 use crate::public_interface::decode_g1::*;
 use crate::public_interface::constants::*;
 use crate::errors::ApiError;
-use crate::constants::*;
+use crate::integers::*;
 
 
 /// return:

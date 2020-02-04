@@ -3,7 +3,7 @@ use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension};
 use crate::traits::ZeroAndOne;
-use crate::constants::*;
+use crate::integers::*;
 use super::Fp2Fp4FrobeniusBaseElements;
 
 // this implementation assumes extension using polynomial u^2 + m = 0

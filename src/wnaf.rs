@@ -1,6 +1,7 @@
 use crate::traits::FieldElement;
 use crate::representation::IntoWnaf;
 
+#[allow(dead_code)]
 pub(crate) fn calculate_wnaf_table<F: FieldElement>(base: &F, window: usize) -> Vec<F> {
     let mut table: Vec<F> = vec![];
     table.reserve(1 << (window - 1));
@@ -21,12 +22,14 @@ pub(crate) fn calculate_wnaf_table<F: FieldElement>(base: &F, window: usize) -> 
     table
 }
 
+#[allow(dead_code)]
 pub(crate) struct WnafBase<F: FieldElement> {
     pub bases: Vec<F>,
     pub window_size: usize,
     zero: F
 }
 
+#[allow(dead_code)]
 impl<F: FieldElement> WnafBase<F> {
     pub fn new(base: &F, zero: F, window: usize, _num_scalars: usize) -> Self {
         let recommended_window_size = window; // TODO

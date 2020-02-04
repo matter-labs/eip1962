@@ -424,8 +424,7 @@ pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>
 //     }
 // }
 
-use crate::constants::*;
-use crate::sliding_window_exp::{WindowExpBase};
+use crate::integers::*;
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a, E, F> {
     pub (crate) fn new(non_residue: Fp6<'a, E, F>) -> Self {
@@ -442,88 +441,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
         }
     }
 
-
-    pub(crate) fn calculate_frobenius_coeffs(
-        &mut self,
-        modulus: &MaxFieldUint,
-        base: &WindowExpBase<Fp2<'a, E, F>>
-    ) -> Result<(), ()> {    
-        // NON_RES**(((q^0) - 1) / 6)
-        let f_0 = Fp2::one(self.field.field);
-
-        // NON_RES**(((q^1) - 1) / 6)
-        let mut powers = Vec::with_capacity(4);
-
-        let modulus = MaxFrobeniusFp12::from(modulus.as_ref());
-        let mut q_power = modulus;
-        let one = MaxFrobeniusFp12::from(1u64);
-        let six = MaxFrobeniusFp12::from(6u64);
-
-        // 1
-        {
-            let power = q_power - one;
-            let (power, rem) = power.div_mod(six);
-            if !rem.is_zero() {
-                if !crate::features::in_gas_metering() {
-                    return Err(());
-                }
-            }
-            powers.push(Vec::from(power.as_ref()));
-        }
-        // 2 & 3
-        for _ in 1..3 {
-            q_power = q_power.adaptive_multiplication(modulus);
-            // q_power *= modulus;
-            let power = q_power - one;
-            let (power, rem) = power.div_mod(six);
-            if !rem.is_zero() {
-                if !crate::features::in_gas_metering() {
-                    return Err(());
-                }
-            }
-            powers.push(Vec::from(power.as_ref()));
-        }
-        // 6
-        {
-            q_power = q_power.adaptive_multiplication(q_power);
-            // q_power *= q_power;
-            let power = q_power - one;
-            let (power, rem) = power.div_mod(six);
-            if !rem.is_zero() {
-                if !crate::features::in_gas_metering() {
-                    return Err(());
-                }
-            }
-            powers.push(Vec::from(power.as_ref()));
-        }
-
-        let mut result = base.exponentiate(&powers);
-        debug_assert!(result.len() == 4);
-
-        let f_6 = result.pop().expect("has enough elements");
-        let f_3 = result.pop().expect("has enough elements");
-        let f_2 = result.pop().expect("has enough elements");
-        let f_1 = result.pop().expect("has enough elements");
-
-        let f_4 = Fp2::zero(self.field.field);
-        let f_5 = Fp2::zero(self.field.field);
-
-        let f_7 = Fp2::zero(self.field.field);
-        let f_8 = Fp2::zero(self.field.field);
-        let f_9 = Fp2::zero(self.field.field);
-        let f_10 = Fp2::zero(self.field.field);
-        let f_11 = Fp2::zero(self.field.field);
-
-        self.frobenius_coeffs_c1 = [f_0, f_1, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_9, f_10, f_11];
-        self.frobenius_coeffs_are_calculated = true;
-
-        Ok(())
-    }
-
+    #[allow(dead_code)]
     pub(crate) fn calculate_frobenius_coeffs_optimized(
         &mut self,
         modulus: &MaxFieldUint,
-        // base: &WindowExpBase<Fp2<'a, E, F>>
     ) -> Result<(), ()> {    
         // NON_RES**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);

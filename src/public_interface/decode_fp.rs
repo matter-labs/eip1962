@@ -4,7 +4,7 @@ use crate::extension_towers::fp2;
 use crate::extension_towers::fp3;
 use crate::representation::ElementRepr;
 use crate::traits::ZeroAndOne;
-use crate::constants::MaxFieldUint;
+use crate::integers::MaxFieldUint;
 use crate::field::PrimeField;
 
 use crate::errors::ApiError;

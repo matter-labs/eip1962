@@ -1,4 +1,4 @@
-use crate::constants::MaxFieldUint;
+use crate::integers::MaxFieldUint;
 
 #[test]
 fn test_fp2_inversion() {
@@ -50,7 +50,7 @@ fn test_fp4_inversion() {
     fp2_non_residue.c0 = fp_non_residue.clone();
 
     let mut extension_4 = Extension2Over2::new(fp2_non_residue);
-    extension_4.calculate_frobenius_coeffs(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
+    extension_4.calculate_frobenius_coeffs_optimized(&MaxFieldUint::from_big_endian(&modulus.clone().to_bytes_be())).expect("must work");
 
     let mut fp2 = Fp2::one(&extension_2);
     fp2.c1 = fp_non_residue;
@@ -82,7 +82,7 @@ fn test_fp3_inversion() {
     let modulus = MaxFieldUint::from_big_endian(&modulus_biguint.clone().to_bytes_be());
 
     let mut extension_3 = Extension3::new(fp_non_residue.clone());
-    extension_3.calculate_frobenius_coeffs(&modulus).expect("must work");
+    extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 
     let one = Fp::one(&base_field);
 

@@ -89,9 +89,9 @@ pub(crate) fn decode_scalar_representation<
 {
     let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
     let scalar = MaxGroupSizeUint::from_big_endian(&encoding);
-    if &scalar > _order {
-        return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
-    }
+    // if &scalar > _order {
+    //     return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
+    // }
 
     Ok((scalar, rest))
 }

@@ -38,10 +38,10 @@ pub(crate) fn decode_group_order_with_length<
         return Err(ApiError::InputError(format!("Encoded group length is too large, file {}, line {}", file!(), line!())));
     }
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
-    let first_byte = be_encoding[0];
-    if first_byte == 0 {
-        return Err(ApiError::InputError(format!("Encoded group length has zero top byte, file {}, line {}", file!(), line!())));
-    }
+    // let first_byte = be_encoding[0];
+    // if first_byte == 0 {
+    //     return Err(ApiError::InputError(format!("Encoded group length has zero top byte, file {}, line {}", file!(), line!())));
+    // }
     let x = MaxGroupSizeUint::from_big_endian(&be_encoding);
 
     Ok( ((length, x), rest) )
@@ -200,10 +200,26 @@ pub(crate) fn num_limbs_for_modulus(modulus: &MaxFieldUint) -> Result<usize, Api
     Ok(modulus_limbs)
 }
 
-pub(crate) fn num_units_for_group_order(order: &MaxGroupSizeUint) -> Result<usize, ApiError> {
+// pub(crate) fn num_units_for_group_order(order: &MaxGroupSizeUint) -> Result<usize, ApiError> {
+//     use crate::public_interface::constants::*;
+
+//     let limbs = (order.bits() + 63) / 64;
+
+//     if limbs < NUM_GROUP_LIMBS_MIN {
+//         return Err(ApiError::InputError(format!("Group has zero limbs, file {}, line {}", file!(), line!())));
+//     }
+
+//     if limbs > NUM_GROUP_LIMBS_MAX {
+//         return Err(ApiError::InputError(format!("Group order has too many limbs, file {}, line {}", file!(), line!())));
+//     }
+
+//     Ok(limbs)
+// }
+
+pub(crate) fn num_units_for_group_order_length(order_len: usize) -> Result<usize, ApiError> {
     use crate::public_interface::constants::*;
 
-    let limbs = (order.bits() + 63) / 64;
+    let limbs = (order_len + 7) / 8;
 
     if limbs < NUM_GROUP_LIMBS_MIN {
         return Err(ApiError::InputError(format!("Group has zero limbs, file {}, line {}", file!(), line!())));
@@ -234,6 +250,10 @@ pub(crate) fn decode_loop_parameter_scalar_with_bit_limit<
         return Err(ApiError::InputError(format!("Loop parameter is too large for bit length, max {} bits, got {} bytes, file {}, line {}", bit_limit, length, file!(), line!())));
     }
     let (be_encoding, rest) = split(rest, length, "Input is not long enough to get modulus")?;
+    let first_byte = be_encoding[0];
+    if first_byte == 0 {
+        return Err(ApiError::InputError(format!("Encoded loop parameter has zero top byte, file {}, line {}", file!(), line!())));
+    }
     let x = MaxLoopParametersUint::from_big_endian(&be_encoding);
     let num_bits = x.bits();
     if num_bits > bit_limit {

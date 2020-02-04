@@ -81,21 +81,23 @@ fn meter_addition_g2(input: &[u8]) -> Result<u64, ApiError> {
 
 fn meter_multiplication_g1(input: &[u8]) -> Result<u64, ApiError> {
 
-    let (modulus, order, _) = parse_g1_curve_parameters(&input)?;
+    let (modulus, order_len, _) = parse_g1_curve_parameters(&input)?;
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
     let params = &*meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE;
 
-    meter_arith::meter_multiplication(modulus_limbs, order_limbs, params)
+    meter_arith::meter_multiplication(modulus_limbs, order_limbs, params, true)
 }
 
 fn meter_multiplication_g2(input: &[u8]) -> Result<u64, ApiError> {
 
-    let (modulus, order, ext_degree, _) = parse_g2_curve_parameters(&input)?;
+    let (modulus, order_len, ext_degree, _) = parse_g2_curve_parameters(&input)?;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
     let params = if ext_degree == EXTENSION_DEGREE_2 {
         &*meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE
@@ -105,14 +107,15 @@ fn meter_multiplication_g2(input: &[u8]) -> Result<u64, ApiError> {
         unreachable!();
     };
 
-    meter_arith::meter_multiplication(modulus_limbs, order_limbs, params)
+    meter_arith::meter_multiplication(modulus_limbs, order_limbs, params, true)
 }
 
 fn meter_multiexp_g1(input: &[u8]) -> Result<u64, ApiError> {
 
-    let (modulus, order, rest) = parse_g1_curve_parameters(&input)?;
+    let (modulus, order_len, rest) = parse_g1_curve_parameters(&input)?;
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
     let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
     let num_pairs = num_pairs_encoding[0] as usize;
@@ -133,10 +136,11 @@ fn meter_multiexp_g1(input: &[u8]) -> Result<u64, ApiError> {
 
 fn meter_multiexp_g2(input: &[u8]) -> Result<u64, ApiError> {
 
-    let (modulus, order, ext_degree, rest) = parse_g2_curve_parameters(&input)?;
+    let (modulus, order_len, ext_degree, rest) = parse_g2_curve_parameters(&input)?;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
     let params = if ext_degree == EXTENSION_DEGREE_2 {
         &*meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE
@@ -171,11 +175,21 @@ fn meter_bn(input: &[u8]) -> Result<u64, ApiError> {
 }
 
 fn meter_mnt4(input: &[u8]) -> Result<u64, ApiError> {
-    self::meter_pairing::meter_mnt_pairing(input, &*self::meter_pairing::MNT4_PARAMS_INSTANCE, self::meter_pairing::MNT4_MAX_MODULUS_POWER)
+    self::meter_pairing::meter_mnt_pairing(
+        input, 
+        &*self::meter_pairing::MNT4_PARAMS_INSTANCE, 
+        self::meter_pairing::MNT4_MAX_MODULUS_POWER,
+        2
+    )
 }
 
 fn meter_mnt6(input: &[u8]) -> Result<u64, ApiError> {
-    self::meter_pairing::meter_mnt_pairing(input, &*self::meter_pairing::MNT6_PARAMS_INSTANCE, self::meter_pairing::MNT6_MAX_MODULUS_POWER)
+    self::meter_pairing::meter_mnt_pairing(
+        input, 
+        &*self::meter_pairing::MNT6_PARAMS_INSTANCE, 
+        self::meter_pairing::MNT6_MAX_MODULUS_POWER,
+        3
+    )
 }
 
 impl GasMeter {

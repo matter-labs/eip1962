@@ -80,21 +80,23 @@ pub(crate) static BN_PARAMS_INSTANCE: Lazy<BnPairingParams> = Lazy::new(|| {
     serde_json::from_str(BN_PARAMS_JSON).expect("must deserialize parameters")
 });
 
-pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_power: usize) -> Result<u64, ApiError> {
+pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_power: usize, ext_degree: usize) -> Result<u64, ApiError> {
     let (
         modulus, 
-        order, 
+        order_len, 
         num_pairs, 
         (ate_loop_bits, ate_loop_hamming), 
         (exp_w0_bits, exp_w0_hamming),
         (exp_w1_bits, exp_w1_hamming),
+        (num_g1_subgroup_checks, num_g2_subgroup_checks),
         _
-    ) = parse_mnt_pairing_parameters(&input)?;
+    ) = parse_mnt_pairing_parameters(&input, ext_degree)?;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
-    calculate_mnt_pairing_cost(
+    let mut estimate = calculate_mnt_pairing_cost(
         modulus_limbs,
         order_limbs,
         num_pairs,
@@ -103,7 +105,32 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
         (exp_w1_bits, exp_w1_hamming),
         params,
         max_power
-    )
+    )?;
+
+    let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
+    let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+
+    estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
+
+    let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
+    let g2_subgroup_discount_per_point = match ext_degree {
+        2 => {
+            super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?
+        },
+        3 => {
+            super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_3_MULTIPLICATION_PARAMS_INSTANCE, false)?
+        },
+        _ => {
+            return Err(ApiError::InputError("Invalid extension degree for MNT4/6 pairing cost calculation".to_owned()));
+        }
+    };
+
+    let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+
+    estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
+
+    Ok(estimate)
 }
 
 fn calculate_mnt_pairing_cost(
@@ -174,15 +201,17 @@ fn calculate_mnt_pairing_cost(
 pub(crate) fn meter_bls12_pairing(input: &[u8], params: &Bls12PairingParams, max_power: usize) -> Result<u64, ApiError> {
     let (
         modulus, 
-        order, 
+        order_len, 
         num_pairs, 
         x,
         _,
+        (num_g1_subgroup_checks, num_g2_subgroup_checks),
         _
     ) = parse_bls12_bn_pairing_parameters(&input, MAX_BLS12_X_BIT_LENGTH)?;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
     let x_bits = x.bits();
     let x_hamming = calculate_hamming_weight(&x.as_ref());
@@ -191,30 +220,46 @@ pub(crate) fn meter_bls12_pairing(input: &[u8], params: &Bls12PairingParams, max
         return Err(ApiError::InputError(format!("Hamming weight for scalar is too large, file {}, line {}", file!(), line!())));
     }
 
-    calculate_bls12_pairing_cost(
+    let mut estimate = calculate_bls12_pairing_cost(
         modulus_limbs,
         order_limbs,
         num_pairs,
         (x_bits as u64, x_hamming as u64),
         params,
         max_power
-    )
+    )?;
+
+    let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
+    let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+
+    estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
+
+    let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
+    let g2_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+
+    estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
+
+    Ok(estimate)
 }
 
 
 pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power: usize) -> Result<u64, ApiError> {
     let (
         modulus, 
-        order, 
+        order_len, 
         num_pairs, 
         u,
         u_is_negative,
+        (num_g1_subgroup_checks, num_g2_subgroup_checks),
         _
     ) = parse_bls12_bn_pairing_parameters(&input, MAX_BN_U_BIT_LENGTH)?;
     use crate::constants::MaxLoopParametersUint;
 
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
-    let order_limbs = num_units_for_group_order(&order)?;
+    // let order_limbs = num_units_for_group_order(&order)?;
+    let order_limbs = num_units_for_group_order_length(order_len)?;
 
     let u_bits = u.bits();
     let u_hamming = calculate_hamming_weight(&u.as_ref());
@@ -241,7 +286,7 @@ pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power
         return Err(ApiError::InputError(format!("Hamming weight for scalar is too large, file {}, line {}", file!(), line!())));
     }
 
-    calculate_bn_pairing_cost(
+    let mut estimate = calculate_bn_pairing_cost(
         modulus_limbs,
         order_limbs,
         num_pairs,
@@ -249,7 +294,21 @@ pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power
         (u_bits as u64, u_hamming as u64),
         params,
         max_power
-    )
+    )?;
+
+    let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
+    let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+
+    estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
+
+    let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
+    let g2_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+
+    estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
+
+    Ok(estimate)
 }
 
 fn calculate_bls12_pairing_cost(

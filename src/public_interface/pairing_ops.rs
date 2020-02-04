@@ -155,16 +155,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (twist_type, rest) = decode_twist_type(rest)?;
 
-        // let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
-
-        // let twist_type = match twist_type_encoding[0] {
-        //     TWIST_TYPE_D => TwistType::D,
-        //     TWIST_TYPE_M => TwistType::M, 
-        //     _ => {
-        //         return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
-        //     },
-        // };
-
         let base_precomp = Fp6Fp12FrobeniusBaseElements::construct(
             &modulus, 
             &fp2_non_residue
@@ -185,24 +175,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
-
-        // let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-
-        // let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
-        // {
-        //     extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
-        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
-        //     })?;
-        // }
-
-        // let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-
-        // {
-        //     extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
-        //         ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
-        //     })?;
-        // }
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
         let b_fp2 = match twist_type {
@@ -238,16 +210,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (x_is_negative, rest) = decode_sign_is_negative(rest)?;
 
-        // let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
-
-        // let x_is_negative = match x_sign[0] {
-        //     SIGN_PLUS => false,
-        //     SIGN_MINUS => true,
-        //     _ => {
-        //         return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
-        //     },
-        // };
-
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
 
@@ -263,10 +225,12 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut g2_points = vec![];
 
         for _ in 0..num_pairs {
-            let (g1, rest) = decode_g1_point_from_xy(&global_rest, modulus_len, &g1_curve)?;
+            let (check_g1_subgroup, rest) = decode_boolean(&global_rest)?;
+            let (g1, rest) = decode_g1_point_from_xy(&rest, modulus_len, &g1_curve)?;
+            let (check_g2_subgroup, rest) = decode_boolean(&rest)?;
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
-
             global_rest = rest;
+
             if !g1.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
@@ -279,15 +243,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 }
             }
 
-            if !g1.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if check_g1_subgroup {
+                if !g1.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
 
-            if !g2.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if check_g2_subgroup {
+                if !g2.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
 
@@ -401,16 +369,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (twist_type, rest) = decode_twist_type(&rest)?;
 
-        // let (twist_type_encoding, rest) = split(rest, TWIST_TYPE_LENGTH, "Input is not long enough to get twist type")?;
-
-        // let twist_type = match twist_type_encoding[0] {
-        //     TWIST_TYPE_D => TwistType::D,
-        //     TWIST_TYPE_M => TwistType::M, 
-        //     _ => {
-        //         return Err(ApiError::UnknownParameter("Unknown twist type supplied".to_owned()));
-        //     },
-        // };
-
         let base_precomp = Fp6Fp12FrobeniusBaseElements::construct(
             &modulus, 
             &fp2_non_residue
@@ -431,24 +389,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
             })?;
         }
-
-        // let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-
-        // let exp_base = WindowExpBase::new(&fp2_non_residue, Fp2::one(&extension_2), 8, 7);
-
-        // {
-        //     extension_6.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
-        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp6".to_owned())
-        //     })?;
-        // }
-
-        // let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-
-        // {
-        //     extension_12.calculate_frobenius_coeffs(&modulus, &exp_base).map_err(|_| {
-        //         ApiError::InputError("Can not calculate Frobenius coefficients for Fp12".to_owned())
-        //     })?;
-        // }
 
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
 
@@ -480,15 +420,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let (u_is_negative, rest) = decode_sign_is_negative(rest)?;
-
-        // let (u_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get U sign encoding")?;
-        // let u_is_negative = match u_sign[0] {
-        //     SIGN_PLUS => false,
-        //     SIGN_MINUS => true,
-        //     _ => {
-        //         return Err(ApiError::InputError("U sign is not encoded properly".to_owned()));
-        //     },
-        // };
 
         let two = MaxLoopParametersUint::from(2u64);
         let six = MaxLoopParametersUint::from(6u64);
@@ -527,9 +458,12 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut g2_points = vec![];
 
         for _ in 0..num_pairs {
-            let (g1, rest) = decode_g1_point_from_xy(&global_rest, modulus_len, &g1_curve)?;
+            let (check_g1_subgroup, rest) = decode_boolean(&global_rest)?;
+            let (g1, rest) = decode_g1_point_from_xy(&rest, modulus_len, &g1_curve)?;
+            let (check_g2_subgroup, rest) = decode_boolean(&rest)?;
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
             global_rest = rest;
+
             if !g1.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
@@ -542,15 +476,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 }
             }
 
-            if !g1.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if check_g1_subgroup {
+                if !g1.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
 
-            if !g2.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if check_g2_subgroup {
+                if !g2.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
 
@@ -694,15 +632,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (x_is_negative, rest) = decode_sign_is_negative(rest)?;
 
-        // let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
-        // let x_is_negative = match x_sign[0] {
-        //     SIGN_PLUS => false,
-        //     SIGN_MINUS => true,
-        //     _ => {
-        //         return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
-        //     },
-        // };
-
         let (exp_w0, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
         if exp_w0.is_zero() {
             return Err(ApiError::InputError("Final exp w0 loop count parameters can not be zero".to_owned()));
@@ -714,15 +643,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let (exp_w0_is_negative, rest) = decode_sign_is_negative(rest)?;
-
-        // let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
-        // let exp_w0_is_negative = match exp_w0_sign[0] {
-        //     SIGN_PLUS => false,
-        //     SIGN_MINUS => true,
-        //     _ => {
-        //         return Err(ApiError::InputError("Exp_w0 sign is not encoded properly".to_owned()));
-        //     },
-        // };
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -739,10 +659,12 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut g2_points = vec![];
 
         for _ in 0..num_pairs {
-            let (g1, rest) = decode_g1_point_from_xy(&global_rest, modulus_len, &g1_curve)?;
+            let (check_g1_subgroup, rest) = decode_boolean(&global_rest)?;
+            let (g1, rest) = decode_g1_point_from_xy(&rest, modulus_len, &g1_curve)?;
+            let (check_g2_subgroup, rest) = decode_boolean(&rest)?;
             let (g2, rest) = decode_g2_point_from_xy_in_fp3(&rest, modulus_len, &g2_curve)?;
-
             global_rest = rest;
+
             if !g1.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
@@ -755,15 +677,19 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 }
             }
 
-            if !g1.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if check_g1_subgroup {
+                if !g1.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
 
-            if !g2.check_correct_subgroup() {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+            if check_g2_subgroup {
+                if !g2.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
 
@@ -875,18 +801,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         // // build an extension field
-        // let mut extension_2 = Extension2::new(fp_non_residue);
-        // extension_2.calculate_frobenius_coeffs(&modulus).map_err(|_| {
-        //     ApiError::InputError("Failed to calculate Frobenius coeffs for Fp2".to_owned())
-        // })?;
-
-        // let mut extension_4 = Extension2Over2::new(Fp2::zero(&extension_2));
-
-        // {
-        //     extension_4.calculate_frobenius_coeffs(&modulus).map_err(|_| {
-        //         ApiError::UnknownParameter("Can not calculate Frobenius coefficients for Fp4".to_owned())
-        //     })?;
-        // }
 
         let one = Fp::one(&base_field);
 
@@ -921,15 +835,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let (x_is_negative, rest) = decode_sign_is_negative(rest)?;
 
-        // let (x_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get X sign encoding")?;
-        // let x_is_negative = match x_sign[0] {
-        //     SIGN_PLUS => false,
-        //     SIGN_MINUS => true,
-        //     _ => {
-        //         return Err(ApiError::InputError("X sign is not encoded properly".to_owned()));
-        //     },
-        // };
-
         let (exp_w0, rest) = decode_loop_parameter_scalar_with_bit_limit(&rest, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH)?;
         if exp_w0.is_zero() {
             return Err(ApiError::InputError("Final exp w0 loop count parameters can not be zero".to_owned()));
@@ -940,15 +845,6 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         }
 
         let (exp_w0_is_negative, rest) = decode_sign_is_negative(rest)?;
-
-        // let (exp_w0_sign, rest) = split(rest, SIGN_ENCODING_LENGTH, "Input is not long enough to get exp_w0 sign encoding")?;
-        // let exp_w0_is_negative = match exp_w0_sign[0] {
-        //     SIGN_PLUS => false,
-        //     SIGN_MINUS => true,
-        //     _ => {
-        //         return Err(ApiError::InputError("Exp_w0 sign is not encoded properly".to_owned()));
-        //     },
-        // };
 
         let (num_pairs_encoding, rest) = split(rest, BYTES_FOR_LENGTH_ENCODING, "Input is not long enough to get number of pairs")?;
         let num_pairs = num_pairs_encoding[0] as usize;
@@ -965,10 +861,12 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let mut g2_points = vec![];
 
         for _ in 0..num_pairs {
-            let (g1, rest) = decode_g1_point_from_xy(&global_rest, modulus_len, &g1_curve)?;
+            let (check_g1_subgroup, rest) = decode_boolean(&global_rest)?;
+            let (g1, rest) = decode_g1_point_from_xy(&rest, modulus_len, &g1_curve)?;
+            let (check_g2_subgroup, rest) = decode_boolean(&rest)?;
             let (g2, rest) = decode_g2_point_from_xy_in_fp2(&rest, modulus_len, &g2_curve)?;
-
             global_rest = rest;
+
             if !g1.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
@@ -981,17 +879,21 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
                 }
             }
 
-            // if !g1.check_correct_subgroup() {
-            //     if !crate::features::in_fuzzing_or_gas_metering() {
-            //         return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
-            //     }
-            // }
+            if check_g1_subgroup {
+                if !g1.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
+                }
+            }
 
-            // if !g2.check_correct_subgroup() {
-            //     if !crate::features::in_fuzzing_or_gas_metering() {
-            //         return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
-            //     }
-            // }
+            if check_g2_subgroup {
+                if !g2.check_correct_subgroup() {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    }
+                }
+            }
 
             if !g1.is_zero() && !g2.is_zero() {
                 g1_points.push(g1);

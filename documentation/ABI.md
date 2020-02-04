@@ -308,6 +308,7 @@ Validations:
   - `base_field_modulus == 1 mod 3` 
   - `base_field_modulus == 1 mod 6` 
 - `x != 0`
+- encoding of `x` is dense(!)
 - bit length of `x` is smaller or equal than `MAX_BLS12_X_BIT_LENGTH`
 - hamming weight of `x` is smaller or equalt than `MAX_BLS12_X_HAMMING`
 - `num_pairs > 0`
@@ -348,6 +349,7 @@ Validations:
   - `base_field_modulus == 1 mod 3` 
   - `base_field_modulus == 1 mod 6` 
 - `u != 0`
+- encoding of `u` is dense(!)
 - bit length of `u` is smaller or equal than `MAX_BN_U_BIT_LENGTH`
 - hamming weight of `|6u + 2|` is smaller or equalt than `MAX_BN_SIX_U_PLUS_TWO_HAMMING`
 - `num_pairs > 0`
@@ -390,10 +392,13 @@ Validations:
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 4` 
 - `loop != 0`
+- encoding of `loop` is dense(!)
 - bit length of `loop` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
 - hamming weight of `loop` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
 - `exp_w0 != 0`
+- encoding of `exp_w0` is dense(!)
 - `exp_w1 != 0`
+- encoding of `exp_w1` is dense(!)
 - hamming weight of `exp_w0` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH`
 - hamming weight of `exp_w1` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH`
 - `num_pairs > 0`
@@ -436,10 +441,13 @@ Validations:
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 3` 
 - `loop != 0`
+- encoding of `loop` is dense(!)
 - bit length of `loop` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
 - hamming weight of `loop` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
 - `exp_w0 != 0`
+- encoding of `exp_w0` is dense(!)
 - `exp_w1 != 0`
+- encoding of `exp_w1` is dense(!)
 - hamming weight of `exp_w0` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH`
 - hamming weight of `exp_w1` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH`
 - `num_pairs > 0`

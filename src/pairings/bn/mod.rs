@@ -336,12 +336,8 @@ impl<
         }
     }
 
-    fn prepare(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
+    fn prepare(&self, twist_point: & CurvePoint<'a, CTW>, two_inv: &Fp<'a, FE, F>) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
-
-        let mut two_inv = Fp::one(self.base_field);
-        two_inv.double();
-        let two_inv = two_inv.inverse().unwrap();
 
         if twist_point.is_zero() {
             return PreparedTwistPoint {
@@ -385,12 +381,8 @@ impl<
         }
     }
 
-    fn prepare_naf(&self, twist_point: & CurvePoint<'a, CTW>) -> PreparedTwistPoint<'a, FE, F> {
+    fn prepare_naf(&self, twist_point: & CurvePoint<'a, CTW>, two_inv: &Fp<'a, FE, F>) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
-
-        let mut two_inv = Fp::one(self.base_field);
-        two_inv.double();
-        let two_inv = two_inv.inverse().unwrap();
 
         if twist_point.is_zero() {
             return PreparedTwistPoint {
@@ -459,9 +451,13 @@ impl<
         let mut g1_references = vec![];
         let mut prepared_coeffs = vec![];
 
+        let mut two_inv = Fp::one(self.base_field);
+        two_inv.double();
+        let two_inv = two_inv.inverse().expect("inverse of 2 is guaranteed to exist");
+
         for (p, q) in i.into_iter() {
             if !p.is_zero() && !q.is_zero() {
-                let coeffs = self.prepare(&q.clone());
+                let coeffs = self.prepare(&q.clone(), &two_inv);
                 let ell_coeffs = coeffs.ell_coeffs;
                 prepared_coeffs.push(ell_coeffs);
                 g1_references.push(p);
@@ -517,9 +513,13 @@ impl<
         let mut g1_references = vec![];
         let mut prepared_coeffs = vec![];
 
+        let mut two_inv = Fp::one(self.base_field);
+        two_inv.double();
+        let two_inv = two_inv.inverse().expect("inverse of 2 is guaranteed to exist");
+
         for (p, q) in i.into_iter() {
             if !p.is_zero() && !q.is_zero() {
-                let coeffs = self.prepare_naf(&q.clone());
+                let coeffs = self.prepare_naf(&q.clone(), &two_inv);
                 let ell_coeffs = coeffs.ell_coeffs;
                 prepared_coeffs.push(ell_coeffs);
                 g1_references.push(p);

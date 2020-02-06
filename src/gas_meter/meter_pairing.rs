@@ -110,6 +110,7 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
     let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
     let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
     let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+    let g1_subgroup_discount = g1_subgroup_discount / 2;
 
     estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
 
@@ -127,6 +128,7 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
     };
 
     let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+    let g2_subgroup_discount = g2_subgroup_discount/2;
 
     estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
 
@@ -232,12 +234,14 @@ pub(crate) fn meter_bls12_pairing(input: &[u8], params: &Bls12PairingParams, max
     let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
     let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
     let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+    let g1_subgroup_discount = g1_subgroup_discount/2;
 
     estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
 
     let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
     let g2_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
     let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+    let g2_subgroup_discount = g2_subgroup_discount/2;
 
     estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
 
@@ -299,12 +303,14 @@ pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power
     let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
     let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
     let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+    let g1_subgroup_discount = g1_subgroup_discount/2;
 
     estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
 
     let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
     let g2_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
     let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
+    let g2_subgroup_discount = g2_subgroup_discount/2;
 
     estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
 

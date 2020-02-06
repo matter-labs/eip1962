@@ -339,9 +339,10 @@ fn bench_addition_bn254_g2_into_affine(b: &mut Bencher) {
 #[bench]
 fn bench_field_eea_inverse(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let mut be_repr = vec![0u8; 32];
-    be_repr[31] = 7u8;
-    let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
+    let mut t = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    t -= BigUint::from(1u64);
+    let t_bytes = t.to_bytes_be();
+    let element = Fp::from_be_bytes(&field, &t_bytes[..], true).unwrap();
     
     b.iter(|| element.eea_inverse().unwrap());
 }
@@ -349,9 +350,10 @@ fn bench_field_eea_inverse(b: &mut Bencher) {
 #[bench]
 fn bench_field_mont_inverse(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let mut be_repr = vec![0u8; 32];
-    be_repr[31] = 7u8;
-    let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
+    let mut t = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    t -= BigUint::from(1u64);
+    let t_bytes = t.to_bytes_be();
+    let element = Fp::from_be_bytes(&field, &t_bytes[..], true).unwrap();
     
     b.iter(|| element.mont_inverse().unwrap());
 }
@@ -359,9 +361,10 @@ fn bench_field_mont_inverse(b: &mut Bencher) {
 #[bench]
 fn bench_field_new_mont_inverse(b: &mut Bencher) {
     let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let mut be_repr = vec![0u8; 32];
-    be_repr[31] = 7u8;
-    let element = Fp::from_be_bytes(&field, &be_repr[..], false).unwrap();
+    let mut t = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    t -= BigUint::from(1u64);
+    let t_bytes = t.to_bytes_be();
+    let element = Fp::from_be_bytes(&field, &t_bytes[..], true).unwrap();
     
     b.iter(|| element.new_mont_inverse().unwrap());
 }

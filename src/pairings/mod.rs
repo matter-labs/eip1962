@@ -347,6 +347,51 @@ mod test {
     }
 
     #[test]
+    fn test_fp6_optimized_precomp() {
+        use crate::field::{U640Repr};
+        let modulus_biguint = BigUint::from_str_radix("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480644260294123843823582617865870693473572190965725707704312821545976965077621486794922414287", 10).unwrap();
+        let base_field = new_field::<U640Repr>("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480644260294123843823582617865870693473572190965725707704312821545976965077621486794922414287", 10).unwrap();
+        let nonres_repr = U640Repr::from(3);
+        let fp_non_residue = Fp::from_repr(&base_field, nonres_repr).unwrap();
+
+        let modulus = MaxFieldUint::from_big_endian(&modulus_biguint.clone().to_bytes_be());
+
+        let mut extension_3 = Extension3::new(fp_non_residue.clone());
+        extension_3.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
+
+        let mut fp3_non_residue = Fp3::zero(&extension_3);
+        fp3_non_residue.c0 = fp_non_residue.clone();
+
+        let mut q_minus_one_by_six = modulus_biguint.clone();
+        q_minus_one_by_six -= BigUint::from(1u64);
+        q_minus_one_by_six /= BigUint::from(6u64);
+
+        let fp_in_1 = fp_non_residue.pow(&biguint_to_u64_vec(q_minus_one_by_six.clone()));
+
+        // let mut q_squared_minus_one_by_six = modulus_biguint.clone();
+        // q_squared_minus_one_by_six *= &modulus_biguint;
+        // q_squared_minus_one_by_six -= BigUint::from(1u64);
+        // q_squared_minus_one_by_six /= BigUint::from(6u64);
+
+        // let fp_in_2 = fp_non_residue.pow(&biguint_to_u64_vec(q_squared_minus_one_by_six.clone()));
+
+        let mut q_cubed_minus_one_by_six = modulus_biguint.clone();
+        q_cubed_minus_one_by_six *= &modulus_biguint;
+        q_cubed_minus_one_by_six *= &modulus_biguint;
+        q_cubed_minus_one_by_six -= BigUint::from(1u64);
+        q_cubed_minus_one_by_six /= BigUint::from(6u64);
+
+        let fp_in_3 = fp_non_residue.pow(&biguint_to_u64_vec(q_cubed_minus_one_by_six.clone()));
+
+        let mut extension_6 = Extension2Over3::new(fp3_non_residue.clone());
+        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
+
+        assert!(extension_6.frobenius_coeffs_c1[1] == fp_in_1);
+        // assert!(extension_6.frobenius_coeffs_c1[2] == fp_in_2);
+        assert!(extension_6.frobenius_coeffs_c1[3] == fp_in_3);
+    }
+
+    #[test]
     fn test_fp6_fast_precomp() {
         use crate::field::{U640Repr};
         let modulus = BigUint::from_str_radix("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480644260294123843823582617865870693473572190965725707704312821545976965077621486794922414287", 10).unwrap();

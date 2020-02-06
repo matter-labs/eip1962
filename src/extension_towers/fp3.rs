@@ -394,7 +394,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
     ) -> Result<(), ()> {    
         let f_0 = Fp::one(self.field);
 
-        // precomputation has is by 6, so square
+        // precomputation has it by 6, so square
         let mut f_1 = precomp.non_residue_in_q_minus_one_by_six.clone();
         f_1.square();
         

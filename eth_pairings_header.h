@@ -54,4 +54,11 @@ uint32_t c_perform_operation(char op,
                              char *err,
                              uint32_t *char_len);
 
+uint32_t c_meter_operation(char op,
+                             const char *i,
+                             uint32_t i_len,
+                             uint64_t *o,
+                             char *err,
+                             uint32_t *char_len);
+
 #endif /* eth_pairings_bindings_h */

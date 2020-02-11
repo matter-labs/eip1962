@@ -136,7 +136,12 @@ Model for BLS12 curve pairings is located in the JSON file named `bls12_model.js
 - for `final_exp_cost` input parameters are `(x_bit_length, 1), (x_hamming_weight, 1), (modulus_limbs, 6)`
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json`
-- 
+
+Model file (JSON) contain the following fields:
+- `multiplier` - single integer encoding `multiplier`
+- `miller` - encoding of the `miller_loop_cost` polynomial model
+- `final_exp` - encoding of the `final_ext_cost` polynomial model
+
 ### BN
 
 `BN` curves are generated from the single parameter `x` (or `u` in different literature). 
@@ -154,6 +159,11 @@ Model for BLS12 curve pairings is located in the JSON file named `bn_model.json`
 - for `final_exp_cost` input parameters are `(u_bit_length, 1), (u_hamming_weight, 1), (modulus_limbs, 6)`, 
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json`
+
+Model file (JSON) contain the following fields:
+- `multiplier` - single integer encoding `multiplier`
+- `miller` - encoding of the `miller_loop_cost` polynomial model
+- `final_exp` - encoding of the `final_ext_cost` polynomial model
 
 ### MNT4/MNT6
 
@@ -178,6 +188,12 @@ Constant `power` is equal to `4` for MNT4 and to `6` for MNT6
 - for `final_exp_cost` input parameters are `(w0_bits, 1), (w0_hamming, 1), (w1_bits, 1), (w1_hamming, 1), (modulus_limbs, power)`, 
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json` for MNT4 and on the model file `g2_multiplication_ext3.json` for MNT6.
+
+Model files themselfves (JSONs) contain the following fields:
+- `one_off` - lookup table for `one_off` based on `modulus_limbs`
+- `multiplier` - single integer encoding `multiplier`
+- `miller` - encoding of the `miller_loop_cost` polynomial model
+- `final_exp` - encoding of the `final_ext_cost` polynomial model
 
 ## Monte-Carlo simulation rationale
 

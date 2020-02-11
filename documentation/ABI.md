@@ -433,8 +433,8 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |main_subgroup_order|`group_order_length` bytes|Main subgroup order                          |
 |fp2_non_residue    |`field_length` bytes      |Non-residue for Fp 2                         |
 |loop_byte_length   |1 bytes                   |                                             |
-|loop                   |`loop_byte_length` bytes          |                                             |
-|loop_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `loop`         |
+|ate_loop_parameter                   |`loop_byte_length` bytes          |                                             |
+|ate_loop_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `ate_loop_parameter`         |
 |exp_w0_byte_length   |1 bytes                   |                                             |
 |exp_w0                   |`exp_w0_byte_length` bytes          |                                             |
 |exp_w1_byte_length   |1 bytes                   |                                             |
@@ -449,10 +449,10 @@ Validations:
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2 and Fp4) perform the following checks (*not performed during gas estimation*):
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 4` 
-- `loop != 0`
-- encoding of `loop` is dense(!)
-- bit length of `loop` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
-- hamming weight of `loop` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
+- `ate_loop_parameter != 0`
+- encoding of `ate_loop_parameter` is dense(!)
+- bit length of `ate_loop_parameter` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
+- hamming weight of `ate_loop_parameter` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
 - `exp_w0 != 0`
 - encoding of `exp_w0` is dense(!)
 - `exp_w1 != 0`
@@ -482,8 +482,8 @@ If result of a pairing (element of `Fp4`) is equal to identity - return single b
 |main_subgroup_order|`group_order_length` bytes|Main subgroup order                          |
 |fp2_non_residue    |`field_length` bytes      |Non-residue for Fp 3                         |
 |loop_byte_length   |1 bytes                   |                                             |
-|loop                   |`loop_byte_length` bytes          |                                             |
-|loop_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `loop`         |
+|ate_loop_parameter                   |`loop_byte_length` bytes          |                                             |
+|ate_loop_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `ate_loop_parameter`         |
 |exp_w0_byte_length   |1 bytes                   |                                             |
 |exp_w0                   |`exp_w0_byte_length` bytes          |                                             |
 |exp_w1_byte_length   |1 bytes                   |                                             |
@@ -498,10 +498,10 @@ Validations:
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2 and Fp4) perform the following checks (*not performed during gas estimation*):
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 3` 
-- `loop != 0`
-- encoding of `loop` is dense(!)
-- bit length of `loop` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
-- hamming weight of `loop` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
+- `ate_loop_parameter != 0`
+- encoding of `ate_loop_parameter` is dense(!)
+- bit length of `ate_loop_parameter` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
+- hamming weight of `ate_loop_parameter` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
 - `exp_w0 != 0`
 - encoding of `exp_w0` is dense(!)
 - `exp_w1 != 0`

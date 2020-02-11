@@ -147,10 +147,10 @@ Model file (JSON) contain the following fields:
 `BN` curves are generated from the single parameter `x` (or `u` in different literature). 
 
 Base variables for estimation of pairing operation cost are:
-- number of bits in `u`, called `u_bit_length` later
-- hamming weight of `u`, called `u_hamming_weight` later
-- number of bits in `|6u + 2|`, called `six_u_plus_two_bit_length` later
-- hamming weight of `|6u + 2|`, called `six_u_plus_two_hamming` later
+- number of bits in `u` (from ABI decoding), called `u_bit_length` later
+- hamming weight of `u` (from ABI decoding), called `u_hamming_weight` later
+- number of bits in `|6u + 2|` (calculated during ABI decoding), called `six_u_plus_two_bit_length` later
+- hamming weight of `|6u + 2|` (calcualted during ABI decoding), called `six_u_plus_two_hamming` later
 
 Model for BLS12 curve pairings is located in the JSON file named `bn_model.json`.
 
@@ -171,12 +171,12 @@ Those Ate pairings are parametrized by the the miller loop scalar labeled `ate_l
 
 Additional parameters:
 
-- number of bits in `ate_loop_parameter`, called `ate_loop_bits` later
-- hamming weight of `ate_loop_parameter`, called `ate_loop_hamming` later
-- number of bits in `w0`, called `w0_bits` later
-- hamming weight of `w0`, called `w0_hamming` later
-- number of bits in `w1`, called `w1_bits` later
-- hamming weight of `w1`, called `w1_hamming` later
+- number of bits in `ate_loop_parameter` (from ABI decoding), called `ate_loop_bits` later
+- hamming weight of `ate_loop_parameter` (from ABI decoding), called `ate_loop_hamming` later
+- number of bits in `w0` (from ABI decoding), called `w0_bits` later
+- hamming weight of `w0` (from ABI decoding), called `w0_hamming` later
+- number of bits in `w1` (from ABI decoding), called `w1_bits` later
+- hamming weight of `w1` (from ABI decoding), called `w1_hamming` later
 
 
 Models for MNT4/MNT6 curve pairings is located in the JSON files named `mnt4_model.json` and `mnt6_model.json` respectively.

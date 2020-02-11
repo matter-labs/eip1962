@@ -25,6 +25,7 @@ This document gives a high-level overview what is a functionality of EIP 1962 pr
 - Now it's possible to implement Schnorr signatures verification and various modifications including off-chain aggregations/multisignatures like MuSig and numerous variants
 - Arithmetic over Secp256k1 can now be performed in full without tricks with `ecrecover` precompile
 - Pedersen arithmetic hashing (usually used inside of the SNARKs, also refered as using jubjub/babyjubjub curves) can be very efficiently implemented using multiexponentiation routine and curve equivalence between Twisted Edwards form and Weierstrass form used by this precompile
+- Recursive SNARKs verification using both half-pairing-friendly cycles and full cycles
 
 ## What is different from precompile that focuses on a single curve
 

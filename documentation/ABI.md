@@ -2,7 +2,7 @@
 
 ## Breaking changes history
 
-- Encoding of group or order is new NOT required to be dense (so first byte is allowed to be zero)
+- Encoding of group or order is now NOT required to be dense (so first byte is allowed to be zero)
 - This also means that group order is calculated from full encoded byte length. In principle one can prepend 8 zero bytes and pay higher price for operations.
 - Scalars for multiplication are now NOT required to be less or equal than the group order. This allows caller to have modular reduction "for free" and is already accounted in our pricing model
 - There is now an optional byte BEFORE G1 or G2 point encoding in pairing calls indicating whether this point must be subgroup checked or not
@@ -64,7 +64,7 @@ NOTE: These limits may change
 
 ## Zero point (point of infinity) encoding convension
 
-Points of infinity are encoded as points with zero `X` and `Y` coordinates for both inputs and outputs. Precompile only works with curves in Weierstrass form with `b != 0` thus point `(0,0)` is not on curve.
+Points of infinity are encoded as points with zero `X` and `Y` coordinates for both inputs and outputs. Precompile only works with curves in short Weierstrass form with `b != 0` thus point `(0,0)` is not on curve.
 
 ## Encoding of elements in extension fields
 
@@ -72,11 +72,11 @@ For an element in extension field `c0 + c1*v + c2*v^3` where `v` is non-residue 
 
 ## Junk at the end of byte string
 
-If after parsing the of all the parameters end of the byte string is not encountered then error must be returned.
+If after parsing of all the parameters the end of the byte string is not encountered then error must be returned.
 
 ## Internal representation of field elements
 
-For reference implementations field elements were represented as a set of `N` 64-bit words (limbs) where highest word (most significant) is underfilled (the highest bit of the highest word is unused) that allowed one to perform additions without extra overflow checks. Thus for `B` bits modulus one has to use `B/64 + 1` limbs (`/` is floor division) and such number of limbs is used for gas schedule that is described in the separate document.
+For reference implementations field elements were represented as a set of `N` 64-bit words (limbs) where highest word (most significant) is underfilled (the highest bit of the highest word is unused) that allowed one to perform additions without extra overflow checks. Thus for `B` bits modulus one has to use value of `modulus_libs = B/64 + 1` limbs (`/` is floor division) and such number of limbs is used for gas schedule that is described in the separate document.
 
 ## Encoding of the modulus
 
@@ -372,6 +372,7 @@ Validations:
 - all points are on the corresponding curves (*not performed during gas estimation*)
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
+- calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.  
 
 Return value:
@@ -392,7 +393,7 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |fp6_non_residue    |`2*field_length` bytes    |Non-residue for Fp 6                         |
 |twist_type         |1 bytes                   |Can be either 0x01 for M or 0x02 for D       |
 |u_length           |1 bytes                   |                                             |
-|u                  |`x_length` bytes          |                                             |
+|u                  |`u_length` bytes          |                                             |
 |sign               |1 bytes                   |0 for plus, 1 for minus, sign of `u`         |
 |num_pairs          |1 bytes                   |Number of point pairs                        |
 |pairs              |`2 + 6*field_length*num_pairs`|Point pairs encoded as `(check_g1_boolean, G1_point, check_g2_boolean, G2_point)`|
@@ -413,6 +414,7 @@ Validations:
 - all points are on the corresponding curves (*not performed during gas estimation*)
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
+- calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
@@ -430,7 +432,6 @@ If result of a pairing (element of `Fp12`) is equal to identity - return single 
 |group_order_length |1 bytes                   |                                             |                 
 |main_subgroup_order|`group_order_length` bytes|Main subgroup order                          |
 |fp2_non_residue    |`field_length` bytes      |Non-residue for Fp 2                         |
-|twist_type         |1 bytes                   |Can be either 0x01 for M or 0x02 for D       |
 |loop_byte_length   |1 bytes                   |                                             |
 |loop                   |`loop_byte_length` bytes          |                                             |
 |loop_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `loop`         |
@@ -462,6 +463,7 @@ Validations:
 - all points are on the corresponding curves (*not performed during gas estimation*)
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
+- calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
@@ -479,7 +481,6 @@ If result of a pairing (element of `Fp4`) is equal to identity - return single b
 |group_order_length |1 bytes                   |                                             |                 
 |main_subgroup_order|`group_order_length` bytes|Main subgroup order                          |
 |fp2_non_residue    |`field_length` bytes      |Non-residue for Fp 3                         |
-|twist_type         |1 bytes                   |Can be either 0x01 for M or 0x02 for D       |
 |loop_byte_length   |1 bytes                   |                                             |
 |loop                   |`loop_byte_length` bytes          |                                             |
 |loop_sign               |1 bytes                   |0 for plus, 1 for minus, sign of `loop`         |
@@ -511,8 +512,48 @@ Validations:
 - all points are on the corresponding curves (*not performed during gas estimation*)
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
+- calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
 - filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
 
 Return value:
 
 If result of a pairing (element of `Fp6`) is equal to identity - return single byte `0x01`, otherwise return `0x00` following the existing ABI for BN254 precompile.
+
+
+## Example of the input parsing
+
+The following byte string (hex encoded) represents a call data to the BLS12 pairing function to perform a pairing for one pair of points:
+
+```
+301a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042073eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff000000011a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaaa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010108d20100000001000001010117f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e101024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb813e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b828010606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be
+```
+
+Let's parse it:
+- `30` single byte - `field_length`, 48 bytes (`0x30` in hex)
+- `1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab` - 48 bytes that encode the modulus in BE encoding. This is a prime field of BLS12-381 curve
+- `000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000` - 48 bytes that encode the `a` coefficient for the short Weierstrass curve. Indeed the BLS12-381 curve has `a = 0`
+- `000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004` - 48 bytes that encode the `b` coefficient for the short Weierstrass curve. Indeed the BLS12-381 curve has `b = 4`
+- `20` single byte - `group_order_length`, 32 bytes
+- `73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001` - 32 bytes that encode the main subgroup order
+- `1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaaa` - 48 bytes that encode an `Fp` element that is quadratic non-residue and is used to construct `Fp2` extension. It's `-1` (`modulus - 1`)
+- Fp2 element that is not 6th root and forms `Fp6` and `Fp12` extensions. It is encoded as two `Fp` elemements
+  - `000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001` - 48 bytes
+  - `000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001` - 48 bytes
+  - Fp2 element is `1 + 1*v` for BLS12-381
+- `01` single byte - encodes twist type. For BLS12-381 twist type is `M` - multiplication.
+- `08` single byte - encodes `x_length`
+- `d201000000010000` - 8 bytes, modulus of `x` parameter of BLS12 curves
+- `01` single byte - encodes that `x` parameter is negative
+- `01` single byte - encodes `num_pairs`. We call it for pairing of one pair
+  - `01` single byte - encodes `check_g1_boolean = true` and we want to perform a subgroup check for the G1 point
+  - G1 point
+    - `17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb` - 48 bytes, x coordiante
+    - `08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1` - 48 bytes, y coordiante
+  - `01` single byte - encodes `check_gg_boolean = true` and we want to perform a subgroup check for the G2 point
+  - G2 point
+    - X coordinate in Fp2
+      - `024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8` - 48 bytes, first coefficient
+      - `13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e` - 48 bytes, second coefficient
+    - Y coordinate in Fp2
+      - `0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801` - 48 bytes, first coefficient
+      - `0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be` - 48 bytes, second coefficient

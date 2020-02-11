@@ -520,14 +520,12 @@ fn test_call_public_api_on_bls12_377() {
 }
 
 #[test]
-#[ignore]
+// #[ignore]
 fn test_print_bls12_381_test_vector() {
-    let calldata = assemble_bls12_381(4);
+    let calldata = assemble_bls12_381(1);
     // ignore curve type
     println!("{}", hex::encode(&calldata[1..]));
 }
-
-
 
 fn strip_0x(string: &str) -> String {
     let string = string.trim();

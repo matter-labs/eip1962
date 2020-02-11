@@ -21,7 +21,7 @@ uint32_t c_meter_operation(char op,
                              uint32_t *char_len);
 ```
 
-(`c_meter_operation` is not yet exposed by Rust);
+(`c_meter_operation` is exposed by Rust if both `c_api` and `gas_metering` features are requested)
 
 There are also constants describing the length of preallocated byte arrays.
 

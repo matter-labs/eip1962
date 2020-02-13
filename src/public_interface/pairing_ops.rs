@@ -271,7 +271,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(pairing_result_false());
+            return Ok(pairing_result_true());
         }
 
         let engine_params = Bls12InstanceParams {
@@ -504,7 +504,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(pairing_result_false());
+            return Ok(pairing_result_true());
         }
 
         let engine_params = BnInstanceParams {
@@ -705,7 +705,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(pairing_result_false());
+            return Ok(pairing_result_true());
         }
 
         let engine_params = MNT6InstanceParams {
@@ -907,7 +907,7 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         debug_assert!(g1_points.len() == g2_points.len());
         if g1_points.len() == 0 {
-            return Ok(pairing_result_false());
+            return Ok(pairing_result_true());
         }
 
         let engine = MNT4InstanceParams {

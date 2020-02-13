@@ -373,7 +373,7 @@ Validations:
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
 - calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
-- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.  
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x01`.  
 
 Return value:
 
@@ -415,7 +415,7 @@ Validations:
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
 - calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
-- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x01`.
 
 Return value:
 
@@ -464,7 +464,7 @@ Validations:
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
 - calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
-- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x01`.
 
 Return value:
 
@@ -513,7 +513,7 @@ Validations:
 - ~~all points are in the claimed subgroups (!)~~
 - for G1 or G2 points where the corresponding `check_g1_boolean` or `check_g2_boolean` is `true` points are checked to be in the correct subgroup (*not performed during gas estimation*)
 - calculate a total number of `check_g1_boolean == true` and `check_g2_boolean == true` into the separate variables `num_g1_checks` and `num_g2_checks` (used for gas estimation only)
-- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x00`.
+- filter out pairs where there are zero-points (so those do not contribute to result). If no points left return single byte `0x01`.
 
 Return value:
 

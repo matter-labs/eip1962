@@ -8,6 +8,7 @@ use crate::extension_towers::fp3::{Fp3, Extension3};
 use crate::extension_towers::fp6_as_2_over_3::{Fp6, Extension2Over3};
 use crate::pairings::PairingEngine;
 use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
+use crate::weierstrass::Group;
 
 pub struct MNT6InstanceParams<
     'a, 
@@ -560,9 +561,23 @@ impl<
             
             let mut pairs = Vec::with_capacity(points.len());
             for (p, q) in points.iter().zip(twists.iter()) {
-                pairs.push((p, q));
+                if !p.is_zero() && !q.is_zero() {
+                    pairs.push((p, q));
+                }
             }
+
+            if pairs.len() == 0 {
+                return Some(Fp6::one(self.fp6_extension));
+            }
+
+            // let loop_result = if self.prefer_naf {
+            //     self.miller_loop_naf(&pairs[..])
+            // } else {
+            //     self.miller_loop(&pairs[..])
+            // };  
+
             let loop_result = self.miller_loop(&pairs[..]);
+
             if loop_result.is_err() {
                 return None;
             }

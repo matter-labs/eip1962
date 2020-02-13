@@ -556,7 +556,13 @@ impl<
             
             let mut pairs = Vec::with_capacity(points.len());
             for (p, q) in points.iter().zip(twists.iter()) {
-                pairs.push((p, q));
+                if !p.is_zero() && !q.is_zero() {
+                    pairs.push((p, q));
+                }
+            }
+
+            if pairs.len() == 0 {
+                return Some(Fp12::one(self.fp12_extension));
             }
 
             let loop_result = if self.prefer_naf {

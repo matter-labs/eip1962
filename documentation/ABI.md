@@ -365,6 +365,7 @@ Validations:
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 3` 
   - `base_field_modulus == 1 mod 6` 
+- `x_length` > 0
 - `x != 0`
 - encoding of `x` is dense(!)
 - bit length of `x` is smaller or equal than `MAX_BLS12_X_BIT_LENGTH`
@@ -407,10 +408,11 @@ Validations:
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 3` 
   - `base_field_modulus == 1 mod 6` 
+- `u_length` > 0
 - `u != 0`
 - encoding of `u` is dense(!)
 - bit length of `u` is smaller or equal than `MAX_BN_U_BIT_LENGTH`
-- hamming weight of `|6u + 2|` is smaller or equalt than `MAX_BN_SIX_U_PLUS_TWO_HAMMING`
+- hamming weight of `|6u + 2|` is smaller or equal than `MAX_BN_SIX_U_PLUS_TWO_HAMMING`
 - `num_pairs > 0`
 - all points are on the corresponding curves (*not performed during gas estimation*)
 - ~~all points are in the claimed subgroups (!)~~
@@ -450,12 +452,15 @@ Validations:
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2 and Fp4) perform the following checks (*not performed during gas estimation*):
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 4` 
+- `loop_byte_length > 0`
 - `ate_loop_parameter != 0`
 - encoding of `ate_loop_parameter` is dense(!)
 - bit length of `ate_loop_parameter` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
 - hamming weight of `ate_loop_parameter` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
+- `exp_w0_byte_length > 0`
 - `exp_w0 != 0`
 - encoding of `exp_w0` is dense(!)
+- `exp_w1_byte_length > 0`
 - `exp_w1 != 0`
 - encoding of `exp_w1` is dense(!)
 - hamming weight of `exp_w0` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH`
@@ -499,12 +504,15 @@ Validations:
 - during computations of Frobenius endomorphism coefficients for all the field extensions (Fp2 and Fp4) perform the following checks (*not performed during gas estimation*):
   - `base_field_modulus == 1 mod 2` 
   - `base_field_modulus == 1 mod 3` 
+- `loop_byte_length > 0`
 - `ate_loop_parameter != 0`
 - encoding of `ate_loop_parameter` is dense(!)
 - bit length of `ate_loop_parameter` is smaller or equal than `MAX_ATE_PAIRING_ATE_LOOP_COUNT`
 - hamming weight of `ate_loop_parameter` is smaller or equalt than `MAX_ATE_PAIRING_ATE_LOOP_COUNT_HAMMING`
+- `exp_w0_byte_length > 0`
 - `exp_w0 != 0`
 - encoding of `exp_w0` is dense(!)
+- `exp_w1_byte_length > 0`
 - `exp_w1 != 0`
 - encoding of `exp_w1` is dense(!)
 - hamming weight of `exp_w0` is smaller or equalt than `MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH`

@@ -72,7 +72,9 @@ There are various parameters (curve and operation dependent) that apriori define
 - Affect a computation in non-linear manner:
   - `modulus_limbs`
 
-Thus we choose an approach to use a polynomial fitting to calculate the pairing call gas costs. 
+We also make an observation that if no subgroup checks are performed (and those are just point multiplications) then pairing cost **does not** depend on the `group_order_limbs`. Thus we have factored out `subgroup_checks` cost in out formula.
+
+In global we choose an approach to use a polynomial fitting to calculate the pairing call gas costs. 
 
 ### Polynomial evaluation
 
@@ -102,13 +104,13 @@ We need a convention to encode such a polynomial. As was mentioned, it's sparse,
 
 These information is enough to evaluate every subterm of the polynomial.
 
-Example: for BLS12 curve we have a term `[6309, [[1, 1], [2, 2]]]` in the `final_exp_cost`
+Example: for BLS12 curve we have a term `[6309, [[0, 1], [1, 2]]]` in the `final_exp_cost`
 - First we parse it at `(coefficient_value, variables)`: 
   - `coefficient_value = 6309`
-  - `variables = [[1, 1], [2, 2]]`
+  - `variables = [[0, 1], [1, 2]]`
 - Now for a list of `variables`
-  - First `(var_num, power) = [1, 1]` means `x_hamming_weight` and power of 1
-  - Second `(var_num, power) = [2, 2]` means `modulus_limbs` and power of 2
+  - First `(var_num, power) = [0, 1]` means `x_hamming_weight` and power of 1
+  - Second `(var_num, power) = [1, 2]` means `modulus_limbs` and power of 2
 - Subterm will look as `6309 * x_hamming_weight^1 * modulus_limbs^2`
 
 NOTE: don't forget to divide by `multiplier` in the full evaluation!
@@ -132,7 +134,7 @@ Additional variables for estimation of pairing operation cost are:
 Model for BLS12 curve pairings is located in the JSON file named `bls12_model.json`.
 
 - `one_off` cost is not used and not present in the model
-- for `miller_loop_cost` input parameters are `(x_bit_length, 1), (x_hamming_weight, 1), (group_order_limbs, 1), (modulus_limbs, 6)`, 
+- for `miller_loop_cost` input parameters are `(x_bit_length, 1), (x_hamming_weight, 1), (modulus_limbs, 6)`, 
 - for `final_exp_cost` input parameters are `(x_bit_length, 1), (x_hamming_weight, 1), (modulus_limbs, 6)`
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json`
@@ -155,7 +157,7 @@ Base variables for estimation of pairing operation cost are:
 Model for BLS12 curve pairings is located in the JSON file named `bn_model.json`.
 
 - `one_off` cost is not used and not present in the model
-- for `miller_loop_cost` input parameters are `(six_u_plus_two_bit_length, 1), (six_u_plus_two_hamming, 1), (group_order_limbs, 1), (modulus_limbs, 6)`, 
+- for `miller_loop_cost` input parameters are `(six_u_plus_two_bit_length, 1), (six_u_plus_two_hamming, 1), (modulus_limbs, 6)`, 
 - for `final_exp_cost` input parameters are `(u_bit_length, 1), (u_hamming_weight, 1), (modulus_limbs, 6)`, 
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json`
@@ -184,7 +186,7 @@ Models for MNT4/MNT6 curve pairings is located in the JSON files named `mnt4_mod
 Constant `power` is equal to `4` for MNT4 and to `6` for MNT6
 
 - `one_off` is a simple lookup table based on `modulus_limbs`
-- for `miller_loop_cost` input parameters are `(group_order_limbs, 1), (ate_loop_bits, 1), (ate_loop_hamming, 1), (modulus_limbs, power)`,  (NOTE reordering from BN/BLS12 models)
+- for `miller_loop_cost` input parameters are `(ate_loop_bits, 1), (ate_loop_hamming, 1), (modulus_limbs, power)`
 - for `final_exp_cost` input parameters are `(w0_bits, 1), (w0_hamming, 1), (w1_bits, 1), (w1_hamming, 1), (modulus_limbs, power)`, 
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json` for MNT4 and on the model file `g2_multiplication_ext3.json` for MNT6.

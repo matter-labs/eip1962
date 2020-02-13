@@ -82,22 +82,24 @@ fn parallel_measure_one_off_pairing_costs() {
                     let curve = gen_params::random_bls12_params(num_limbs, num_group_limbs, &mut rng);
                     for num_pairs in pairs.iter() {
                         let reports = bls12::process_for_curve_and_bit_sizes(curve.clone(), x_bits, x_hamming, *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, res_vec) in reports.into_iter() {
+                            assert!(res_vec.len() == 1);
+                            assert!(res_vec[0] == 1u8);
                             bls_tx.send(r).unwrap();
                         }
                     }    
                 }
                 {
                     // for BN situation is a bit different (cause 6u+2 != 1 always, so miller loop is always non-empty),
-                    // so we trim the number of pairs
+                    // so we trim the number of pairs to eliminate the loop and final exponentiation
                     let u_bits = 1;
                     let u_hamming = 1;
                     let curve = gen_params::random_bn_params(num_limbs, num_group_limbs, &mut rng);
                     for num_pairs in pairs.iter() {
-                        let true_pairs_to_make = 0;
-                        let reports = bn::process_for_curve_and_bit_sizes(curve.clone(), u_bits, u_hamming, true_pairs_to_make);
-                        for mut r in reports.into_iter() {
-                            r.num_pairs = *num_pairs;
+                        let reports = bn::process_for_curve_and_bit_sizes(curve.clone(), u_bits, u_hamming, *num_pairs);
+                        for (r, res_vec) in reports.into_iter() {
+                            assert!(res_vec.len() == 1);
+                            assert!(res_vec[0] == 1u8);
                             bn_tx.send(r).unwrap();
                         }
                     }
@@ -123,7 +125,9 @@ fn parallel_measure_one_off_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for (r, _) in reports.into_iter() {
+                        for (r, res_vec) in reports.into_iter() {
+                            assert!(res_vec.len() == 1);
+                            assert!(res_vec[0] == 1u8);
                             mnt4_tx.send(r).unwrap();
                         }
                     }
@@ -149,7 +153,9 @@ fn parallel_measure_one_off_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for (r, _) in reports.into_iter() {
+                        for (r, res_vec) in reports.into_iter() {
+                            assert!(res_vec.len() == 1);
+                            assert!(res_vec[0] == 1u8);
                             mnt6_tx.send(r).unwrap();
                         }
                     }
@@ -294,7 +300,7 @@ fn parallel_measure_bls12_bn_pairing_costs() {
                     let curve = gen_params::random_bls12_params(num_limbs, num_group_limbs, &mut rng);
                     for num_pairs in pairs.iter() {
                         let reports = bls12::process_for_curve_and_bit_sizes(curve.clone(), x_bits, x_hamming, *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             bls_tx.send(r).unwrap();
                         }
                     }     
@@ -306,7 +312,7 @@ fn parallel_measure_bls12_bn_pairing_costs() {
                     let curve = gen_params::random_bn_params(num_limbs, num_group_limbs, &mut rng);
                     for num_pairs in pairs.iter() {
                         let reports = bn::process_for_curve_and_bit_sizes(curve.clone(), u_bits, u_hamming, *num_pairs);
-                        for r in reports.into_iter() {
+                        for (r, _) in reports.into_iter() {
                             bn_tx.send(r).unwrap();
                         }
                     }

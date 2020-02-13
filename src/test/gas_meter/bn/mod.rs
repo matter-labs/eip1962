@@ -74,7 +74,12 @@ impl BnReportWriter {
     } 
 }
 
-pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameters, bits: usize, hamming: usize, num_pairs: usize) -> Vec<BnReport> {
+pub(crate) fn process_for_curve_and_bit_sizes(
+    curve: JsonBnPairingCurveParameters, 
+    bits: usize, hamming: usize, 
+    num_pairs: usize
+) -> Vec<(BnReport, Vec<u8>)>
+{
     use std::time::Instant;
     
     let mut reports = vec![];
@@ -99,7 +104,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
         let now = Instant::now();
         let res = API::run(&input_data);
         let elapsed = now.elapsed();
-        if res.is_ok() {
+        if let Ok(result_data) = res {
             let report = BnReport {
                 six_u_plus_two_bit_length: six_u_plus_two_bit_length,
                 six_u_plus_two_hamming: six_u_plus_two_hamming,
@@ -112,7 +117,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
                 run_microseconds: elapsed.as_micros() as u64,
             };
 
-            reports.push(report);
+            reports.push((report, result_data));
         } else {
             println!("BN error {:?}", res.err().unwrap());
         }
@@ -121,27 +126,27 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
     reports
 }
 
-fn process_curve(curve: JsonBnPairingCurveParameters) -> Vec<BnReport> {
-    let max_bits = MAX_BN_U_BIT_LENGTH;
-    let max_bits = 64;
-    let max_hamming = MAX_BN_SIX_U_PLUS_TWO_HAMMING;
-    let max_num_pairs = 8;
+// fn process_curve(curve: JsonBnPairingCurveParameters) -> Vec<BnReport> {
+//     let max_bits = MAX_BN_U_BIT_LENGTH;
+//     let max_bits = 64;
+//     let max_hamming = MAX_BN_SIX_U_PLUS_TWO_HAMMING;
+//     let max_num_pairs = 8;
 
-    let mut reports = vec![];
+//     let mut reports = vec![];
 
-    for bits in (1..=max_bits).step_by(1) {
-        for hamming in (1..=bits).step_by(2) {
-            for num_pairs in (2..=max_num_pairs).step_by(2) {
-                let subreports = process_for_curve_and_bit_sizes(
-                    curve.clone(), bits, hamming, num_pairs
-                );
-                reports.extend(subreports);
-            }
-        }
-    }
+//     for bits in (1..=max_bits).step_by(1) {
+//         for hamming in (1..=bits).step_by(2) {
+//             for num_pairs in (2..=max_num_pairs).step_by(2) {
+//                 let subreports = process_for_curve_and_bit_sizes(
+//                     curve.clone(), bits, hamming, num_pairs
+//                 );
+//                 reports.extend(subreports.0);
+//             }
+//         }
+//     }
 
-    reports
-}
+//     reports
+// }
 
 // #[test]
 // #[ignore]

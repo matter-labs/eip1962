@@ -101,7 +101,12 @@ impl Bls12ReportWriter {
     } 
 }
 
-pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParameters, bits: usize, hamming: usize, num_pairs: usize) -> Vec<Bls12Report> {
+pub(crate) fn process_for_curve_and_bit_sizes(
+    curve: JsonBls12PairingCurveParameters, 
+    bits: usize, 
+    hamming: usize, 
+    num_pairs: usize
+) -> Vec<(Bls12Report, Vec<u8>)> {
     use std::time::Instant;
     
     let mut reports = vec![];
@@ -124,7 +129,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
         let now = Instant::now();
         let res = API::run(&input_data);
         let elapsed = now.elapsed();
-        if res.is_ok() {
+        if let Ok(result_data) = res {
             let report = Bls12Report {
                 x_bit_length: bits,
                 x_hamming_weight: hamming,
@@ -135,7 +140,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
                 run_microseconds: elapsed.as_micros() as u64,
             };
 
-            reports.push(report);
+            reports.push((report, result_data));
         } else {
             println!("BLS12 error {:?}", res.err().unwrap());
         }
@@ -144,41 +149,41 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
     reports
 }
 
-fn process_curve(curve: JsonBls12PairingCurveParameters) -> Vec<Bls12Report> {
-    let max_bits = MAX_BLS12_X_BIT_LENGTH;
-    let max_bits = 64;
-    let max_hamming = MAX_BLS12_X_HAMMING;
-    let max_num_pairs = 8;
+// fn process_curve(curve: JsonBls12PairingCurveParameters) -> Vec<Bls12Report> {
+//     let max_bits = MAX_BLS12_X_BIT_LENGTH;
+//     let max_bits = 64;
+//     let max_hamming = MAX_BLS12_X_HAMMING;
+//     let max_num_pairs = 8;
 
-    let mut reports = vec![];
+//     let mut reports = vec![];
 
-    for bits in (1..=max_bits).step_by(1) {
-        for hamming in (1..=bits).step_by(2) {
-            for num_pairs in (2..=max_num_pairs).step_by(2) {
-                let subreports = process_for_curve_and_bit_sizes(
-                    curve.clone(), bits, hamming, num_pairs
-                );
-                reports.extend(subreports);
-            }
-        }
-    }
+//     for bits in (1..=max_bits).step_by(1) {
+//         for hamming in (1..=bits).step_by(2) {
+//             for num_pairs in (2..=max_num_pairs).step_by(2) {
+//                 let subreports = process_for_curve_and_bit_sizes(
+//                     curve.clone(), bits, hamming, num_pairs
+//                 );
+//                 reports.extend(subreports.0);
+//             }
+//         }
+//     }
 
-    reports
-}
+//     reports
+// }
 
-#[test]
-#[ignore]
-fn test_bench_bls12_pairings() {
-    let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
-    let curves = vec![curves[0].clone()];
-    let mut total_results = vec![];
-    for (curve, _) in curves.into_iter() {
-        let subresult = process_curve(curve);
-        total_results.extend(subresult);
-    }
+// #[test]
+// #[ignore]
+// fn test_bench_bls12_pairings() {
+//     let curves = read_dir_and_grab_curves::<JsonBls12PairingCurveParameters>("src/test/test_vectors/bls12/");
+//     let curves = vec![curves[0].clone()];
+//     let mut total_results = vec![];
+//     for (curve, _) in curves.into_iter() {
+//         let subresult = process_curve(curve);
+//         total_results.extend(subresult);
+//     }
 
-    write_reports(total_results, "src/test/gas_meter/bls12/reports.csv");
-}
+//     write_reports(total_results, "src/test/gas_meter/bls12/reports.csv");
+// }
 
     
 

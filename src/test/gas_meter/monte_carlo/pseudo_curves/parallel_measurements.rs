@@ -59,6 +59,10 @@ fn parallel_measure_one_off_pairing_costs() {
 
     let pairs: [usize; 1] = [0];
 
+    // Without subgroup check pairing DOES NOT depend on the group size,
+    // BUT for this test and to check it explicitly at least for some part
+    // we do a full greedy search
+
     let mut parameters_space = vec![];
     for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
         for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
@@ -282,11 +286,11 @@ fn parallel_measure_bls12_bn_pairing_costs() {
     // let pairs: [usize; 6] = [2, 4, 6, 8, 12, 16];
     let pairs: [usize; 4] = [2, 4, 8, 16];
 
+    // Without subgroup check pairing DOES NOT depend on the group size,
+    // so don't even use it for a sake of smaller noise and just use the maximum one
     let mut parameters_space = vec![];
     for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
-        for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
-            parameters_space.push((num_limbs, num_group_limbs, rng.clone(), pb.clone(), (bls_tx.clone(), bn_tx.clone())));
-        }
+        parameters_space.push((num_limbs, NUM_GROUP_LIMBS_MAX, rng.clone(), pb.clone(), (bls_tx.clone(), bn_tx.clone())));
     }
 
     drop(bls_tx);
@@ -383,8 +387,9 @@ fn parallel_measure_miller_loop_pairing_costs_mnt() {
     use rand_xorshift::XorShiftRng;
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    // const SAMPLES: usize = 1_000;
-    const SAMPLES: usize = 100;
+    let samples = std::env::var("NUM_SAMPLES").expect("`NUM_SAMPLES` variable must be set");
+    let samples : usize  = samples.parse().expect("`NUM_SAMPLES` variable must be an unsigned integer");
+    assert!(samples > 0);
 
     use std::thread;
 
@@ -392,8 +397,8 @@ fn parallel_measure_miller_loop_pairing_costs_mnt() {
 
     use rayon::prelude::*;
 
-    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/miller_loop_parallel_{}.csv", SAMPLES));
-    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/miller_loop_parallel_{}.csv", SAMPLES));
+    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/miller_loop_parallel_{}.csv", samples));
+    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/miller_loop_parallel_{}.csv", samples));
 
     let (mnt4_tx, mnt4_rx) = channel();
     let (mnt6_tx, mnt6_rx) = channel();
@@ -409,22 +414,23 @@ fn parallel_measure_miller_loop_pairing_costs_mnt() {
     // let pairs: [usize; 6] = [2, 4, 6, 8, 12, 16];
     let pairs: [usize; 4] = [2, 4, 8, 16];
 
+    // Without subgroup check pairing DOES NOT depend on the group size,
+    // so don't even use it for a sake of smaller noise and just use the maximum one
+
     let mut parameters_space = vec![];
     for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
-        for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
-            parameters_space.push((num_limbs, num_group_limbs, rng.clone(), pb.clone(), (mnt4_tx.clone(), mnt6_tx.clone())));
-        }
+        parameters_space.push((num_limbs, NUM_GROUP_LIMBS_MAX, rng.clone(), pb.clone(), (mnt4_tx.clone(), mnt6_tx.clone())));
     }
 
     drop(mnt4_tx);
     drop(mnt6_tx);
 
-    pb.set_length((parameters_space.len() * SAMPLES) as u64);
+    pb.set_length((parameters_space.len() * samples) as u64);
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
             let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
-            for _ in 0..SAMPLES {
+            for _ in 0..samples {
                 {
                     let ate_bits = ate_rng.sample(&mut rng);
                     let ate_hamming = Uniform::new_inclusive(1, ate_bits);
@@ -566,11 +572,12 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
 
     let pairs: [usize; 1] = [2];
 
+    // Without subgroup check pairing DOES NOT depend on the group size,
+    // so don't even use it for a sake of smaller noise and just use the maximum one
+
     let mut parameters_space = vec![];
     for num_limbs in NUM_LIMBS_MIN..=NUM_LIMBS_MAX {
-        for num_group_limbs in NUM_GROUP_LIMBS_MIN..=NUM_GROUP_LIMBS_MAX {
-            parameters_space.push((num_limbs, num_group_limbs, rng.clone(), pb.clone(), (mnt4_tx.clone(), mnt6_tx.clone())));
-        }
+        parameters_space.push((num_limbs, NUM_GROUP_LIMBS_MAX, rng.clone(), pb.clone(), (mnt4_tx.clone(), mnt6_tx.clone())));
     }
 
     drop(mnt4_tx);

@@ -69,6 +69,7 @@ Points of infinity are encoded as points with zero `X` and `Y` coordinates for b
 ## Encoding of elements in extension fields
 
 For an element in extension field `c0 + c1*v + c2*v^3` where `v` is non-residue corresponding encoding is `(c0, c1, c2)`.
+This means that for e.g. when field modulus is encoded with 32 bytes (and length of the modulus defines length of the elements of the *base field* as explained also below) when one decodes an Fp2 element then in total one expects to encounter 64 bytes where first 32 bytes encode `c0` and next 32 bytes encode `c1`.
 
 ## Junk at the end of byte string
 
@@ -108,7 +109,7 @@ Encoding of the modulus (our main parameter) is explicitly unrolled in the specs
 
 This encoding applied to e.g. `a` or `b` coefficients of the curve being used.
 
-- length of the element is taken as 
+- length of the element is `field_length` (also explicitly unrolled in particular ABI structures later)
 - encoded field element is strictly less than the modulus
 - for field extensions (`Fp2`, `Fp3`) each of the coefficients is encoded properly
 
@@ -126,7 +127,7 @@ We mention again that `group_order` encoding is NOT dense.
 
 ## Encoding of loop parameters
 
-Loop parameters are used in pairing operations and all have "sane" limits. Such limits also impose intrinsic restrictions on how they can be encoded. Let's take an example of the `x` parameter for `BLS12` curve to demonstrate all the checks. There `x` parameter has a limit `MAX_BLS12_X_BIT_LENGTH` for it's bit length and `MAX_BLS12_X_HAMMING` for it's hamming weight (hamming weight check is not a part of the decoding routine, but it's listed for completeness).
+Loop parameters are used in pairing operations and all have "sane" limits. Such limits also impose intrinsic restrictions on how they can be encoded. Let's take an example of the `x` parameter for `BLS12` curve to demonstrate all the checks. There `x` parameter has a limit `MAX_BLS12_X_BIT_LENGTH` for it's bit length and `MAX_BLS12_X_HAMMING` for it's hamming weight (hamming weight check is not a part of the *decoding routine*, but it's a part of *validation*).
 
 - `x_length` is encoded as a single byte
 - `x_length > 0`

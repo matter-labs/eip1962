@@ -121,7 +121,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(
         let limbs = crate::test::calculate_num_limbs(&new_curve.q).expect("must work");
         let group_order_limbs = crate::test::num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        let calldata = assemble_single_curve_params(new_curve, num_pairs, false);
         if calldata.is_err() {
             continue
         };
@@ -156,59 +156,59 @@ pub(crate) fn process_for_curve_and_bit_sizes(
     reports
 }
 
-pub(crate) fn estimate_gas_meter_difference(
-    curve: JsonMnt4PairingCurveParameters, 
-    bits: usize, 
-    hamming: usize, 
-    w_0_bits: usize,
-    w_0_hamming: usize,
-    w_1_bits: usize,
-    w_1_hamming: usize,
-    num_pairs: usize
-) -> Vec<i64> {
-    use std::time::Instant;
+// pub(crate) fn estimate_gas_meter_difference(
+//     curve: JsonMnt4PairingCurveParameters, 
+//     bits: usize, 
+//     hamming: usize, 
+//     w_0_bits: usize,
+//     w_0_hamming: usize,
+//     w_1_bits: usize,
+//     w_1_hamming: usize,
+//     num_pairs: usize
+// ) -> Vec<i64> {
+//     use std::time::Instant;
 
-    let gas_factor = 15u64;
-    let mut reports = vec![];
+//     let gas_factor = 15u64;
+//     let mut reports = vec![];
 
-    let new_x = make_x_bit_length_and_hamming_weight(bits, hamming);
-    let new_w0 = make_x_bit_length_and_hamming_weight(w_0_bits, w_0_hamming);
-    let new_w1 = make_x_bit_length_and_hamming_weight(w_1_bits, w_1_hamming);
-    let exp_w0_is_negative = true;
-    for x_is_negative in vec![true] {
-    // for x_is_negative in vec![false, true] {
-        let mut new_curve = curve.clone();
-        new_curve.x = (new_x.clone(), x_is_negative);
-        new_curve.exp_w0 = (new_w0.clone(), exp_w0_is_negative);
-        new_curve.exp_w1 = new_w1.clone();
-        let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(new_curve, num_pairs);
-        if calldata.is_err() {
-            continue
-        };
-        let calldata = calldata.unwrap();
-        input_data.extend(calldata);
-        let now = Instant::now();
-        let res = API::run(&input_data);
-        let elapsed = now.elapsed();
+//     let new_x = make_x_bit_length_and_hamming_weight(bits, hamming);
+//     let new_w0 = make_x_bit_length_and_hamming_weight(w_0_bits, w_0_hamming);
+//     let new_w1 = make_x_bit_length_and_hamming_weight(w_1_bits, w_1_hamming);
+//     let exp_w0_is_negative = true;
+//     for x_is_negative in vec![true] {
+//     // for x_is_negative in vec![false, true] {
+//         let mut new_curve = curve.clone();
+//         new_curve.x = (new_x.clone(), x_is_negative);
+//         new_curve.exp_w0 = (new_w0.clone(), exp_w0_is_negative);
+//         new_curve.exp_w1 = new_w1.clone();
+//         let mut input_data = vec![OPERATION_PAIRING];
+//         let calldata = assemble_single_curve_params(new_curve, num_pairs, false);
+//         if calldata.is_err() {
+//             continue
+//         };
+//         let calldata = calldata.unwrap();
+//         input_data.extend(calldata);
+//         let now = Instant::now();
+//         let res = API::run(&input_data);
+//         let elapsed = now.elapsed();
 
-        if res.is_ok() {
-            let gas_estimated = crate::gas_meter::GasMeter::meter(&input_data);
-            if gas_estimated.is_ok() {
-                let running_gas = (elapsed.as_micros() as u64) * gas_factor;
-                let difference = (gas_estimated.unwrap() as i64) - (running_gas as i64);
+//         if res.is_ok() {
+//             let gas_estimated = crate::gas_meter::GasMeter::meter(&input_data);
+//             if gas_estimated.is_ok() {
+//                 let running_gas = (elapsed.as_micros() as u64) * gas_factor;
+//                 let difference = (gas_estimated.unwrap() as i64) - (running_gas as i64);
 
-                reports.push(difference);
-            } else {
-                println!("MNT4 gas estimation error {:?}", gas_estimated.err().unwrap());
-                println!("Data = {}", hex::encode(&input_data));
-            }
-        } else {
-            println!("MNT4 error {:?}", res.err().unwrap());
-            // println!("Data = {}", hex::encode(&input_data));
-        }
-    }
+//                 reports.push(difference);
+//             } else {
+//                 println!("MNT4 gas estimation error {:?}", gas_estimated.err().unwrap());
+//                 println!("Data = {}", hex::encode(&input_data));
+//             }
+//         } else {
+//             println!("MNT4 error {:?}", res.err().unwrap());
+//             // println!("Data = {}", hex::encode(&input_data));
+//         }
+//     }
 
-    reports
-}
+//     reports
+// }
 

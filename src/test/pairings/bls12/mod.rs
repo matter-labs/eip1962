@@ -10,7 +10,7 @@ use super::call_pairing_engine;
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError>  {
+pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameters, pairs: usize, check_subgroup: bool) -> Result<Vec<u8>, ApiError>  {
     let curve_clone = curve.clone();
     assert!(pairs % 2 == 0);
     // - Curve type
@@ -205,7 +205,17 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBls12PairingCurveParameter
     calldata.extend(x_sign.into_iter());
     calldata.extend(num_pairs.into_iter());
     for (g1, g2) in g1_encodings.into_iter().zip(g2_encodings.into_iter()) {
+        if check_subgroup {
+            calldata.extend(vec![1u8]);
+        } else {
+            calldata.extend(vec![0u8]);
+        }
         calldata.extend(g1.into_iter());
+        if check_subgroup {
+            calldata.extend(vec![1u8]);
+        } else {
+            calldata.extend(vec![0u8]);
+        }
         calldata.extend(g2.into_iter());
     }
 
@@ -227,7 +237,7 @@ fn test_bls12_pairings_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     for (curve, _) in curves.into_iter() {
-        let calldata = assemble_single_curve_params(curve, 2).unwrap();
+        let calldata = assemble_single_curve_params(curve, 2, true).unwrap();
         let result = call_pairing_engine(&calldata[..]);
         if !result.is_ok() {
             println!("Error {}", result.err().unwrap());
@@ -244,7 +254,7 @@ fn test_bench_bls12_pairings_from_vectors() {
     let curves = read_dir_and_grab_curves("src/test/test_vectors/bls12/");
     assert!(curves.len() != 0);
     for (curve, _) in curves.into_iter() {
-        let calldata = assemble_single_curve_params(curve, 2).unwrap();
+        let calldata = assemble_single_curve_params(curve, 2, true).unwrap();
         let start = std::time::Instant::now();
         let result = call_pairing_engine(&calldata[..]);
         println!("Taken {:?}", start.elapsed());
@@ -273,7 +283,7 @@ fn dump_pairing_vectors() {
     writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2).unwrap();
+        let calldata = assemble_single_curve_params(curve.clone(), 2, true).unwrap();
         input_data.extend(calldata);
         let expected_result = vec![1u8];
         writer.write_record(&[
@@ -296,7 +306,7 @@ fn dump_fuzzing_vectors() {
     // writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(curve.clone(), 2).unwrap();
+        let calldata = assemble_single_curve_params(curve.clone(), 2, true).unwrap();
         input_data.extend(calldata);
         let filename = hex::encode(&input_data);
         let mut f = File::create(&format!("src/test/test_vectors/bls12/fuzzing_corpus/{}", &filename[0..40])).unwrap();

@@ -10,7 +10,7 @@ use super::call_pairing_engine;
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters, pairs: usize) -> Result<Vec<u8>, ApiError> {
+pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters, pairs: usize, check_subgroup: bool) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
     assert!(pairs % 2 == 0);
 
@@ -208,7 +208,17 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters
     calldata.extend(exp_w0_sign.into_iter());
     calldata.extend(num_pairs.into_iter());
     for (g1, g2) in g1_encodings.into_iter().zip(g2_encodings.into_iter()) {
+        if check_subgroup {
+            calldata.extend(vec![1u8]);
+        } else {
+            calldata.extend(vec![0u8]);
+        }
         calldata.extend(g1.into_iter());
+        if check_subgroup {
+            calldata.extend(vec![1u8]);
+        } else {
+            calldata.extend(vec![0u8]);
+        }
         calldata.extend(g2.into_iter());
     }
 

@@ -10,15 +10,15 @@ use crate::test::pairings::bn::*;
 use super::*;
 
 pub(crate) struct BnReport {
-    six_u_plus_two_bit_length: usize,
-    six_u_plus_two_hamming: usize,
-    modulus_limbs: usize,
-    num_pairs: usize,
-    group_limbs: usize,
-    x_is_negative: bool,
-    x_bit_length: usize,
-    x_hamming_weight: usize,
-    run_microseconds: u64,
+    pub(crate) six_u_plus_two_bit_length: usize,
+    pub(crate) six_u_plus_two_hamming: usize,
+    pub(crate) modulus_limbs: usize,
+    pub(crate) num_pairs: usize,
+    pub(crate) group_limbs: usize,
+    pub(crate) x_is_negative: bool,
+    pub(crate) x_bit_length: usize,
+    pub(crate) x_hamming_weight: usize,
+    pub(crate) run_microseconds: u64,
 }
 
 extern crate csv;
@@ -88,7 +88,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBnPairingCurveParameter
         let limbs = crate::test::calculate_num_limbs(&new_curve.q).expect("must work");
         let group_order_limbs = crate::test::num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        let calldata = assemble_single_curve_params(new_curve, num_pairs, false);
         if calldata.is_err() {
             // panic!("Bn curve encoding error = {}", calldata.err().unwrap());
             // println!("Bn curve encoding error = {}", calldata.err().unwrap());

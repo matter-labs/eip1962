@@ -10,12 +10,12 @@ use crate::test::pairings::bls12::*;
 use super::*;
 
 pub(crate) struct Bls12Report {
-    x_bit_length: usize,
-    x_hamming_weight: usize,
-    modulus_limbs: usize,
-    group_limbs: usize,
-    num_pairs: usize,
-    x_is_negative: bool,
+    pub(crate) x_bit_length: usize,
+    pub(crate) x_hamming_weight: usize,
+    pub(crate) modulus_limbs: usize,
+    pub(crate) group_limbs: usize,
+    pub(crate) num_pairs: usize,
+    pub(crate) x_is_negative: bool,
     pub(crate) run_microseconds: u64,
 }
 
@@ -114,7 +114,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(curve: JsonBls12PairingCurveParame
         let limbs = crate::test::calculate_num_limbs(&new_curve.q).expect("must work");
         let group_order_limbs = crate::test::num_units_for_group_order(&new_curve.r).expect("must work");
         let mut input_data = vec![OPERATION_PAIRING];
-        let calldata = assemble_single_curve_params(new_curve, num_pairs);
+        let calldata = assemble_single_curve_params(new_curve, num_pairs, false);
         if calldata.is_err() {
             continue
         };

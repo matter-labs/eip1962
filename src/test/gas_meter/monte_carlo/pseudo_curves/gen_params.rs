@@ -254,12 +254,12 @@ pub(crate) fn random_mul_params_a_non_zero_ext3<R: Rng>(
         modulus -= &one;
     }
 
+    // group size is `group_size_limbs` of u64::MAX
     let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
     group_size -= &one;
 
-    // it's almost the worst case
-    let mut mul_scalar = group_size.clone();
-    mul_scalar -= &one;
+    // it's the worst case
+    let mul_scalar = group_size.clone();
 
     let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
         scalar: mul_scalar.clone(),
@@ -371,9 +371,8 @@ pub(crate) fn random_mul_params_a_is_zero_ext3<R: Rng>(
     let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
     group_size -= &one;
 
-    // it's almost the worst case
-    let mut mul_scalar = group_size.clone();
-    mul_scalar -= &one;
+    // it's the worst case
+    let mul_scalar = group_size.clone();
 
     let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
         scalar: mul_scalar.clone(),
@@ -485,9 +484,8 @@ pub(crate) fn random_mul_params_a_non_zero_ext2<R: Rng>(
     let mut group_size = BigUint::from(1u64) << (group_size_limbs * 64);
     group_size -= &one;
 
-    // it's almost the worst case
-    let mut mul_scalar = group_size.clone();
-    mul_scalar -= &one;
+    // it's the worst case
+    let mul_scalar = group_size.clone();
 
     let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
         scalar: mul_scalar.clone(),
@@ -588,8 +586,7 @@ pub(crate) fn random_mul_params_a_is_zero_ext2<R: Rng>(
     group_size -= &one;
 
     // it's almost the worst case
-    let mut mul_scalar = group_size.clone();
-    mul_scalar -= &one;
+    let mul_scalar = group_size.clone();
 
     let g1_worst_case_mul_pair = JsonG1PointScalarMultiplicationPair {
         scalar: mul_scalar.clone(),

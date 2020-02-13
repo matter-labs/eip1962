@@ -101,7 +101,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(
     w_1_bits: usize,
     w_1_hamming: usize,
     num_pairs: usize
-) -> Vec<(Mnt6Report, Vec<u8>)> {
+) -> Vec<(Mnt6Report, Vec<u8>, Vec<u8>)> {
     use std::time::Instant;
     
     let mut reports = vec![];
@@ -128,7 +128,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(
         let now = Instant::now();
         let res = API::run(&input_data);
         let elapsed = now.elapsed();
-        if res.is_ok() {
+        if let Ok(res_data) = res {
             let report = Mnt6Report {
                 modulus_limbs: limbs,
                 group_order_limbs, 
@@ -144,7 +144,7 @@ pub(crate) fn process_for_curve_and_bit_sizes(
                 run_microseconds: elapsed.as_micros() as u64,
             };
 
-            reports.push((report, input_data));
+            reports.push((report, res_data, input_data));
         } else {
             println!("MNT6 error {:?}", res.err().unwrap());
         }

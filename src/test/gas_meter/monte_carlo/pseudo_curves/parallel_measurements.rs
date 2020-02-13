@@ -26,8 +26,12 @@ fn parallel_measure_one_off_pairing_costs() {
     use rand_xorshift::XorShiftRng;
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+    let samples = std::env::var("NUM_SAMPLES").expect("`NUM_SAMPLES` variable must be set");
+    let samples : usize  = samples.parse().expect("`NUM_SAMPLES` variable must be an unsigned integer");
+    assert!(samples > 0);
     // const SAMPLES: usize = 1_000;
-    const SAMPLES: usize = 2_000;
+    // const SAMPLES: usize = 2_000;
 
     use std::thread;
 
@@ -35,10 +39,10 @@ fn parallel_measure_one_off_pairing_costs() {
 
     use rayon::prelude::*;
 
-    let mut bls12_writer = bls12::Bls12ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bls12/one_off_parallel_{}.csv", SAMPLES));
-    let mut bn_writer = bn::BnReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bn/one_off_parallel_{}.csv", SAMPLES));
-    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/one_off_parallel_{}.csv", SAMPLES));
-    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/one_off_parallel_{}.csv", SAMPLES));
+    let mut bls12_writer = bls12::Bls12ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bls12/one_off_parallel_{}.csv", samples));
+    let mut bn_writer = bn::BnReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bn/one_off_parallel_{}.csv", samples));
+    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/one_off_parallel_{}.csv", samples));
+    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/one_off_parallel_{}.csv", samples));
 
     let (bls_tx, bls_rx) = channel();
     let (bn_tx, bn_rx) = channel();
@@ -68,14 +72,14 @@ fn parallel_measure_one_off_pairing_costs() {
     drop(mnt4_tx);
     drop(mnt6_tx);
 
-    pb.set_length((parameters_space.len() * SAMPLES) as u64);
+    pb.set_length((parameters_space.len() * samples) as u64);
 
     // we are ok with group size beign random here because we DO NOT perform a subgroup checks during gas metering
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (bls_tx, bn_tx, mnt4_tx, mnt6_tx))| {
         // parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
-            for _ in 0..SAMPLES {
+            for _ in 0..samples {
                 {
                     let x_bits = 1;
                     let x_hamming = 1;
@@ -83,8 +87,8 @@ fn parallel_measure_one_off_pairing_costs() {
                     for num_pairs in pairs.iter() {
                         let reports = bls12::process_for_curve_and_bit_sizes(curve.clone(), x_bits, x_hamming, *num_pairs);
                         for (r, res_vec) in reports.into_iter() {
-                            assert!(res_vec.len() == 1);
-                            assert!(res_vec[0] == 1u8);
+                            assert_eq!(res_vec.len(), 1);
+                            assert_eq!(res_vec[0], 1u8);
                             bls_tx.send(r).unwrap();
                         }
                     }    
@@ -98,8 +102,8 @@ fn parallel_measure_one_off_pairing_costs() {
                     for num_pairs in pairs.iter() {
                         let reports = bn::process_for_curve_and_bit_sizes(curve.clone(), u_bits, u_hamming, *num_pairs);
                         for (r, res_vec) in reports.into_iter() {
-                            assert!(res_vec.len() == 1);
-                            assert!(res_vec[0] == 1u8);
+                            assert_eq!(res_vec.len(), 1);
+                            assert_eq!(res_vec[0], 1u8);
                             bn_tx.send(r).unwrap();
                         }
                     }
@@ -125,9 +129,9 @@ fn parallel_measure_one_off_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for (r, res_vec) in reports.into_iter() {
-                            assert!(res_vec.len() == 1);
-                            assert!(res_vec[0] == 1u8);
+                        for (r, res_vec, _) in reports.into_iter() {
+                            assert_eq!(res_vec.len(), 1);
+                            assert_eq!(res_vec[0], 1u8);
                             mnt4_tx.send(r).unwrap();
                         }
                     }
@@ -153,9 +157,9 @@ fn parallel_measure_one_off_pairing_costs() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for (r, res_vec) in reports.into_iter() {
-                            assert!(res_vec.len() == 1);
-                            assert!(res_vec[0] == 1u8);
+                        for (r, res_vec, _) in reports.into_iter() {
+                            assert_eq!(res_vec.len(), 1);
+                            assert_eq!(res_vec[0], 1u8);
                             mnt6_tx.send(r).unwrap();
                         }
                     }
@@ -251,7 +255,9 @@ fn parallel_measure_bls12_bn_pairing_costs() {
     use rand_xorshift::XorShiftRng;
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    const SAMPLES: usize = 1_000;
+    let samples = std::env::var("NUM_SAMPLES").expect("`NUM_SAMPLES` variable must be set");
+    let samples : usize  = samples.parse().expect("`NUM_SAMPLES` variable must be an unsigned integer");
+    assert!(samples > 0);
 
     use std::thread;
 
@@ -259,8 +265,8 @@ fn parallel_measure_bls12_bn_pairing_costs() {
 
     use rayon::prelude::*;
 
-    let mut bls12_writer = bls12::Bls12ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bls12/miller_loop_and_final_exp_parallel_{}.csv", SAMPLES));
-    let mut bn_writer = bn::BnReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bn/miller_loop_and_final_exp_parallel_{}.csv", SAMPLES));
+    let mut bls12_writer = bls12::Bls12ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bls12/miller_loop_and_final_exp_parallel_{}.csv", samples));
+    let mut bn_writer = bn::BnReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/bn/miller_loop_and_final_exp_parallel_{}.csv", samples));
 
     let (bls_tx, bls_rx) = channel();
     let (bn_tx, bn_rx) = channel();
@@ -286,13 +292,13 @@ fn parallel_measure_bls12_bn_pairing_costs() {
     drop(bls_tx);
     drop(bn_tx);
 
-    pb.set_length((parameters_space.len() * SAMPLES) as u64);
+    pb.set_length((parameters_space.len() * samples) as u64);
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (bls_tx, bn_tx))| {
             let x_bits_rng = Uniform::new_inclusive(1, MAX_BLS12_X_BIT_LENGTH);
             let u_bits_rng = Uniform::new_inclusive(1, MAX_BN_U_BIT_LENGTH);
-            for _ in 0..SAMPLES {
+            for _ in 0..samples {
                 {
                     let x_bits = x_bits_rng.sample(&mut rng);
                     let x_hamming = Uniform::new_inclusive(1, x_bits);
@@ -441,7 +447,7 @@ fn parallel_measure_miller_loop_pairing_costs_mnt() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for (r, _) in reports.into_iter() {
+                        for (r, _, _) in reports.into_iter() {
                             mnt4_tx.send(r).unwrap();
                         }
                     }
@@ -468,7 +474,7 @@ fn parallel_measure_miller_loop_pairing_costs_mnt() {
                             w1_bits,
                             w1_hamming,                        
                             *num_pairs);
-                        for (r, _) in reports.into_iter() {
+                        for (r, _, _) in reports.into_iter() {
                             mnt6_tx.send(r).unwrap();
                         }
                     }
@@ -604,7 +610,7 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
                                 w1_bits,
                                 w1_hamming,                        
                                 *num_pairs);
-                            for (r, _) in reports.into_iter() {
+                            for (r, _, _) in reports.into_iter() {
                                 mnt4_tx.send(r).unwrap();
                             }
                         }
@@ -637,7 +643,7 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
                                 w1_bits,
                                 w1_hamming,                        
                                 *num_pairs);
-                            for (r, _) in reports.into_iter() {
+                            for (r, _, _) in reports.into_iter() {
                                 mnt6_tx.send(r).unwrap();
                             }
                         }

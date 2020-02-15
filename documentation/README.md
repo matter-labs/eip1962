@@ -1,12 +1,14 @@
 # Document overview
 
-This document gives a high-level overview what is a functionality of EIP 1962 precompile and gives brief examples of it's practical applications, as well as explanation of the main challenges to design and implement this precompile.
+This document gives a high-level overview what is a functionality of EIP 1962 precompile and gives brief examples of it's practical applications, as well as explanation of the main challenges to design and implement this precompile. 
+
+IMPORTANT NOTE: We try to provide this set of documents in a form of both rationale (why and how we made certain design decision) and a spec (how to execute this decision in code).
 
 ### External source/tutorial
 
 There are terms that are specific to cryptography and we invite the reader to refer to the [Handbook of Applied Cryptography](http://cacr.uwaterloo.ca/hac/) to find expanations of the terms the he/she does not know or understand well. This book is a huge amount of work and we don't think it's a good idea to copy/paste parts of it to form a short glossary for this spec.
 
-## Benefits and what is included
+## Benefits of this precompile and what is included
 
 - Support of basic arithmetic (additions and multiplications) for elliptic curves over prime field and it's quadratic and cubic extensions.
 - Multiexponentiation operation that allows one to save execution time (so gas) by both the algorithm used and (usually forgotten) by the fact that `CALL` operation in Ethereum is expensive (at the time of writing), so one would have to pay non-negigible overhead if e.g. for multiexponentiation of `100` points would have to call the multipication precompile `100` times and addition for `99` times (roughly `138600` would be saved).
@@ -23,7 +25,7 @@ There are terms that are specific to cryptography and we invite the reader to re
 
 ## Examples of what can be done using Ethereum and this precompile
 
-- BLS signatures can not be used with aggregation of public keys in both G1 or G2 (don't be confused with BLS12 curve!) and can be made with 128 bits of security (existing BN254 precompile provides 80 bits by latest estimates). Applications of this can be e.g. mutlisignatures, sidechains or DAOs
+- BLS signatures can not be used with aggregation of public keys in both G1 or G2 (don't be confused with BLS12 curve!) and can be made with 128 bits of security by utilization of new elliptic curves (existing BN254 precompile provides 80 bits by latest estimates). Applications of this can be e.g. mutlisignatures, sidechains or DAOs
 - Feature reach privacy solutions as described in Zexe and was demonstrated by recent work of EY can be implemented using BLS12-377 curve and it's embeddings that use Ate pairing with k=6 embedding degree
 - Cheaper verification of Bulletproofs due to multiexponentiation operation both for range proofs and privacy, as well as for arithmetic circuits
 - Now it's possible to implement Schnorr signatures verification and various modifications including off-chain aggregations/multisignatures like MuSig and numerous variants
@@ -60,3 +62,28 @@ There are three main documents that describe this EIP and allows to one to imple
 - [Gas schedule](https://github.com/matter-labs/eip1962/blob/master/documentation/Gas_schedule.md) that describes gas schedule approach, specification with explicit formulas, description of the gas model files and examples.
 - [Explicit arithmetic formulas](https://github.com/matter-labs/eip1962/blob/master/documentation/Algorithms_for_EIP1962.pdf) that contains in a single place formulas from various sources that were used to implement this EIP. It also contains remarks about conventions chosen (e.g. we use "double-and-add" multiplication and "square-and-multiply" powering). Please note that at the time of writing this document is updated constantly
 
+## Downgrading
+
+It's possible to downgrade this EIP for a gradual rollout in two stages:
+- First use a whitelist of the most necessary curves (such whitelisting is prefix matching in our ABI)
+- Then lift the restriction
+
+Whitelisting at the first stage also would allow one to provide specialized implementations for each curve for simplicity, although the list of curves is large.
+
+NOTE: it's also possible to even assign a separate precompile address to each specific whitelisted curve, but it's a large set of addresses! 6 addresses per pairing-friendly curve and 3 for normal ones.
+
+List of the curves most wanted at the current state of affairs:
+- BN254 (same as the current Ethereum precompile): get multiexponentiation, G2 operations for BLS signature aggregation, separate subgroup check from pairing cause it's not required in most of the cases
+- BLS12-381 - de-factor standard for 120+ bits of security. Used by zCash, Eth2.0, other
+- BLS12-377 - unique curve from ZEXE paper that has large number of roots of unity for both group order and base field (allows efficient wrapping)
+- Some Weierstrass curve with k=6 for wrapping of BLS12-377: either an original or updated from Zexe, or recent works by EY (more efficient)
+- MNT4/6 cycle with 750 bit fields: questionable. This is an old curve used by Coda, most likely is too heavy (used for resursive SNARKs)
+- BN/Weierstrass half-pairing-friendly curve cycle: for Halo applications
+- Secp256k1: for multisignatures, Schnorr signatures, Bulletproofs (no pairings for this one)
+- Rational equivalent to Twisted Edwards curve used for Pedersen hashing by BN254 based SNARKS (no pairings for this one)
+- Rational equivalent to Twisted Edwards curve used for Pedersen hashing by BLS12-381 based SNARKS (no pairings for this one)
+- Rational equivalent to Twisted Edwards curve used for Pedersen hashing by BLS12-377 based SNARKS (no pairings for this one)
+
+There are other flavors of curves that readers can check out and may be suggest to include (using e.g. a PR):
+- Twisted Edwards curve over `2^255 - 19` field (`Ed25519`, used by `dalek-crypto`) - also de-factor standard
+- Curves used by goverment service (e.g. Estonia's e-resident card) - to verify authority-issued signatures

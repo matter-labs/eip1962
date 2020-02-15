@@ -30,8 +30,6 @@ fn parallel_measure_one_off_pairing_costs() {
     let samples = std::env::var("NUM_SAMPLES").expect("`NUM_SAMPLES` variable must be set");
     let samples : usize  = samples.parse().expect("`NUM_SAMPLES` variable must be an unsigned integer");
     assert!(samples > 0);
-    // const SAMPLES: usize = 1_000;
-    // const SAMPLES: usize = 2_000;
 
     use std::thread;
 

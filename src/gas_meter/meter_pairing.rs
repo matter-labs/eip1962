@@ -3,6 +3,7 @@ use crate::errors::ApiError;
 
 use once_cell::sync::Lazy;
 use serde_json;
+use std::collections::HashMap;
 
 use super::parsers::*;
 
@@ -16,12 +17,9 @@ pub(crate) const BLS12_MAX_MODULUS_POWER: usize = 6;
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct MntPairingParams {
-    // #[serde(deserialize_with = "parse_tuple_usize_u64")]
-    #[serde(rename = "one_off")]
-    one_off: Vec<(usize, u64)>,
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
+    one_off: HashMap<usize, u64>,
 
-    // #[serde(deserialize_with = "parse_u64")]
-    #[serde(rename = "multiplier")]
     multiplier: u64,
 
     miller_features: Vec<(String, u64)>,
@@ -35,6 +33,9 @@ pub(crate) struct MntPairingParams {
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct Bls12PairingParams {
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
+    one_off: HashMap<usize, u64>,
+
     multiplier: u64,
 
     miller_features: Vec<(String, u64)>,
@@ -48,6 +49,9 @@ pub(crate) struct Bls12PairingParams {
 
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct BnPairingParams {
+    #[serde(deserialize_with = "parse_hashmap_usize_u64_from_ints")]
+    one_off: HashMap<usize, u64>,
+
     multiplier: u64,
 
     miller_features: Vec<(String, u64)>,
@@ -107,15 +111,12 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
         max_power
     )?;
 
-    let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
-    let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
-    let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
-    let g1_subgroup_discount = g1_subgroup_discount / 2;
+    let g1_subgroup_check_cost_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g1_subgroup_checks_cost = g1_subgroup_check_cost_per_point.checked_mul(num_g1_subgroup_checks as u64).ok_or(ApiError::Overflow)?;
 
-    estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
+    estimate = estimate.checked_add(g1_subgroup_checks_cost).ok_or(ApiError::Overflow)?;
 
-    let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
-    let g2_subgroup_discount_per_point = match ext_degree {
+    let g2_subgroup_check_cost_per_point = match ext_degree {
         2 => {
             super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?
         },
@@ -127,17 +128,16 @@ pub(crate) fn meter_mnt_pairing(input: &[u8], params: &MntPairingParams, max_pow
         }
     };
 
-    let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
-    let g2_subgroup_discount = g2_subgroup_discount/2;
+    let g2_subgroup_checks_cost = g2_subgroup_check_cost_per_point.checked_mul(num_g2_subgroup_checks as u64).ok_or(ApiError::Overflow)?;
 
-    estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
+    estimate = estimate.checked_add(g2_subgroup_checks_cost).ok_or(ApiError::Overflow)?;
 
     Ok(estimate)
 }
 
 fn calculate_mnt_pairing_cost(
     modulus_limbs: usize,
-    order_limbs: usize,
+    _order_limbs: usize,
     num_pairs: usize,
     (ate_loop_bits, ate_loop_hamming): (u64, u64), 
     (exp_w0_bits, exp_w0_hamming): (u64, u64),
@@ -146,29 +146,22 @@ fn calculate_mnt_pairing_cost(
     max_power: usize
 
 ) -> Result<u64, ApiError> {
-    const GROUP_LIMBS_INDEX: usize = 0;
-    const ATE_LOOP_BITS_INDEX: usize = 1;
-    const ATE_LOOP_HAMMING_INDEX: usize = 2;
-    const EXP_W0_LOOP_BITS_INDEX: usize = 3;
-    const EXP_W0_HAMMING_INDEX: usize = 4;
-    const EXP_W1_LOOP_BITS_INDEX: usize = 5;
-    const EXP_W1_HAMMING_INDEX: usize = 6;
+    const ATE_LOOP_BITS_INDEX: usize = 0;
+    const ATE_LOOP_HAMMING_INDEX: usize = 1;
+    const EXP_W0_LOOP_BITS_INDEX: usize = 2;
+    const EXP_W0_HAMMING_INDEX: usize = 3;
+    const EXP_W1_LOOP_BITS_INDEX: usize = 4;
+    const EXP_W1_HAMMING_INDEX: usize = 5;
 
     debug_assert!(max_power == MNT4_MAX_MODULUS_POWER || max_power == MNT6_MAX_MODULUS_POWER);
 
-    let mut one_off: Vec<_> = params.one_off.iter().filter(|(limbs, _)| *limbs == modulus_limbs).collect();
-    if one_off.len() != 1 {
-        return Err(ApiError::UnknownParameter(format!("Unknown number of limbs = {}", modulus_limbs)));
-    }
-
-    let one_off = one_off.pop().expect("result exists").1;
+    let one_off = *params.one_off.get(&modulus_limbs).ok_or(ApiError::MissingValue)?;
 
     let modulus_limbs_powers = make_powers(modulus_limbs as u64, max_power)?;
-    let params_vector = vec![order_limbs as u64, ate_loop_bits, ate_loop_hamming, exp_w0_bits, exp_w0_hamming, exp_w1_bits, exp_w1_hamming];
+    let params_vector = vec![ate_loop_bits, ate_loop_hamming, exp_w0_bits, exp_w0_hamming, exp_w1_bits, exp_w1_hamming];
 
     let miller_cost = {
         let miller_params = vec![
-            &params_vector[GROUP_LIMBS_INDEX..(GROUP_LIMBS_INDEX+1)], 
             &params_vector[ATE_LOOP_BITS_INDEX..(ATE_LOOP_BITS_INDEX+1)], 
             &params_vector[ATE_LOOP_HAMMING_INDEX..(ATE_LOOP_HAMMING_INDEX+1)], 
             &modulus_limbs_powers[..] 
@@ -231,19 +224,15 @@ pub(crate) fn meter_bls12_pairing(input: &[u8], params: &Bls12PairingParams, max
         max_power
     )?;
 
-    let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
-    let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
-    let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
-    let g1_subgroup_discount = g1_subgroup_discount/2;
+    let g1_subgroup_check_cost_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g1_subgroup_check_cost = g1_subgroup_check_cost_per_point.checked_mul(num_g1_subgroup_checks as u64).ok_or(ApiError::Overflow)?;
 
-    estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
+    estimate = estimate.checked_add(g1_subgroup_check_cost).ok_or(ApiError::Overflow)?;
 
-    let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
-    let g2_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
-    let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
-    let g2_subgroup_discount = g2_subgroup_discount/2;
+    let g2_subgroup_check_cost_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g2_subgroup_check_cost = g2_subgroup_check_cost_per_point.checked_mul(num_g2_subgroup_checks as u64).ok_or(ApiError::Overflow)?;
 
-    estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
+    estimate = estimate.checked_add(g2_subgroup_check_cost).ok_or(ApiError::Overflow)?;
 
     Ok(estimate)
 }
@@ -300,26 +289,22 @@ pub(crate) fn meter_bn_pairing(input: &[u8], params: &BnPairingParams, max_power
         max_power
     )?;
 
-    let g1_subgroup_discount_points = (num_pairs - num_g1_subgroup_checks) as u64;
-    let g1_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
-    let g1_subgroup_discount = g1_subgroup_discount_per_point.checked_mul(g1_subgroup_discount_points).ok_or(ApiError::Overflow)?;
-    let g1_subgroup_discount = g1_subgroup_discount/2;
+    let g1_subgroup_check_cost_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G1_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g1_subgroup_check_cost = g1_subgroup_check_cost_per_point.checked_mul(num_g1_subgroup_checks as u64).ok_or(ApiError::Overflow)?;
 
-    estimate = estimate.checked_sub(g1_subgroup_discount).ok_or(ApiError::Overflow)?;
+    estimate = estimate.checked_add(g1_subgroup_check_cost).ok_or(ApiError::Overflow)?;
 
-    let g2_subgroup_discount_points = (num_pairs - num_g2_subgroup_checks) as u64;
-    let g2_subgroup_discount_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
-    let g2_subgroup_discount = g2_subgroup_discount_per_point.checked_mul(g2_subgroup_discount_points).ok_or(ApiError::Overflow)?;
-    let g2_subgroup_discount = g2_subgroup_discount/2;
+    let g2_subgroup_check_cost_per_point = super::meter_arith::meter_multiplication(modulus_limbs, order_limbs, &*super::meter_arith::G2_EXT_2_MULTIPLICATION_PARAMS_INSTANCE, false)?;
+    let g2_subgroup_check_cost = g2_subgroup_check_cost_per_point.checked_mul(num_g2_subgroup_checks as u64).ok_or(ApiError::Overflow)?;
 
-    estimate = estimate.checked_sub(g2_subgroup_discount).ok_or(ApiError::Overflow)?;
+    estimate = estimate.checked_add(g2_subgroup_check_cost).ok_or(ApiError::Overflow)?;
 
     Ok(estimate)
 }
 
 fn calculate_bls12_pairing_cost(
     modulus_limbs: usize,
-    order_limbs: usize,
+    _order_limbs: usize,
     num_pairs: usize,
     (x_bits, x_hamming): (u64, u64),
     params: &Bls12PairingParams, 
@@ -328,18 +313,18 @@ fn calculate_bls12_pairing_cost(
 ) -> Result<u64, ApiError> {
     const X_BITS_INDEX: usize = 0;
     const X_HAMMING_INDEX: usize = 1;
-    const GROUP_LIMBS_INDEX: usize = 2;
 
     debug_assert!(max_power == BLS12_MAX_MODULUS_POWER);
 
     let modulus_limbs_powers = make_powers(modulus_limbs as u64, max_power)?;
-    let params_vector = vec![x_bits, x_hamming, order_limbs as u64];
+    let params_vector = vec![x_bits, x_hamming];
+
+    let one_off = *params.one_off.get(&modulus_limbs).ok_or(ApiError::MissingValue)?;
 
     let miller_cost = {
         let miller_params = vec![
             &params_vector[X_BITS_INDEX..(X_BITS_INDEX+1)], 
             &params_vector[X_HAMMING_INDEX..(X_HAMMING_INDEX+1)], 
-            &params_vector[GROUP_LIMBS_INDEX..(GROUP_LIMBS_INDEX+1)], 
             &modulus_limbs_powers[..] 
             ];
         let mut miller_cost = eval_model(&params.miller, &miller_params)?;
@@ -359,7 +344,8 @@ fn calculate_bls12_pairing_cost(
         final_exp_cost
     };
 
-    let mut result = miller_cost;
+    let mut result = one_off;
+    result = result.checked_add(miller_cost).ok_or(ApiError::Overflow)?;
     result = result.checked_add(final_exp_cost).ok_or(ApiError::Overflow)?;
     result = result.checked_div(params.multiplier).ok_or(ApiError::Overflow)?;
 
@@ -368,30 +354,29 @@ fn calculate_bls12_pairing_cost(
 
 fn calculate_bn_pairing_cost(
     modulus_limbs: usize,
-    order_limbs: usize,
+    _order_limbs: usize,
     num_pairs: usize,
     (six_u_plus_two_bits, six_u_plus_two_hamming): (u64, u64),
     (u_bits, u_hamming): (u64, u64),
     params: &BnPairingParams, 
     max_power: usize
-
 ) -> Result<u64, ApiError> {
     const U_BITS_INDEX: usize = 0;
     const U_HAMMING_INDEX: usize = 1;
     const SIX_U_PLUS_TWO_BITS_INDEX: usize = 2;
     const SIX_U_PLUS_TWO_HAMMING_INDEX: usize = 3;
-    const GROUP_LIMBS_INDEX: usize = 4;
 
     debug_assert!(max_power == BN_MAX_MODULUS_POWER);
 
     let modulus_limbs_powers = make_powers(modulus_limbs as u64, max_power)?;
-    let params_vector = vec![u_bits, u_hamming, six_u_plus_two_bits, six_u_plus_two_hamming, order_limbs as u64];
+    let params_vector = vec![u_bits, u_hamming, six_u_plus_two_bits, six_u_plus_two_hamming];
+
+    let one_off = *params.one_off.get(&modulus_limbs).ok_or(ApiError::MissingValue)?;
 
     let miller_cost = {
         let miller_params = vec![
             &params_vector[SIX_U_PLUS_TWO_BITS_INDEX..(SIX_U_PLUS_TWO_BITS_INDEX+1)], 
             &params_vector[SIX_U_PLUS_TWO_HAMMING_INDEX..(SIX_U_PLUS_TWO_HAMMING_INDEX+1)], 
-            &params_vector[GROUP_LIMBS_INDEX..(GROUP_LIMBS_INDEX+1)], 
             &modulus_limbs_powers[..] 
             ];
         let mut miller_cost = eval_model(&params.miller, &miller_params)?;
@@ -411,7 +396,8 @@ fn calculate_bn_pairing_cost(
         final_exp_cost
     };
 
-    let mut result = miller_cost;
+    let mut result = one_off;
+    result = result.checked_add(miller_cost).ok_or(ApiError::Overflow)?;
     result = result.checked_add(final_exp_cost).ok_or(ApiError::Overflow)?;
     result = result.checked_div(params.multiplier).ok_or(ApiError::Overflow)?;
 

@@ -1,9 +1,11 @@
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize};
 use std::collections::HashMap;
 use crate::errors::ApiError;
 
 use once_cell::sync::Lazy;
 use serde_json;
+
+use super::parsers::*;
 
 pub(crate) trait ArithmeticAdditionParams {
     fn params(&self) -> &HashMap<usize, u64>;
@@ -108,44 +110,6 @@ pub(crate) static G2_EXT_3_MULTIPLICATION_PARAMS_INSTANCE: Lazy<G1G2Multiplicati
 pub(crate) static MULTIEXP_PARAMS_INSTANCE: Lazy<G1G2MultiexpParams> = Lazy::new(|| {
     serde_json::from_str(MULTIEXP_PARAMS_JSON).expect("must deserialize parameters")
 });
-
-pub(crate) fn parse_hashmap_usize_u64_from_ints<'de, D>(deserializer: D) -> Result<HashMap<usize, u64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use serde_json::Value;
-    use serde::de::{Visitor, SeqAccess};
-
-    struct MyVisitor;
-
-    impl<'de> Visitor<'de> for MyVisitor
-    {
-        type Value = HashMap<usize, u64>;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("a nonempty sequence of numbers")
-        }
-
-        fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-        where
-            S: SeqAccess<'de>,
-        {
-            let mut results = HashMap::with_capacity(seq.size_hint().unwrap_or(100));
-            while let Some(value) = seq.next_element::<[Value; 2]>()? {
-                let first = value[0].as_u64().expect(&format!("should be an integer {:?}", value[0])) as usize;
-                let second = value[1].as_u64().expect(&format!("should be an integer {:?}", value[1]));
-                results.insert(first, second);
-            }
-
-            Ok(results)
-        }
-    }
-
-    let visitor = MyVisitor;
-    let result = deserializer.deserialize_seq(visitor)?;
-
-    Ok(result)
-}
 
 pub(crate) fn meter_addition<P: ArithmeticAdditionParams>(modulus_limbs: usize, parameters: &P) -> Result<u64, ApiError> {
     let found = *parameters.params().get(&modulus_limbs).ok_or(ApiError::MissingValue)?;

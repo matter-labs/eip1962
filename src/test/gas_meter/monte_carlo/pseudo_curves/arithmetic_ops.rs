@@ -64,9 +64,11 @@ fn run_deterministic_parallel_search_no_filtering() {
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-    let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path("src/test/gas_meter/pseudo_curves/monte_carlo_arith_deterministic_parallel_unfiltered.csv");
+    let samples = std::env::var("NUM_SAMPLES").expect("`NUM_SAMPLES` variable must be set");
+    let samples : usize  = samples.parse().expect("`NUM_SAMPLES` variable must be an unsigned integer");
+    assert!(samples > 0);
 
-    const RUNS_PER_PARAMETERS_COMBINATION: usize = 200;
+    let mut writer = arithmetic_ops::ArithmeticReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/monte_carlo_arith_deterministic_parallel_unfiltered_{}.csv", samples));
 
     // let mut multiexp_len = vec![0, 2, 4, 8, 16, 32, 64, 128];
     let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
@@ -90,11 +92,11 @@ fn run_deterministic_parallel_search_no_filtering() {
 
     drop(tx);
 
-    pb.set_length((parameters_space.len() * RUNS_PER_PARAMETERS_COMBINATION) as u64);
+    pb.set_length((parameters_space.len() * samples) as u64);
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each(|(num_limbs, num_group_limbs, mut rng, pb, tx)| {
-            for _ in 0..RUNS_PER_PARAMETERS_COMBINATION {
+            for _ in 0..samples {
                 let (mut curve_ext3, g1_worst_case, g2_worst_case) = gen_params::random_mul_params_a_non_zero_ext3(num_limbs, num_group_limbs, 128, &mut rng);
                 let mut curve_ext3_a_zero = curve_ext3.clone();
                 make_a_zero_ext3(&mut curve_ext3_a_zero);

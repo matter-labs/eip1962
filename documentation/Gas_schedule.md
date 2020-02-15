@@ -42,7 +42,7 @@ Models are stored in `src/gas_meter/*.json`. Description of the model files is g
 
 Implementation has clear separatation of Miller loop and final exponentiation, so for all the curves final cost of the pairing operation can be represented as `cost = subgroup_checks + (one_off + final_exp_cost + num_pairs * miller_loop_cost) / multiplier`.
 - `subgroup_checks` denoted computations required to perform subgroup checks if requested by caller
-- `one_off` parameter may be equal to zero in some cases and denoted costs required to perform all the validations and precomputations (expensive operations like divisions, large exponent powerings, etc). 
+- `one_off` parameter that denotes costs required to perform all the validations and precomputations (expensive operations like divisions, large exponent powerings, etc) before performing an actual pairing. 
 - `num_pairs` parameter is factored based on apriori assumptions (more on this below).
 - `miller_loop_cost` is a computational cost of running the Miller loop (part of the pairing operation) per single pair of points
 - `final_exp_cost` is a computational cost of the final exponentiation. This is one-off operation after the Miller loop
@@ -133,13 +133,14 @@ Additional variables for estimation of pairing operation cost are:
 
 Model for BLS12 curve pairings is located in the JSON file named `bls12_model.json`.
 
-- `one_off` cost is not used and not present in the model
+- `one_off` is a simple lookup table based on `modulus_limbs`
 - for `miller_loop_cost` input parameters are `(x_bit_length, 1), (x_hamming_weight, 1), (modulus_limbs, 6)`, 
 - for `final_exp_cost` input parameters are `(x_bit_length, 1), (x_hamming_weight, 1), (modulus_limbs, 6)`
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json`
 
 Model file (JSON) contain the following fields:
+- `one_off` - lookup table for `one_off` based on `modulus_limbs`
 - `multiplier` - single integer encoding `multiplier`
 - `miller` - encoding of the `miller_loop_cost` polynomial model
 - `final_exp` - encoding of the `final_ext_cost` polynomial model
@@ -156,13 +157,14 @@ Base variables for estimation of pairing operation cost are:
 
 Model for BLS12 curve pairings is located in the JSON file named `bn_model.json`.
 
-- `one_off` cost is not used and not present in the model
+- `one_off` is a simple lookup table based on `modulus_limbs`
 - for `miller_loop_cost` input parameters are `(six_u_plus_two_bit_length, 1), (six_u_plus_two_hamming, 1), (modulus_limbs, 6)`, 
 - for `final_exp_cost` input parameters are `(u_bit_length, 1), (u_hamming_weight, 1), (modulus_limbs, 6)`, 
 - `multiplication_in_g1` is based on the model file `g1_multiplication.json`
 - `multiplication_in_g2` is based on the model file `g2_multiplication_ext2.json`
 
 Model file (JSON) contain the following fields:
+- `one_off` - lookup table for `one_off` based on `modulus_limbs`
 - `multiplier` - single integer encoding `multiplier`
 - `miller` - encoding of the `miller_loop_cost` polynomial model
 - `final_exp` - encoding of the `final_ext_cost` polynomial model

@@ -2,6 +2,10 @@
 
 This document gives a high-level overview what is a functionality of EIP 1962 precompile and gives brief examples of it's practical applications, as well as explanation of the main challenges to design and implement this precompile.
 
+### External source/tutorial
+
+There are terms that are specific to cryptography and we invite the reader to refer to the [Handbook of Applied Cryptography](http://cacr.uwaterloo.ca/hac/) to find expanations of the terms the he/she does not know or understand well. This book is a huge amount of work and we don't think it's a good idea to copy/paste parts of it to form a short glossary for this spec.
+
 ## Benefits and what is included
 
 - Support of basic arithmetic (additions and multiplications) for elliptic curves over prime field and it's quadratic and cubic extensions.

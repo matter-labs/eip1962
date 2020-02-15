@@ -545,10 +545,15 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
     use rand_xorshift::XorShiftRng;
 
     let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    // const SAMPLES: usize = 1_000;
-    const NUM_BIT_LENGTHS: usize = 100;
-    const NUM_HAMMING_PER_BIT_LENGTH: usize = 20;
-    const SAMPLES: usize = NUM_BIT_LENGTHS * NUM_HAMMING_PER_BIT_LENGTH;
+    let num_different_bit_length = std::env::var("NUM_BIT_LENGTH").expect("`NUM_BIT_LENGTH` variable must be set");
+    let num_different_bit_length : usize  = num_different_bit_length.parse().expect("`NUM_BIT_LENGTH` variable must be an unsigned integer");
+    assert!(num_different_bit_length > 0);
+
+    let num_hammings_per_bit_length = std::env::var("NUM_HAMMINGS_PER_BIT_LENGTH").expect("`NUM_HAMMINGS_PER_BIT_LENGTH` variable must be set");
+    let num_hammings_per_bit_length : usize  = num_hammings_per_bit_length.parse().expect("`NUM_HAMMINGS_PER_BIT_LENGTH` variable must be an unsigned integer");
+    assert!(num_hammings_per_bit_length > 0);
+
+    let samples: usize = num_different_bit_length * num_hammings_per_bit_length;
 
     use std::thread;
 
@@ -556,8 +561,8 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
 
     use rayon::prelude::*;
 
-    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/final_exp_parallel_{}.csv", SAMPLES));
-    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/final_exp_parallel_{}.csv", SAMPLES));
+    let mut mnt4_writer = mnt4::Mnt4ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt4/final_exp_parallel_{}.csv", samples));
+    let mut mnt6_writer = mnt6::Mnt6ReportWriter::new_for_path(format!("src/test/gas_meter/pseudo_curves/mnt6/final_exp_parallel_{}.csv", samples));
 
     let (mnt4_tx, mnt4_rx) = channel();
     let (mnt6_tx, mnt6_rx) = channel();
@@ -583,14 +588,14 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
     drop(mnt4_tx);
     drop(mnt6_tx);
 
-    pb.set_length((parameters_space.len() * SAMPLES * 2) as u64);
+    pb.set_length((parameters_space.len() * samples * 2) as u64);
 
     let handler = thread::spawn(move || {
         parameters_space.into_par_iter().for_each( |(num_limbs, num_group_limbs, mut rng, pb, (mnt4_tx, mnt6_tx))| {
             // let ate_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_ATE_LOOP_COUNT);
             let w0_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH);
             let w1_bits_rng = Uniform::new_inclusive(1, MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH);
-            for _ in 0..NUM_BIT_LENGTHS {
+            for _ in 0..num_different_bit_length {
                 {
                 let ate_bits = 1;
                 let ate_hamming = 1;
@@ -601,7 +606,7 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
                 let w1_bits = w1_bits_rng.sample(&mut rng);
                 let w1_hamming = Uniform::new_inclusive(1, w1_bits);
 
-                for _ in 0..NUM_HAMMING_PER_BIT_LENGTH {
+                for _ in 0..num_hammings_per_bit_length {
 
                     let w0_hamming = w0_hamming.sample(&mut rng);
                     let w1_hamming = w1_hamming.sample(&mut rng);
@@ -634,7 +639,7 @@ fn parallel_measure_final_exp_pairing_costs_mnt() {
                     let w1_bits = w1_bits_rng.sample(&mut rng);
                     let w1_hamming = Uniform::new_inclusive(1, w1_bits);
 
-                    for _ in 0..NUM_HAMMING_PER_BIT_LENGTH {
+                    for _ in 0..num_hammings_per_bit_length {
 
                         let w0_hamming = w0_hamming.sample(&mut rng);
                         let w1_hamming = w1_hamming.sample(&mut rng);

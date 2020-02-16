@@ -87,3 +87,36 @@ List of the curves most wanted at the current state of affairs:
 There are other flavors of curves that readers can check out and may be suggest to include (using e.g. a PR):
 - Twisted Edwards curve over `2^255 - 19` field (`Ed25519`, used by `dalek-crypto`) - also de-factor standard
 - Curves used by goverment service (e.g. Estonia's e-resident card) - to verify authority-issued signatures
+
+## Attack surface
+
+In this section we emphasize and summarize the attack surface of this precompile.
+
+In general we can assume three main problems/attacks for this precompiles:
+- Infinite execution on some user input
+- Consensus breaking
+- Execution cost (gas) underestimation
+
+Let's address them one by one.
+
+#### Infinite execution
+
+This problem is interweaved with the next one cause it usually boils down to following the spec, but here we give a short explanation why this problem is easy to solve. Among all the algorithms *potentially* needed to implement this precompile there are *no* algorithms that can not be implemented with a clear upper bound in execution time. The only example that comes to mind where naive implementation can have an infinite loop is a naive implementation of extended eucledian algorithm based inversion in a field. *Usually* in literaty such algorithms is written as a `while` cycle with no exit condition if inverse is not found. Such algorithm is perfectly fine in a *field* where multiplicative inverse exists for all the elements but for `0`, but may cause troubles when dealing with user-supplied field parameters. 
+
+There are two fixes to this:
+- We *explicitly* present unrolled inversion algorithm with upper bound on the number of execution rounds
+- One can make EEA based algorithms with a bounded loop length (up to the reader)
+
+Both our presented algorithm and EEA (if someone decides to take a risk an implement it this way by not following the spec) one will give a multiplicative inverse *if it exists* (and it's unique if it exists).
+
+#### Consensus breaking
+
+This part is also solved completely by following the spec in it's *conventions*. As was explained above field implementation is no affected by particular choices of algorithms, but it was not *explicitly* tested (and there are no such results in a literature) that different approaches for elliptic curve arithmetic (e.g. multiplication using wNAF form) will always give the same results under relaxed conditions (largely that user supplied field modulus is not prime). So for such cases we state conventions in our algorithms document.
+
+#### Execution cost (gas) underestimation
+
+This one is a little more tricky. As described in the gas schedule document execution time was performed using Monte-Carlo method using worst-case conditions in a case where those applied, and my random sampling in a parameter space where such space was too large for a greedy algorithms. Then such data was processed into polynomial fitting and sanity-checks in the resulting formulas (more on this in the corresponding document). As with any benchmarking this is a subject of noise, but for a large number of samples and good *apriori* model on the gas schedule it gave consistent results based on statistical tests for fitting results. 
+
+On top of this we have two extra protections:
+- Multiplicative factor protection using overestimated `MGas/second` constant. Such constant was chosen to be `25%` larger than this parameter estimated on a reference PC using the current `BN254` precompile in Rust (used by Parity client)
+- Without any additional hyperparameter tuning all the fitting results (polynomials over many variables) had a form that was expected from *apriori* analysis of the execution routine (more on this in the corresponding document)

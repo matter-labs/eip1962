@@ -558,7 +558,7 @@ Let's parse it:
   - G1 point
     - `17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb` - 48 bytes, x coordiante
     - `08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1` - 48 bytes, y coordiante
-  - `01` single byte - encodes `check_gg_boolean = true` and we want to perform a subgroup check for the G2 point
+  - `01` single byte - encodes `check_g2_boolean = true` and we want to perform a subgroup check for the G2 point
   - G2 point
     - X coordinate in Fp2
       - `024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8` - 48 bytes, first coefficient
@@ -566,3 +566,4 @@ Let's parse it:
     - Y coordinate in Fp2
       - `0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801` - 48 bytes, first coefficient
       - `0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be` - 48 bytes, second coefficient
+

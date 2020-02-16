@@ -262,3 +262,35 @@ After ABI parsing and obtaining `num_pairs` gas estimator first calculated a `di
 With `multiplication(include_base = true)` calculated as described at the beginning of this section one calculated `multiexp_cost = num_pairs * multiplication(include_base = true) * discount / discount_multiplier`.
 
 Example: for a BN254 curve and multiexponentiation of `10` scalar-point pairs in G1 corresponding `multiplication(include_base = true)` cost is equal to `3660` (in a section above). `discount_multiplier = 1000` from the model file and lookup over `num_pairs = 10` provides `discount = 380`. Thus final price is `10 * 3660 * 380 / 1000 = 13908` gas (please note the floor integer division).
+
+## Correspondance of the apriori gas schedule assumption with the fitting results
+
+As was described above we've used *apriori* assumptions with what kind of polynomial and what variables we'll perform our fitting of the precompile execution time. What we didn't cover in detail is that for our chosen polynomail of total degree 2 with only cross terms there are terms that are expected to be zero from extra apriori assumptions.
+
+Let's first look at the following code for point mulitplication using left-to-right double-and-add algorithm
+```
+  let mut res = Self::zero(&self.curve);
+
+  let mut found_one = false;
+
+  for i in BitIterator::new(exp)
+  {
+      if found_one {
+          res.double();
+      } else {
+          found_one = i;
+      }
+
+      if i {
+          res.add_assign(self);
+      }
+  }
+
+  return res;
+```
+
+where `exp` is a scalar by which we multiply the base point (`self`). It's clear that `for i in BitIterator::new(exp)` cycle goes over all the bits of the `exp` and that `if i {}` condition is executed only if the corresponding bit of `exp` is set to `1`.
+
+So cycle has a length that is `bit_length(exp)` and condition is only executed `hamming_weight(exp)` times. Execution difficulty of `res.double();` and `res.add_assign(self);` routines depends from the length of the field modulus.
+
+As a result one would expect to encounter terms like `C_0 * bit_length(exp) * modulus_limbs` and `C_1 * hamming_weight(exp) * modulus_limbs` but NOT a term `C_2 * bit_length(exp) * hamming_weight(exp)` (remember that we can only have terms of degree 2). In principle one *could* enforce such restriction at the time when polynomial fitting is performed by giving a huge penatly to the fitting quality function if `C_2` coefficient is not zero, but for self-testing and sanity checking we've performed this operation differently. During fitting phase we didn't enforce *any* restriction on the coefficients of the terms and allowed an algorithm to his work. Then we've examined the terms of the results and compared whether they follow our expectation or not. For all the fitting results we've found that **there are no unreasonable** terms that demonstrates quality of the obtained results.

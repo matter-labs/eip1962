@@ -4,7 +4,6 @@ use super::CurveParameters;
 use crate::traits::ZeroAndOne;
 
 pub struct WeierstrassCurve<'a, C: CurveParameters> {
-    // pub(crate) base_field: CurveParameters::BaseFieldParameters,
     pub(crate) a: C::BaseFieldElement,
     pub(crate) b: C::BaseFieldElement,
     pub(crate) curve_type: CurveType,

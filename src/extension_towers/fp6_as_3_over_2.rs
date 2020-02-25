@@ -382,6 +382,18 @@ pub struct Extension3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension3Over2<'a, E, F> {
+    fn clone(&self) -> Self {
+        Self {
+            non_residue: self.non_residue.clone(),
+            field: self.field,
+            frobenius_coeffs_c1: self.frobenius_coeffs_c1.clone(),
+            frobenius_coeffs_c2: self.frobenius_coeffs_c2.clone(),
+            frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
+        }
+    }
+}
+
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F> {
     pub (crate) fn new(non_residue: Fp2<'a, E, F>) -> Self {
         let extension_2 = &non_residue.extension_field;

@@ -265,6 +265,11 @@ macro_rules! construct_uint {
 			// 	}
 			// 	Ok(res)
 			// }
+			
+			#[inline(always)]
+			pub const fn from_limbs(limbs: [u64; $n_words]) -> $name {
+				$name(limbs)
+			}
 
 			/// Conversion to u32
 			#[inline]

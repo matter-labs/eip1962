@@ -333,6 +333,8 @@ fn calculate_bls12_pairing_cost(
         miller_cost
     };
 
+    println!("Miller cost = {}", miller_cost);
+
     let final_exp_cost = {
         let final_exp_params = vec![
             &params_vector[X_BITS_INDEX..(X_BITS_INDEX+1)], 
@@ -343,6 +345,8 @@ fn calculate_bls12_pairing_cost(
 
         final_exp_cost
     };
+
+    println!("Final exp cost = {}", final_exp_cost);
 
     let mut result = one_off;
     result = result.checked_add(miller_cost).ok_or(ApiError::Overflow)?;
@@ -514,6 +518,22 @@ mod test {
             6).unwrap();
 
         println!("BN381 for 4 pairs = {}", bls12_4_pairs_cost);
+        
+    }
+
+    #[test]
+    fn test_print_example_prices_bls12_381() {
+        let x_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0xd201000000010000]);
+        let x_bits = 64 - 0xd201000000010000u64.leading_zeros();
+        let bls12_1_pair_cost = super::calculate_bls12_pairing_cost(
+            6, 
+            4, 
+            1, 
+            (x_bits as u64, x_hamming as u64), 
+            &*super::BLS12_PARAMS_INSTANCE, 
+            6).unwrap();
+
+        println!("BN381 for 1 pair = {}", bls12_1_pair_cost);
         
     }
 }

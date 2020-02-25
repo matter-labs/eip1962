@@ -22,6 +22,8 @@ mod errors;
 mod integers;
 mod features;
 mod wnaf;
+mod square_root;
+mod engines;
 
 pub mod public_interface;
 

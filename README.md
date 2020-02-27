@@ -1,8 +1,8 @@
-# Purpose
+# Status
 
-Rust library for EC arithmetics and pairing calculations over various curves with parameters defined at runtime.
+This Rust implementation of EIP1962 is complete to the large extend. If course it's possible to polish further (e.g. make it `no_std` compatible), but largest part is done:
 
-Features (WIP):
+Features:
 - [x] Fields implementation
 - [x] Weierstrass curves implementation
   - [x] a = 0
@@ -19,25 +19,27 @@ Features (WIP):
   - [x] BN family
   - [x] MNT6 family
   - [x] MNT4 family
-  - [x] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing)
-    - [x] Test over a single k=6 curve from Zexe 
+  - [x] Cocks-Pinch method generated curves in Weierstrass form (Ate pairing) with k=6
 
-# ABI interface
+Testing:
 
-See [ABI.md](ABI.md).
+- Basic properties are tested during development (whitebox testing) in a form of e.g. bilinearity checks for pairings
+- Fuzzy testing in cross-checks mode with C++ and Go implementations that catches both crashes in any of the libraries and tests for a consistent output (for consensus purposes) 
+  - During such testing most of the checks are disabled, e.g. points are allowed to be not on the curve cause it would be difficult for a fuzzer to find a proper test vector. So such testing covers more edge cases then would be possible in production
 
-# Performance testing
+# Documentation about EIP1962
 
-- [x] Find a way to save on precomputations
-- [x] Benchmark Peppinger
+See [documentation](https://github.com/matter-labs/eip1962/tree/master/documentation) folder for a complete description and the single source of truth about EIP.
+
+## Original proposal
+
+Original EIP is [here](https://eips.ethereum.org/EIPS/eip-1962)
 
 # Contributors
 
 - Kobi Gurkan, [kobigurk@gmail.com](mailto://kobigurk@gmail.com)
 
 # Resources to consult and use 
-
-So I do not forget it
 
 - https://eprint.iacr.org/2012/072.pdf
 - https://eprint.iacr.org/2013/722.pdf

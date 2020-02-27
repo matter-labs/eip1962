@@ -677,6 +677,7 @@ const BLS12_381_PAIRING_ENGINE: Bls12Instance<
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::public_interface::decode_g1::serialize_g1_point;
 
     #[test]
     fn test_engine_bilinearity() {
@@ -699,5 +700,39 @@ mod test {
 
         assert!(ans1 == ans2);
         assert!(ans1 == ans3);
+    }
+
+    fn output_test_vector(input: &[u8], output: &[u8]) {
+        println!("Input: 0x{}", hex::encode(input));
+        println!("Output: 0x{}", hex::encode(output));
+    }
+
+    fn serialize_scalar(repr: &[u64], len: usize) -> Vec<u8> {
+        let a = MaxFieldUint::from(repr);
+
+        let mut res = vec![0u8; a.as_ref().len() * 8];
+        a.to_big_endian(&mut res);
+
+        res.reverse();
+        res.truncate(len);
+        res.reverse();
+
+        res
+    }
+
+
+    #[test]
+    fn test_g1_mul_by_zero() {
+        let mut input_encoding = serialize_g1_point(48, &BLS12_381_G1_GENERATOR).expect("must serialize a generator");
+        let scalar = [0u64];
+        let scalar_encoding = serialize_scalar(&scalar, 32);
+        input_encoding.extend(scalar_encoding);
+
+        let mut out = BLS12_381_G1_GENERATOR.mul(&scalar);
+        out.normalize();
+
+        let output_encoding = serialize_g1_point(48, &out).expect("must serialize a generator");
+
+        output_test_vector(&input_encoding, &output_encoding);
     }
 }

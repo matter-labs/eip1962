@@ -172,6 +172,8 @@ fn calculate_mnt_pairing_cost(
         miller_cost
     };
 
+    println!("Miller cost = {}", miller_cost);
+
     let final_exp_cost = {
         let final_exp_params = vec![
             &params_vector[EXP_W0_LOOP_BITS_INDEX..(EXP_W0_LOOP_BITS_INDEX+1)], 
@@ -184,6 +186,8 @@ fn calculate_mnt_pairing_cost(
 
         final_exp_cost
     };
+
+    println!("Final exp cost = {}", final_exp_cost);
 
     let mut result = one_off;
     result = result.checked_add(miller_cost).ok_or(ApiError::Overflow)?;
@@ -477,15 +481,15 @@ mod test {
         let ey_pendulum_gas_cost = super::calculate_mnt_pairing_cost(
             10, 
             5, 
-            4, 
+            1, 
             (613, 292), 
             (613, 312), 
             (315, 157), 
             &*super::MNT6_PARAMS_INSTANCE, 
-            4
+            6
         ).unwrap();
 
-        println!("EY pendulum cost for 4 pairs = {}", ey_pendulum_gas_cost);
+        println!("EY pendulum cost for 1 pair = {}", ey_pendulum_gas_cost);
     }
 
     #[test]
@@ -534,6 +538,23 @@ mod test {
             6).unwrap();
 
         println!("BN381 for 1 pair = {}", bls12_1_pair_cost);
+        
+    }
+
+    #[test]
+    fn test_print_example_prices_bls12_377() {
+        let x: u64 = 0x8508c00000000001;
+        let x_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[x]);
+        let x_bits = 64 - x.leading_zeros();
+        let bls12_1_pair_cost = super::calculate_bls12_pairing_cost(
+            6, 
+            4, 
+            1, 
+            (x_bits as u64, x_hamming as u64), 
+            &*super::BLS12_PARAMS_INSTANCE, 
+            6).unwrap();
+
+        println!("BN377 for 1 pair = {}", bls12_1_pair_cost);
         
     }
 }

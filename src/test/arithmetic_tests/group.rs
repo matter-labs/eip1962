@@ -110,6 +110,17 @@ impl<
         assert_eq!(a.into_xy(), b.into_xy());
     }
 
+    fn a_mul_by_minus_scalar(&self) {
+        let scalar = MaxGroupSizeUint::from(&[12345][..]);
+        let group_order = MaxGroupSizeUint::from(&self.group_order[..]);
+        let minus_scalar = group_order - scalar;
+        let a = self.generator.mul(&minus_scalar.as_ref());
+        let mut b = self.generator.mul(&scalar.as_ref());
+        b.negate();
+
+        assert_eq!(a.into_xy(), b.into_xy());
+    }
+
     pub fn test(&self) {
         self.a_minus_a_equal_zero();
         self.a_plus_a_equal_to_2a();
@@ -119,6 +130,7 @@ impl<
         self.a_mul_by_zero_is_zero();
         self.a_mul_by_group_order_is_zero();
         self.a_mul_by_scalar_wraps_over_group_order();
+        self.a_mul_by_minus_scalar();
     }
 }
 

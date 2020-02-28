@@ -65,12 +65,12 @@ pub const BLS12_381_MODULUS_UINT: MaxFieldUint = MaxFieldUint::from_limbs(
     ]
 );
 
-const BLS12_381_MODULUS: U384Repr = U384Repr([0xb9feffffffffaaab,0x1eabfffeb153ffff,0x6730d2a0f6b0f624,0x64774b84f38512bf,0x4b1ba7b6434bacd7,0x1a0111ea397fe69a]);
+pub const BLS12_381_MODULUS: U384Repr = U384Repr([0xb9feffffffffaaab,0x1eabfffeb153ffff,0x6730d2a0f6b0f624,0x64774b84f38512bf,0x4b1ba7b6434bacd7,0x1a0111ea397fe69a]);
 const BLS12_381_R: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
 const BLS12_381_R2: U384Repr = U384Repr([0xf4df1f341c341746,0x0a76e6a609d104f1,0x8de5476c4c95b6d5,0x67eb88a9939d83c0,0x9a793e85b519952d,0x11988fe592cae3aa]);
 const BLS12_381_MONT_INV: u64 = 0x89f3fffcfffcfffd;
 
-const BLS12_381_FIELD: PrimeField<U384Repr> = PrimeField::<U384Repr> {
+pub const BLS12_381_FIELD: PrimeField<U384Repr> = PrimeField::<U384Repr> {
     mont_power: 384,
     modulus_bits: 381,
     modulus: BLS12_381_MODULUS,
@@ -141,13 +141,13 @@ const BLS12_381_FP_NON_RESIDUE: decl_fp!(U384Repr) = repr_into_fp!(
     BLS12_381_FIELD
 );
 
-const BLS12_381_FP_ZERO: decl_fp!(U384Repr) = repr_into_fp!(
+pub const BLS12_381_FP_ZERO: decl_fp!(U384Repr) = repr_into_fp!(
     REPR_ZERO, 
     U384Repr,
     BLS12_381_FIELD
 );
 
-const BLS12_381_FP_ONE: decl_fp!(U384Repr) = repr_into_fp!(
+pub const BLS12_381_FP_ONE: decl_fp!(U384Repr) = repr_into_fp!(
     BLS12_381_R, 
     U384Repr,
     BLS12_381_FIELD
@@ -239,7 +239,7 @@ const BLS12_381_FP2_NON_RESIDUE: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 // const BLS12_381_EXTENSION_2_FIELD: Bls12_381Extension2 = Bls12_381Extension2;
 
-const BLS12_381_SUBGROUP_ORDER: [u64; 4] = [
+pub const BLS12_381_SUBGROUP_ORDER: [u64; 4] = [
     0xffffffff00000001,
     0x53bda402fffe5bfe,
     0x3339d80809a1d805,
@@ -279,12 +279,12 @@ const BLS12_381_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> =
     };
 
 
-const BLS12_381_G1_CURVE_PARAMETERS: CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_381_G1_CURVE_PARAMETERS: CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>> = 
     CurveOverFpParameters::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_381_FIELD
     };
 
-const BLS12_381_G2_CURVE_PARAMETERS: CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_381_G2_CURVE_PARAMETERS: CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>> = 
     CurveOverFp2Parameters::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_381_EXTENSION_2_FIELD
     };
@@ -296,14 +296,14 @@ const BLS12_381_G2_CURVE_PARAMETERS: CurveOverFp2Parameters<'static, U384Repr, P
 //         extension_field: &BLS12_381_EXTENSION_2_FIELD
 //     };
 
-const BLS12_381_FP2_ZERO: decl_fp2!(U384Repr) = repr_into_fp2!(
+pub const BLS12_381_FP2_ZERO: decl_fp2!(U384Repr) = repr_into_fp2!(
     BLS12_381_FP_ZERO, 
     BLS12_381_FP_ZERO,
     U384Repr,
     BLS12_381_EXTENSION_2_FIELD
 );
 
-const BLS12_381_FP2_ONE: decl_fp2!(U384Repr) = repr_into_fp2!(
+pub const BLS12_381_FP2_ONE: decl_fp2!(U384Repr) = repr_into_fp2!(
     BLS12_381_FP_ONE, 
     BLS12_381_FP_ZERO,
     U384Repr,
@@ -553,8 +553,6 @@ const BLS12_381_FP6_ZERO: Fp6<'static, U384Repr, PrimeField<U384Repr>> =
         extension_field: &BLS12_381_EXTENSION_6_FIELD
     };
 
-
-
 pub const BLS12_381_EXTENSION_12_FIELD: Extension2Over3Over2<'static, U384Repr, PrimeField<U384Repr>> = 
 Extension2Over3Over2::<'static, U384Repr, PrimeField<U384Repr>> {
     non_residue: BLS12_381_FP6_ZERO,
@@ -570,7 +568,7 @@ Extension2Over3Over2::<'static, U384Repr, PrimeField<U384Repr>> {
     frobenius_coeffs_are_calculated: true
 };   
 
-const BLS12_381_G1_CURVE: WeierstrassCurve<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> = 
+pub const BLS12_381_G1_CURVE: WeierstrassCurve<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> = 
     WeierstrassCurve::<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> {
         a: BLS12_381_FP_ZERO,
         b: BLS12_381_B_FOR_G1,
@@ -579,7 +577,7 @@ const BLS12_381_G1_CURVE: WeierstrassCurve<'static, CurveOverFpParameters<'stati
         params: &BLS12_381_G1_CURVE_PARAMETERS
     };   
 
-const BLS12_381_G2_CURVE: WeierstrassCurve<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> = 
+pub const BLS12_381_G2_CURVE: WeierstrassCurve<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> = 
     WeierstrassCurve::<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> {
         a: BLS12_381_FP2_ZERO,
         b: BLS12_381_B_FOR_G2,
@@ -630,7 +628,7 @@ const BLS12_381_G2_GENERATOR_Y: decl_fp2!(U384Repr) = repr_into_fp2!(
     BLS12_381_EXTENSION_2_FIELD
 );
 
-const BLS12_381_G1_GENERATOR: CurvePoint<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> = 
+pub const BLS12_381_G1_GENERATOR: CurvePoint<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> = 
     CurvePoint::<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> 
     {
         curve: &BLS12_381_G1_CURVE,
@@ -639,7 +637,7 @@ const BLS12_381_G1_GENERATOR: CurvePoint<'static, CurveOverFpParameters<'static,
         z: BLS12_381_FP_ONE,
     };
 
-const BLS12_381_G2_GENERATOR: CurvePoint<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> = 
+pub const BLS12_381_G2_GENERATOR: CurvePoint<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> = 
     CurvePoint::<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>>
     {
         curve: &BLS12_381_G2_CURVE,
@@ -648,7 +646,7 @@ const BLS12_381_G2_GENERATOR: CurvePoint<'static, CurveOverFp2Parameters<'static
         z: BLS12_381_FP2_ONE,
     };
 
-const BLS12_381_PAIRING_ENGINE: Bls12Instance<
+pub const BLS12_381_PAIRING_ENGINE: Bls12Instance<
     'static, 
     U384Repr, 
     PrimeField<U384Repr>, 

@@ -8,6 +8,8 @@ use crate::extension_towers::fp2::*;
 use crate::traits::*;
 use num_traits::Num;
 
+mod mnt6;
+
 fn generate_bls12_spec_params<FE: ElementRepr>(
     modulus: BigUint, 
     twist_type: TwistType,

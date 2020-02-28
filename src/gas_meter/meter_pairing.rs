@@ -493,6 +493,43 @@ mod test {
     }
 
     #[test]
+    fn test_calculate_example_prices_ey_sw6_bis() {
+        use num_bigint::BigUint;
+        use num_traits::Num;
+        use crate::test::biguint_to_u64_vec;
+
+        let ate = BigUint::from_str_radix("6891450384315732539396789682275657542479668912536150109513790160209623422243491736087683183289411687640864567753786354786735746151460237106615816805591765205438850184717968966109876910955248455129124731541829539482640472797610122", 10).unwrap();
+        let w0 = BigUint::from_str_radix("2156695813352724974824326851054479880127610960548355747044807332080688727374737671308314095389122345740953981240668571898337613282699493372314698360451061276517306188376803619985090458895588556562724088277106828", 10).unwrap();
+        let w1 = BigUint::from_str_radix("26642435879335816683987677701488073867751118270052650655942102502312977592501693353047140953112195348280268661194889", 10).unwrap();
+    
+        let ate = biguint_to_u64_vec(ate);
+        let w0 = biguint_to_u64_vec(w0);
+        let w1 = biguint_to_u64_vec(w1);
+
+        let ate_bits = crate::public_interface::decode_utils::calculate_hamming_weight(&ate);
+        let ate_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&ate);
+
+        let w0_bits = crate::public_interface::decode_utils::calculate_hamming_weight(&w0);
+        let w0_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&w0);
+
+        let w1_bits = crate::public_interface::decode_utils::calculate_hamming_weight(&w1);
+        let w1_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&w1);
+        
+        let gas_cost = super::calculate_mnt_pairing_cost(
+            12, 
+            6, 
+            1, 
+            (ate_bits as u64, ate_hamming as u64), 
+            (w0_bits as u64, w0_hamming as u64), 
+            (w1_bits as u64, w1_hamming as u64), 
+            &*super::MNT6_PARAMS_INSTANCE, 
+            6
+        ).unwrap();
+
+        println!("EY Sw6 bis cost for 1 pair = {}", gas_cost);
+    }
+
+    #[test]
     fn test_calculate_example_prices_bn254() {
         let u_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0x44e992b44a6909f1]);
         let six_u_plus_two_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0x9d797039be763ba8, 1]);

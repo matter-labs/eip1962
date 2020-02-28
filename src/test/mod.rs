@@ -4,6 +4,7 @@ pub(crate) mod g1_ops;
 pub(crate) mod parsers;
 pub(crate) mod public_api;
 pub(crate) mod spec_generator;
+pub(crate) mod arithmetic_tests;
 
 mod fields;
 // mod fuzzing;

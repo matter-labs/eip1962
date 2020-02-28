@@ -17,8 +17,8 @@ pub trait CurveParameters {
 }
 
 use crate::fp::Fp;
-pub(crate) struct CurveOverFpParameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) field: &'a F,
+pub struct CurveOverFpParameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub field: &'a F,
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFpParameters<'a, FE, F> {
     type BaseFieldElement = Fp<'a, FE, F>;
@@ -27,7 +27,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for Cur
     }
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFpParameters<'a, FE, F> {
-    pub(crate) fn new(field: &'a F) -> Self {
+    pub fn new(field: &'a F) -> Self {
         Self {
             field
         }
@@ -35,8 +35,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFpParameters<'
 }
 
 use crate::extension_towers::fp2;
-pub(crate) struct CurveOverFp2Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) field: &'a fp2::Extension2<'a, FE, F>,
+pub struct CurveOverFp2Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub field: &'a fp2::Extension2<'a, FE, F>,
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFp2Parameters<'a, FE, F> {
     type BaseFieldElement = fp2::Fp2<'a, FE, F>;
@@ -45,7 +45,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for Cur
     }
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFp2Parameters<'a, FE, F> {
-    pub(crate) fn new(field: &'a fp2::Extension2<'a, FE, F>) -> Self {
+    pub fn new(field: &'a fp2::Extension2<'a, FE, F>) -> Self {
         Self {
             field
         }
@@ -53,8 +53,8 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFp2Parameters<
 }
 
 use crate::extension_towers::fp3;
-pub(crate) struct CurveOverFp3Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) field: &'a fp3::Extension3<'a, FE, F>,
+pub struct CurveOverFp3Parameters<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
+    pub field: &'a fp3::Extension3<'a, FE, F>,
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for CurveOverFp3Parameters<'a, FE, F> {
     type BaseFieldElement = fp3::Fp3<'a, FE, F>;
@@ -63,7 +63,7 @@ impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveParameters for Cur
     }
 }
 impl<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> CurveOverFp3Parameters<'a, FE, F> {
-    pub(crate) fn new(field: &'a fp3::Extension3<'a, FE, F>) -> Self {
+    pub fn new(field: &'a fp3::Extension3<'a, FE, F>) -> Self {
         Self {
             field
         }

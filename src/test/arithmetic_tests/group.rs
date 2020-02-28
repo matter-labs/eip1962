@@ -55,6 +55,24 @@ impl<
         assert_eq!(other_two_a.into_xy(), two_a.into_xy());
     }
 
+    fn three_a_is_equal_to_three_a(&self) {
+        let mut two_a = self.generator.clone();
+        two_a.double();
+
+        let a = self.generator.clone();;
+
+        let mut t0 = two_a.clone();
+        t0.add_assign(&a);
+
+        let mut t1 = a.clone();
+        t1.add_assign(&two_a);
+
+        let t2 = self.generator.mul(&[3u64]);
+
+        assert_eq!(t0.into_xy(), t1.into_xy());
+        assert_eq!(t0.into_xy(), t2.into_xy());
+    }
+
     fn a_plus_b_equal_to_b_plus_a(&self) {
         let mut b = self.generator.clone();
         b.double();
@@ -82,7 +100,7 @@ impl<
         assert!(a.is_zero());
     }
 
-    fn a_mul_by_sclar_wraps_over_group_order(&self) {
+    fn a_mul_by_scalar_wraps_over_group_order(&self) {
         let scalar = MaxGroupSizeUint::from(&[12345][..]);
         let group_order = MaxGroupSizeUint::from(&self.group_order[..]);
         let scalar_plus_group_order = scalar + group_order;
@@ -96,10 +114,11 @@ impl<
         self.a_minus_a_equal_zero();
         self.a_plus_a_equal_to_2a();
         self.two_a_is_equal_to_two_a();
+        self.three_a_is_equal_to_three_a();
         self.a_plus_b_equal_to_b_plus_a();
         self.a_mul_by_zero_is_zero();
         self.a_mul_by_group_order_is_zero();
-        self.a_mul_by_sclar_wraps_over_group_order();
+        self.a_mul_by_scalar_wraps_over_group_order();
     }
 }
 

@@ -1,6 +1,3 @@
-use crate::representation::*;
-use crate::field::*;
-use crate::fp::*;
 use crate::weierstrass::*;
 use crate::weierstrass::curve::*;
 use crate::integers::MaxGroupSizeUint;
@@ -59,7 +56,7 @@ impl<
         let mut two_a = self.generator.clone();
         two_a.double();
 
-        let a = self.generator.clone();;
+        let a = self.generator.clone();
 
         let mut t0 = two_a.clone();
         t0.add_assign(&a);
@@ -138,6 +135,7 @@ impl<
 mod test {
     use super::*;
     use crate::engines::bls12_381::*;
+    use crate::engines::bls12_377::*;
 
     #[test]
     fn test_bls12_381_g1() {
@@ -156,6 +154,28 @@ mod test {
             curve: &BLS12_381_PAIRING_ENGINE.curve_twist,
             generator: &BLS12_381_G2_GENERATOR,
             group_order: &BLS12_381_SUBGROUP_ORDER,
+        };
+
+        tester.test();
+    }
+
+    #[test]
+    fn test_bls12_377_g1() {
+        let tester = ArithmeticProcessor::<_, _> {
+            curve: &BLS12_377_PAIRING_ENGINE.curve,
+            generator: &BLS12_377_G1_GENERATOR,
+            group_order: &BLS12_377_SUBGROUP_ORDER,
+        };
+
+        tester.test();
+    }
+
+    #[test]
+    fn test_bls12_377_g2() {
+        let tester = ArithmeticProcessor::<_, _> {
+            curve: &BLS12_377_PAIRING_ENGINE.curve_twist,
+            generator: &BLS12_377_G2_GENERATOR,
+            group_order: &BLS12_377_SUBGROUP_ORDER,
         };
 
         tester.test();

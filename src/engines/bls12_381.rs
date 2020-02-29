@@ -79,60 +79,6 @@ pub const BLS12_381_FIELD: PrimeField<U384Repr> = PrimeField::<U384Repr> {
     mont_inv: BLS12_381_MONT_INV,  
 };
 
-// macro_rules! decl_repr_into_fp {
-//     ($repr:ident, $repr_type:ty, $field:ident) => ( Fp::<'static, $repr_type, PrimeField<$repr_type>> = Fp::<'static, $repr_type, PrimeField<$repr_type>> {
-//             field: &$field,
-//             repr: $repr
-//         };
-//     );
-// }
-
-macro_rules! decl_fp {
-    ($repr_type:ty) => ( Fp::<'static, $repr_type, PrimeField<$repr_type>> );
-}
-
-// macro_rules! repr_into_fp {
-//     ($repr:ident, $repr_type:ty, $field:ident) => ({
-//         Fp::<'static, $repr_type, PrimeField<$repr_type>> {
-//             field: &$field,
-//             repr: $repr
-//         }
-//     });
-// }
-
-macro_rules! repr_into_fp {
-    ($repr:expr, $repr_type:ty, $field:ident) => ({
-        Fp::<'static, $repr_type, PrimeField<$repr_type>> {
-            field: &$field,
-            repr: $repr
-        }
-    });
-}
-
-macro_rules! decl_fp2 {
-    ($repr_type:ty) => ( Fp2::<'static, $repr_type, PrimeField<$repr_type>> );
-}
-
-// macro_rules! repr_into_fp2 {
-//     ($repr_c0:ident, $repr_c1:ident, $repr_type:ty, $field:ident) => ({
-//         Fp2::<'static, $repr_type, PrimeField<$repr_type>> {
-//             c0: $repr_c0,
-//             c1: $repr_c1,
-//             extension_field: &$field
-//         }
-//     });
-// }
-
-macro_rules! repr_into_fp2 {
-    ($repr_c0:expr, $repr_c1:expr, $repr_type:ty, $field:ident) => ({
-        Fp2::<'static, $repr_type, PrimeField<$repr_type>> {
-            c0: $repr_c0,
-            c1: $repr_c1,
-            extension_field: &$field
-        }
-    });
-}
-
 const BLS12_381_FP_NON_RESIDUE_REPR: U384Repr = U384Repr([0x43f5fffffffcaaae,0x32b7fff2ed47fffd,0x07e83a49a2e99d69,0xeca8f3318332bb7a,0xef148d1ea0f4c069,0x040ab3263eff0206]);
 
 const BLS12_381_FP_NON_RESIDUE: decl_fp!(U384Repr) = repr_into_fp!(

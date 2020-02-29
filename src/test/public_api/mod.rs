@@ -9,7 +9,6 @@ use crate::public_interface::decode_g1::*;
 use crate::public_interface::decode_utils::*;
 use crate::public_interface::decode_fp::*;
 
-#[macro_use]
 use crate::{expand_for_modulus_limbs};
 
 fn call_public_api_on_test_vector(data: &[u8]) -> Result<Vec<u8>, ApiError>{

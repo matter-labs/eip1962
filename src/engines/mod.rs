@@ -1,4 +1,9 @@
+#[macro_use]
+mod convenience;
+
 pub mod bls12_381;
+pub mod bls12_377;
+
 
 #[cfg(test)]
 mod test {
@@ -39,7 +44,13 @@ mod test {
         pretty_print_field_constants(&field);
     }
 
-    fn print_bls12_constants<FE: ElementRepr>(
+    #[test]
+    fn test_print_bls12_377_params() {
+        let field = crate::field::new_field::<U384Repr>("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
+        pretty_print_field_constants(&field);
+    }
+
+    fn print_bls12_engine_constants<FE: ElementRepr>(
         modulus: BigUint, 
         twist_type: TwistType,
         b: BigUint,
@@ -128,8 +139,6 @@ mod test {
     #[test]
     fn print_bls12_381_constants() {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-        let group_order = BigUint::from_str_radix("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
-
         // non-residue is -1
         let mut fp_non_residue = modulus.clone();
         fp_non_residue -= BigUint::from(1u64);
@@ -151,7 +160,47 @@ mod test {
 
         let twist_type = TwistType::M;
 
-        print_bls12_constants::<U384Repr>(
+        print_bls12_engine_constants::<U384Repr>(
+            modulus,
+            twist_type,
+            b,
+            fp_non_residue,
+            fp2_non_residue_c0,
+            fp2_non_residue_c1,
+            p_x,
+            p_y,
+            q_x_0,
+            q_x_1,
+            q_y_0,
+            q_y_1,
+        );
+    }
+
+    #[test]
+    fn print_bls12_377_constants() {
+        let modulus = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
+        // non-residue is -5
+        let mut fp_non_residue = modulus.clone();
+        fp_non_residue -= BigUint::from(5u64);
+
+        // fp2 non-residue is (0, 1)
+
+        let fp2_non_residue_c0 = BigUint::from(0u64);
+        let fp2_non_residue_c1 = BigUint::from(1u64);
+
+        let b = BigUint::from(4u64);
+
+        let p_x = BigUint::from_str_radix("008848defe740a67c8fc6225bf87ff5485951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef", 16).unwrap();
+        let p_y = BigUint::from_str_radix("01914a69c5102eff1f674f5d30afeec4bd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6", 16).unwrap();
+
+        let q_x_0 = BigUint::from_str_radix("018480be71c785fec89630a2a3841d01c565f071203e50317ea501f557db6b9b71889f52bb53540274e3e48f7c005196", 16).unwrap();
+        let q_x_1 = BigUint::from_str_radix("00ea6040e700403170dc5a51b1b140d5532777ee6651cecbe7223ece0799c9de5cf89984bff76fe6b26bfefa6ea16afe", 16).unwrap();
+        let q_y_0 = BigUint::from_str_radix("00690d665d446f7bd960736bcbb2efb4de03ed7274b49a58e458c282f832d204f2cf88886d8c7c2ef094094409fd4ddf", 16).unwrap();
+        let q_y_1 = BigUint::from_str_radix("00f8169fd28355189e549da3151a70aa61ef11ac3d591bf12463b01acee304c24279b83f5e52270bd9a1cdd185eb8f93", 16).unwrap();
+
+        let twist_type = TwistType::D;
+
+        print_bls12_engine_constants::<U384Repr>(
             modulus,
             twist_type,
             b,
@@ -201,6 +250,52 @@ mod test {
         }   
         
         let mut ext_12 = super::bls12_381::BLS12_381_EXTENSION_12_FIELD.clone();
+        ext_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp12");
+
+        println!("Frobenius coeffs for Fp12 c1");
+        for (idx, c) in ext_12.frobenius_coeffs_c1.iter().enumerate() {
+            println!("Frobenius coeff {}", idx);
+            println!("C0:");
+            print_single(c.c0.repr.as_ref());
+            println!("C1:");
+            print_single(c.c1.repr.as_ref());
+        }
+    }
+
+    #[test]
+    fn calculate_bls12_377_constants() {
+        let mut ext_2 = super::bls12_377::BLS12_377_EXTENSION_2_FIELD.clone();
+        let modulus = super::bls12_377::BLS12_377_MODULUS_UINT;
+        ext_2.calculate_frobenius_coeffs(&modulus).expect("must calcualte frobenius for Fp2");
+
+        println!("Frobenius coeffs for Fp2 c1");
+        for (idx, c) in ext_2.frobenius_coeffs_c1.iter().enumerate() {
+            println!("Frobenius coeff {}", idx);
+            print_single(c.repr.as_ref());
+        }
+
+        let mut ext_6 = super::bls12_377::BLS12_377_EXTENSION_6_FIELD.clone();
+        ext_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp6");
+
+        println!("Frobenius coeffs for Fp6 c1");
+        for (idx, c) in ext_6.frobenius_coeffs_c1.iter().enumerate() {
+            println!("Frobenius coeff {}", idx);
+            println!("C0:");
+            print_single(c.c0.repr.as_ref());
+            println!("C1:");
+            print_single(c.c1.repr.as_ref());
+        }
+
+        println!("Frobenius coeffs for Fp6 c2");
+        for (idx, c) in ext_6.frobenius_coeffs_c2.iter().enumerate() {
+            println!("Frobenius coeff {}", idx);
+            println!("C0:");
+            print_single(c.c0.repr.as_ref());
+            println!("C1:");
+            print_single(c.c1.repr.as_ref());
+        }   
+        
+        let mut ext_12 = super::bls12_377::BLS12_377_EXTENSION_12_FIELD.clone();
         ext_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp12");
 
         println!("Frobenius coeffs for Fp12 c1");

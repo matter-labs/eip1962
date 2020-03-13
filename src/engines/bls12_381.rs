@@ -618,6 +618,36 @@ pub const BLS12_381_PAIRING_ENGINE: Bls12Instance<
     x_naf: Vec::new()
 };
 
+
+// isogeny for field-to-curve mapping
+
+pub const BLS12_381_G1_ISOGENY_A: decl_fp!(U384Repr) = repr_into_fp!(
+    U384Repr([0x2f65aa0e9af5aa51,0x86464c2d1e8416c3,0xb85ce591b7bd31e2,0x27e11c91b5f24e7c,0x28376eda6bfc1835,0x155455c3e5071d85]), 
+    U384Repr,
+    BLS12_381_FIELD
+);
+
+pub const BLS12_381_G1_ISOGENY_B: decl_fp!(U384Repr) = repr_into_fp!(
+    U384Repr([0xfb996971fe22a1e0,0x9aa93eb35b742d6f,0x8c476013de99c5c4,0x873e27c3a221e571,0xca72b5e45a52d888,0x06824061418a386b]), 
+    U384Repr,
+    BLS12_381_FIELD
+);
+
+pub const BLS12_381_G1_CURVE_ISOGENY: WeierstrassCurve<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> = 
+    WeierstrassCurve::<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>> {
+        a: BLS12_381_G1_ISOGENY_A,
+        b: BLS12_381_G1_ISOGENY_B,
+        curve_type: CurveType::Generic,
+        subgroup_order_repr: &BLS12_381_SUBGROUP_ORDER,
+        params: &BLS12_381_G1_CURVE_PARAMETERS
+    };  
+
+pub const BLS12_381_G1_SWU_Z: decl_fp!(U384Repr) = repr_into_fp!(
+    U384Repr([0x886c00000023ffdc,0x0f70008d3090001d,0x77672417ed5828c3,0x9dac23e943dc1740,0x50553f1b9c131521,0x078c712fbe0ab6e8]), 
+    U384Repr,
+    BLS12_381_FIELD
+);
+
 #[cfg(test)]
 mod test {
     use super::*;

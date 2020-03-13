@@ -24,6 +24,7 @@ mod features;
 mod wnaf;
 mod square_root;
 mod engines;
+mod mapping;
 
 pub mod public_interface;
 

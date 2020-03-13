@@ -48,7 +48,7 @@ pub enum LegendreSymbol {
     QuadraticNonResidue = -1,
 }
 
-fn legendre_symbol<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> LegendreSymbol {
+pub(crate) fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> LegendreSymbol {
     let mut modulus_minus_one_by_two = *element.field.modulus();
     modulus_minus_one_by_two.shr(1);
 
@@ -57,6 +57,21 @@ fn legendre_symbol<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &F
     if a.is_zero() {
         LegendreSymbol::Zero
     } else if a == Fp::one(element.field) {
+        LegendreSymbol::QuadraticResidue
+    } else {
+        LegendreSymbol::QuadraticNonResidue
+    }
+}
+
+pub(crate) fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> LegendreSymbol {
+    let mut modulus_minus_one_by_two = *element.extension_field.field.modulus();
+    modulus_minus_one_by_two.shr(1);
+
+    let a = element.pow(&modulus_minus_one_by_two.as_ref());
+
+    if a.is_zero() {
+        LegendreSymbol::Zero
+    } else if a == Fp2::one(element.extension_field) {
         LegendreSymbol::QuadraticResidue
     } else {
         LegendreSymbol::QuadraticNonResidue
@@ -99,7 +114,7 @@ fn sqrt_for_one_mod_sixteen<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(el
     // postpone for now
     // we know that it's 1 mod 16, so we can use simple bit shifts
 
-    match legendre_symbol(&element) {
+    match legendre_symbol_fp(&element) {
         LegendreSymbol::Zero => {
             // it's zero, so clone
             Some(element.clone())

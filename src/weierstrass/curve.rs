@@ -11,6 +11,18 @@ pub struct WeierstrassCurve<'a, C: CurveParameters> {
     pub(crate) params: &'a C
 }
 
+impl<'a, C: CurveParameters> Clone for WeierstrassCurve<'a, C> {
+    fn clone(&self) -> Self {
+        Self {
+            a: self.a.clone(),
+            b: self.b.clone(),
+            curve_type: self.curve_type,
+            subgroup_order_repr: self.subgroup_order_repr,
+            params: self.params
+        }
+    }
+}
+
 impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
     pub(crate) fn new(
         subgroup_order: &'a [u64],
@@ -58,6 +70,54 @@ impl<'a, C: CurveParameters> Clone for CurvePoint<'a, C> {
     }
 }
 
+pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
+    let mut prod = Vec::with_capacity(v.len());
+    let one = C::BaseFieldElement::one(v[0].curve.params.params());
+    let mut tmp = one.clone();
+    for g in v.iter_mut()
+                // Ignore normalized elements
+                .filter(|g| !g.is_normalized())
+    {
+        tmp.mul_assign(&g.z);
+        prod.push(tmp.clone());
+    }
+
+    if tmp.is_zero() {
+        return;
+    }
+
+    tmp = tmp.inverse().unwrap(); // Guaranteed to be nonzero.
+
+    // Second pass: iterate backwards to compute inverses
+    for (g, s) in v.iter_mut()
+                    // Backwards
+                    .rev()
+                    // Ignore normalized elements
+                    .filter(|g| !g.is_normalized())
+                    // Backwards, skip last element, fill in one for last term.
+                    .zip(prod.into_iter().rev().skip(1).chain(Some(one.clone())))
+    {
+        // tmp := tmp * g.z; g.z := tmp * s = 1/z
+        let mut newtmp = tmp.clone();
+        newtmp.mul_assign(&g.z);
+        g.z = tmp.clone();
+        g.z.mul_assign(&s);
+        tmp = newtmp;
+    }
+
+    // Perform affine transformations
+    for g in v.iter_mut()
+                .filter(|g| !g.is_normalized())
+    {
+        let mut z = g.z.clone(); // 1/z
+        z.square(); // 1/z^2
+        g.x.mul_assign(&z); // x/z^2
+        z.mul_assign(&g.z); // 1/z^3
+        g.y.mul_assign(&z); // y/z^3
+        g.z = one.clone(); // z = 1
+    }
+}
+
 impl<'a, C: CurveParameters> CurvePoint<'a, C> {    
     pub fn zero(curve: &'a WeierstrassCurve<C>) -> Self {
         Self {
@@ -91,10 +151,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         rhs == lhs
     }
 
-    pub fn point_from_xy(
-        curve: &'a WeierstrassCurve<'a, C>,
+    pub fn point_from_xy<'b: 'a>(
+        curve: &'a WeierstrassCurve<'b, C>,
         x: C::BaseFieldElement, 
-        y: C::BaseFieldElement
+        y: C::BaseFieldElement,
     ) -> CurvePoint<'a, C> {
         if x.is_zero() && y.is_zero() {
             return Self::zero(curve);
@@ -412,16 +472,16 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
     }
 
     pub(crate) fn wnaf_mul_impl<S: crate::representation::IntoWnaf>(&self, exp: S) -> Self {
-        // let one = Fp::<'a, FE, F>::one(&self.curve.field);
-        // if self.z == one {
-        //     return self.mul_impl_mixed_addition(exp);
-        // }
+        const WINDOW_SIZE: u32 = 4;
 
-        const WINDOW_SIZE: u32 = 3;
+        self.wnaf_mul_with_window_size_impl(exp, WINDOW_SIZE)
+    }
 
-        let mut precomp_table = vec![Self::zero(&self.curve); (1 << (WINDOW_SIZE-1)) as usize];
+    pub(crate) fn wnaf_mul_with_window_size_impl<S: crate::representation::IntoWnaf>(&self, exp: S, window_size: u32) -> Self {
+        assert!(window_size >= 2u32);
+        let mut precomp_table = vec![Self::zero(&self.curve); (1 << (window_size-1)) as usize];
 
-        let index_for_positive = (1 << (WINDOW_SIZE-2)) as usize;
+        let index_for_positive = (1 << (window_size-2)) as usize;
 
         let mut two_self = self.clone();
         two_self.double();
@@ -440,7 +500,9 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             precomp_table[index_for_positive-1-i] = neg_precomp;
         }
 
-        let wnaf = exp.wnaf(WINDOW_SIZE);
+        // batch_normalize(&mut precomp_table);
+
+        let wnaf = exp.wnaf(window_size);
 
         let mut res = Self::zero(&self.curve);
         let mut found_nonzero = false;
@@ -688,6 +750,14 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 return self.wnaf_mul_impl(exp);
+            },
+        }
+    }
+
+    fn wnaf_mul_with_window_size<S: crate::representation::IntoWnaf>(&self, exp: S, window_size: u32) -> Self {
+        match self.curve.curve_type {
+            _ => {
+                return self.wnaf_mul_with_window_size_impl(exp, window_size);
             },
         }
     }

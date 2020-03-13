@@ -4,3 +4,4 @@ mod g2_ops;
 mod field_ops;
 // mod gas_meter;
 mod public_interface;
+mod bls12_381_engine;

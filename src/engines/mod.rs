@@ -307,4 +307,29 @@ mod test {
             print_single(c.c1.repr.as_ref());
         }
     }
+
+    #[test]
+    fn calculate_bls12_381_isogeny_constants() {
+        let fp_field = &super::bls12_381::BLS12_381_FIELD;
+        let a_biguint = BigUint::from_str_radix("144698a3b8e9433d693a02c96d4982b0ea985383ee66a8d8e8981aefd881ac98936f8da0e0f97f5cf428082d584c1d", 16).unwrap();
+        let b_biguint = BigUint::from_str_radix("12e2908d11688030018b12e8753eee3b2016c1f0f24f4070a0b9c14fcef35ef55a23215a316ceaa5d1cc48e98e172be0", 16).unwrap();
+        let a = Fp::from_be_bytes(fp_field, &a_biguint.to_bytes_be(), true).unwrap();
+        let b = Fp::from_be_bytes(fp_field, &b_biguint.to_bytes_be(), true).unwrap();
+
+        println!("G1 isogeny A =");
+        print_single(a.repr.as_ref());
+
+        println!("G1 isogeny B =");
+        print_single(b.repr.as_ref());
+    }
+
+    #[test]
+    fn calculate_bls12_381_fp_to_g1_mapping_constants() {
+        let fp_field = &super::bls12_381::BLS12_381_FIELD;
+        let z_biguint = BigUint::from_str_radix("11", 10).unwrap();
+        let z = Fp::from_be_bytes(fp_field, &z_biguint.to_bytes_be(), true).unwrap();
+
+        println!("Z = ");
+        print_single(z.repr.as_ref());
+    }
 }

@@ -134,6 +134,19 @@ pub struct PrimeField<E: ElementRepr> {
     pub mont_inv: u64
 }
 
+impl<E: ElementRepr> Clone for PrimeField<E> {
+    fn clone(&self) -> Self {
+        Self {
+            mont_power: self.mont_power,
+            modulus_bits: self.modulus_bits,
+            modulus: self.modulus,
+            mont_r: self.mont_r,
+            mont_r2: self.mont_r2,
+            mont_inv: self.mont_inv
+        }
+    }
+}
+
 impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     type Repr = E;
 

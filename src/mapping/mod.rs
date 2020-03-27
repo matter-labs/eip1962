@@ -4,9 +4,11 @@ use crate::field::*;
 use crate::traits::*;
 use crate::extension_towers::fp2::Fp2;
 
-mod simple_swu;
-mod isogeny;
+pub mod simple_swu;
+pub mod isogeny;
+pub mod parameters;
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Sign {
     Zero,
     SignPlus,
@@ -39,21 +41,23 @@ fn sign_of_fp2_be<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
     el: &Fp2<'a, E, F>
 ) -> Sign {
     // compare c_0 and then c_1
-    let sign_from_c0 = sign_of_fp_be(&el.c0);
+    // let sign_from_c0 = sign_of_fp_be(&el.c0);
+    let sign_from_c1 = sign_of_fp_be(&el.c1);
 
-    match sign_from_c0 {
+    // match sign_from_c0 {
+    match sign_from_c1 {
         s @ Sign::SignMinus | 
         s @ Sign::SignPlus => {
             return s;
         },
         Sign::Zero => {
-            return sign_of_fp_be(&el.c1);
+            // return sign_of_fp_be(&el.c1);
+            return sign_of_fp_be(&el.c0);
         }
     }
 }
 
-#[cfg(test)]
-mod test {
+mod constants {
     use super::isogeny::*;
     use super::simple_swu::*;
     use crate::engines::bls12_381::*;
@@ -63,24 +67,29 @@ mod test {
     use num_bigint::BigUint;
     use num_traits::Num;
     use crate::fp::*;
-    use crate::weierstrass::curve::*;
+    use crate::extension_towers::fp2::{Extension2, Fp2};
 
-    // fn str_radix_into_field(s: &str, radix: u32) -> Fp<'static, U384Repr, PrimeField<U384Repr>> {
-    //     let fp_field = &crate::engines::bls12_381::BLS12_381_FIELD;
-    //     let biguint = BigUint::from_str_radix(s, radix).unwrap();
-    //     let el = Fp::from_be_bytes(fp_field, &biguint.to_bytes_be(), true).unwrap();
-
-    //     el
-    // }
-
-    fn str_radix_into_field<'a>(s: &str, radix: u32, field: &'a PrimeField<U384Repr>) -> Fp<'a, U384Repr, PrimeField<U384Repr>> {
+    pub(crate) fn str_radix_into_field<'a>(s: &str, radix: u32, field: &'a PrimeField<U384Repr>) -> Fp<'a, U384Repr, PrimeField<U384Repr>> {
         let biguint = BigUint::from_str_radix(s, radix).unwrap();
         let el = Fp::from_be_bytes(field, &biguint.to_bytes_be(), true).unwrap();
 
         el
     }
 
-    fn calculate_bls12_381_g1_mapping_params<'a>(field: &'a PrimeField<U384Repr>) -> (
+    pub(crate) fn str_radix_into_ext2<'a>(c0: &str, c1: &str, radix: u32, extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>) -> Fp2<'a, U384Repr, PrimeField<U384Repr>> {
+        let biguint_c0 = BigUint::from_str_radix(c0, radix).unwrap();
+        let biguint_c1 = BigUint::from_str_radix(c1, radix).unwrap();
+        let c0 = Fp::from_be_bytes(extension.field, &biguint_c0.to_bytes_be(), true).unwrap();
+        let c1 = Fp::from_be_bytes(extension.field, &biguint_c1.to_bytes_be(), true).unwrap();
+
+        let mut el = Fp2::zero(extension);
+        el.c0 = c0;
+        el.c1 = c1;
+
+        el
+    }
+
+    pub(crate) fn calculate_bls12_381_g1_mapping_params<'a>(field: &'a PrimeField<U384Repr>) -> (
         SwuParameters<CurveOverFpParameters<'a, U384Repr, PrimeField<U384Repr>>>,
         IsogenyParameters<CurveOverFpParameters<'a, U384Repr, PrimeField<U384Repr>>>
     ) {
@@ -176,8 +185,150 @@ mod test {
         (swu, iso)
     }
 
+    pub(crate) fn calculate_bls12_381_g2_mapping_params<'a>(extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>) -> (
+        SwuParameters<CurveOverFp2Parameters<'a, U384Repr, PrimeField<U384Repr>>>,
+        IsogenyParameters<CurveOverFp2Parameters<'a, U384Repr, PrimeField<U384Repr>>>
+    ) {
+        let mut minus_z_inv = BLS12_381_G2_SWU_Z.inverse().unwrap();
+        minus_z_inv.negate();
+
+        let mut minus_b_by_a = BLS12_381_G2_ISOGENY_B;
+        minus_b_by_a.negate();
+
+        let a_inv = BLS12_381_G2_ISOGENY_A.inverse().unwrap();
+        minus_b_by_a.mul_assign(&a_inv);
+
+        let swu = SwuParameters::<_> {
+            z: BLS12_381_G2_SWU_Z.clone(),
+            minus_b_by_a,
+            minus_z_inv
+        };
+
+        let mut iso = IsogenyParameters::<_> {
+            map_degree: 3,
+            k1: vec![
+                str_radix_into_ext2(
+                    "5c759507e8e333ebb5b7a9a47d7ed8532c52d39fd3a042a88b58423c50ae15d5c2638e343d9c71c6238aaaaaaaa97d6", 
+                    "5c759507e8e333ebb5b7a9a47d7ed8532c52d39fd3a042a88b58423c50ae15d5c2638e343d9c71c6238aaaaaaaa97d6",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "0", 
+                    "11560bf17baa99bc32126fced787c88f984f87adf7ae0c7f9a208c6b4f20a4181472aaa9cb8d555526a9ffffffffc71a",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "11560bf17baa99bc32126fced787c88f984f87adf7ae0c7f9a208c6b4f20a4181472aaa9cb8d555526a9ffffffffc71e", 
+                    "8ab05f8bdd54cde190937e76bc3e447cc27c3d6fbd7063fcd104635a790520c0a395554e5c6aaaa9354ffffffffe38d",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "171d6541fa38ccfaed6dea691f5fb614cb14b4e7f4e810aa22d6108f142b85757098e38d0f671c7188e2aaaaaaaa5ed1", 
+                    "0",
+                    16,
+                    extension
+                ),
+            ],
+            k2: vec![
+                str_radix_into_ext2(
+                    "0", 
+                    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaa63",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "c", 
+                    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaa9f",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "1", 
+                    "0",
+                    16,
+                    extension
+                ),
+            ],
+            k3: vec![
+                str_radix_into_ext2(
+                    "1530477c7ab4113b59a4c18b076d11930f7da5d4a07f649bf54439d87d27e500fc8c25ebf8c92f6812cfc71c71c6d706", 
+                    "1530477c7ab4113b59a4c18b076d11930f7da5d4a07f649bf54439d87d27e500fc8c25ebf8c92f6812cfc71c71c6d706",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "0", 
+                    "5c759507e8e333ebb5b7a9a47d7ed8532c52d39fd3a042a88b58423c50ae15d5c2638e343d9c71c6238aaaaaaaa97be",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "11560bf17baa99bc32126fced787c88f984f87adf7ae0c7f9a208c6b4f20a4181472aaa9cb8d555526a9ffffffffc71c", 
+                    "8ab05f8bdd54cde190937e76bc3e447cc27c3d6fbd7063fcd104635a790520c0a395554e5c6aaaa9354ffffffffe38f",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "124c9ad43b6cf79bfbf7043de3811ad0761b0f37a1e26286b0e977c69aa274524e79097a56dc4bd9e1b371c71c718b10", 
+                    "0",
+                    16,
+                    extension
+                ),
+            ],
+            k4: vec![
+                str_radix_into_ext2(
+                    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffa8fb", 
+                    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffa8fb",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "0", 
+                    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffa9d3",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "12", 
+                    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaa99",
+                    16,
+                    extension
+                ),
+                str_radix_into_ext2(
+                    "1", 
+                    "0",
+                    16,
+                    extension
+                ),
+            ],
+        };
+
+        let zero = Fp2::zero(extension);
+
+        iso.k1.resize(iso.map_degree + 1, zero.clone());
+        iso.k2.resize(iso.map_degree + 1, zero.clone());
+        iso.k3.resize(iso.map_degree + 1, zero.clone());
+        iso.k4.resize(iso.map_degree + 1, zero.clone());
+
+        (swu, iso)
+    }
+
+    
+}
+
+#[cfg(test)]
+mod test {
+    use super::constants::*;
+    use super::isogeny::*;
+    use super::simple_swu::*;
+    use crate::engines::bls12_381::*;
+    use crate::weierstrass::curve::*;
+
     #[test]
-    fn test_mapping_0() {
+    fn test_mapping_g1_0() {
         let random_el = str_radix_into_field("42", 10, &BLS12_381_FIELD);
         let (swu, iso) = calculate_bls12_381_g1_mapping_params(&BLS12_381_FIELD);
 
@@ -197,4 +348,27 @@ mod test {
         let point = CurvePoint::point_from_xy(&BLS12_381_G1_CURVE, x, y);
         assert!(point.is_on_curve());
     }
+
+    #[test]
+    fn test_mapping_g2_0() {
+        let random_el = str_radix_into_ext2("42", "42", 10, &BLS12_381_EXTENSION_2_FIELD);
+        let (swu, iso) = calculate_bls12_381_g2_mapping_params(&BLS12_381_EXTENSION_2_FIELD);
+
+        let (x_prime, y_prime) = simplified_swu_fp2(
+            &random_el, 
+            &swu, 
+            &BLS12_381_G2_CURVE_ISOGENY
+        );
+
+        let (x, y) = apply_isogeny_map(
+            &x_prime,
+            &y_prime,
+            &iso,
+            &BLS12_381_G2_CURVE_PARAMETERS
+        );
+
+        let point = CurvePoint::point_from_xy(&BLS12_381_G2_CURVE, x, y);
+        assert!(point.is_on_curve());
+    }
+
 }

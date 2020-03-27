@@ -648,6 +648,152 @@ pub const BLS12_381_G1_SWU_Z: decl_fp!(U384Repr) = repr_into_fp!(
     BLS12_381_FIELD
 );
 
+pub const BLS12_381_G1_MAPPING_H_EFF: [u64; 1] = [
+    0xd201000000010001
+];
+
+pub const BLS12_381_G2_SWU_Z: decl_fp2!(U384Repr) = repr_into_fp2!(
+    repr_into_fp!(
+        U384Repr([0x87ebfffffff9555c,0x656fffe5da8ffffa,0x0fd0749345d33ad2,0xd951e663066576f4,0xde291a3d41e980d3,0x0815664c7dfe040d]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ), 
+    repr_into_fp!(
+        U384Repr([0x43f5fffffffcaaae,0x32b7fff2ed47fffd,0x07e83a49a2e99d69,0xeca8f3318332bb7a,0xef148d1ea0f4c069,0x040ab3263eff0206]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ),
+    U384Repr,
+    BLS12_381_EXTENSION_2_FIELD
+);
+
+pub const BLS12_381_G2_ISOGENY_A: decl_fp2!(U384Repr) = repr_into_fp2!(
+    repr_into_fp!(
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ), 
+    repr_into_fp!(
+        U384Repr([0xe53a000003135242,0x01080c0fdef80285,0xe7889edbe340f6bd,0x0b51375126310601,0x02d6985717c744ab,0x1220b4e979ea5467]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ),
+    U384Repr,
+    BLS12_381_EXTENSION_2_FIELD
+);
+
+pub const BLS12_381_G2_ISOGENY_B: decl_fp2!(U384Repr) = repr_into_fp2!(
+    repr_into_fp!(
+        U384Repr([0x22ea00000cf89db2,0x6ec832df71380aa4,0x6e1b94403db5a66e,0x75bf3c53a79473ba,0x3dd3a569412c0a34,0x125cdb5e74dc4fd1]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ), 
+    repr_into_fp!(
+        U384Repr([0x22ea00000cf89db2,0x6ec832df71380aa4,0x6e1b94403db5a66e,0x75bf3c53a79473ba,0x3dd3a569412c0a34,0x125cdb5e74dc4fd1]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ),
+    U384Repr,
+    BLS12_381_EXTENSION_2_FIELD
+);
+
+pub const BLS12_381_G2_CURVE_ISOGENY: WeierstrassCurve<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> = 
+    WeierstrassCurve::<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>> {
+        a: BLS12_381_G2_ISOGENY_A,
+        b: BLS12_381_G2_ISOGENY_B,
+        curve_type: CurveType::AIsZero,
+        subgroup_order_repr: &BLS12_381_SUBGROUP_ORDER,
+        params: &BLS12_381_G2_CURVE_PARAMETERS
+    };   
+
+pub const BLS12_381_G2_MAPPING_H_EFF: [u64; 10] = [
+    0xe8020005aaa95551,
+    0x59894c0adebbf6b4,
+    0xe954cbc06689f6a3,
+    0x2ec0ec69d7477c1a,
+    0x6d82bf015d1212b0,
+    0x329c2f178731db95,
+    0x9986ff031508ffe1,
+    0x88e2a8e9145ad768,
+    0x584c6a0ea91b3528,
+    0x0bc69f08f2ee75b3
+];
+
+
+#[cfg(feature = "mappings")]
+pub mod mapping {
+    use crate::weierstrass::*;
+    use crate::weierstrass::curve::*;
+    use crate::fp::Fp;
+    use crate::errors::ApiError;
+    use super::*;
+    use crate::mapping::simple_swu::*;
+    use crate::mapping::isogeny::*;
+
+    fn coerce_static<'a, T: Sized, U: Sized + 'static>(_: &'a T, to_borrow: &'static U) -> &'a U {
+        &*to_borrow
+    }
+
+    pub fn fp_to_g1(
+        el: &Fp<'static, U384Repr, PrimeField<U384Repr>>
+    ) -> Result<CurvePoint<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>>, ApiError>
+    {
+        let (swu, iso) = &*crate::mapping::parameters::BLS12_G1_MAPPING_PARAMS;
+        let (x_prime, y_prime) = simplified_swu_fp(
+            el, 
+            &swu, 
+            coerce_static(el, &BLS12_381_G1_CURVE_ISOGENY)
+        );
+
+        let (x, y) = apply_isogeny_map(
+            &x_prime,
+            &y_prime,
+            &iso,
+            &BLS12_381_G1_CURVE_PARAMETERS
+        );
+
+        let point = CurvePoint::point_from_xy(&BLS12_381_G1_CURVE, x, y);
+        if point.is_on_curve() == false {
+            return Err(ApiError::InputError("mapped point is not on the curve".to_owned()));
+        }
+
+        let mut cofactor_cleared = point.mul(&BLS12_381_G1_MAPPING_H_EFF[..]);
+        cofactor_cleared.normalize();
+
+        Ok(cofactor_cleared)
+    }
+
+    pub fn fp2_to_g2(
+        el: &Fp2<'static, U384Repr, PrimeField<U384Repr>>
+    ) -> Result<CurvePoint<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>>, ApiError>
+    {
+        let (swu, iso) = &*crate::mapping::parameters::BLS12_G2_MAPPING_PARAMS;
+        let (x_prime, y_prime) = simplified_swu_fp2(
+            el, 
+            &swu, 
+            coerce_static(el, &BLS12_381_G2_CURVE_ISOGENY)
+        );
+
+        let (x, y) = apply_isogeny_map(
+            &x_prime,
+            &y_prime,
+            &iso,
+            &BLS12_381_G2_CURVE_PARAMETERS
+        );
+
+        let point = CurvePoint::point_from_xy(&BLS12_381_G2_CURVE, x, y);
+        if point.is_on_curve() == false {
+            return Err(ApiError::InputError("mapped point is not on the curve".to_owned()));
+        }
+
+        let mut cofactor_cleared = point.wnaf_mul_with_window_size(&BLS12_381_G2_MAPPING_H_EFF[..], 5);
+        cofactor_cleared.normalize();
+
+        Ok(cofactor_cleared)
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::*;

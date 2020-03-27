@@ -74,3 +74,29 @@ fn bench_bls12_engine_sugroup_g2_window_7(b: &mut Bencher) {
         assert!(point.wnaf_mul_with_window_size(&subgroup[..], 7).is_zero());
     });
 }
+
+#[cfg(feature = "mappings")]
+#[bench]
+fn bench_bls12_engine_map_fp_to_g1(b: &mut Bencher) {
+    let mut x = BLS12_381_FP_ONE.clone();
+    x.double();
+    x.double();
+    x.square();
+
+    b.iter(|| {
+        crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
+    });
+}
+
+#[cfg(feature = "mappings")]
+#[bench]
+fn bench_bls12_engine_map_fp2_to_g2(b: &mut Bencher) {
+    let mut x = BLS12_381_FP2_ONE.clone();
+    x.double();
+    x.double();
+    x.square();
+
+    b.iter(|| {
+        crate::engines::bls12_381::mapping::fp2_to_g2(&x).unwrap();
+    });
+}

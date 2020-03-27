@@ -24,6 +24,8 @@ mod features;
 mod wnaf;
 mod square_root;
 mod engines;
+
+#[cfg(feature = "mappings")]
 mod mapping;
 
 pub mod public_interface;

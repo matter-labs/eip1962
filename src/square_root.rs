@@ -64,18 +64,22 @@ pub(crate) fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E
 }
 
 pub(crate) fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> LegendreSymbol {
-    let mut modulus_minus_one_by_two = *element.extension_field.field.modulus();
-    modulus_minus_one_by_two.shr(1);
+    // let mut modulus_minus_one_by_two = *element.extension_field.field.modulus();
+    // modulus_minus_one_by_two.shr(1);
 
-    let a = element.pow(&modulus_minus_one_by_two.as_ref());
+    let a = element.norm();
 
-    if a.is_zero() {
-        LegendreSymbol::Zero
-    } else if a == Fp2::one(element.extension_field) {
-        LegendreSymbol::QuadraticResidue
-    } else {
-        LegendreSymbol::QuadraticNonResidue
-    }
+    legendre_symbol_fp(&a)
+
+    // let a = a.pow(&modulus_minus_one_by_two.as_ref());
+
+    // if a.is_zero() {
+    //     LegendreSymbol::Zero
+    // } else if a == Fp2::one(element.extension_field) {
+    //     LegendreSymbol::QuadraticResidue
+    // } else {
+    //     LegendreSymbol::QuadraticNonResidue
+    // }
 }
 
 fn sqrt_for_one_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(_element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {

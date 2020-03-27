@@ -52,6 +52,18 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
         self.c0.mul_assign(&element);
         self.c1.mul_assign(&element);
     }
+
+    pub fn norm(&self) -> Fp<'a, E, F> {
+        let mut t0 = self.c0.clone();
+        t0.square();
+        let mut t1 = self.c1.clone();
+        t1.square();
+        t1.mul_by_nonresidue(self.extension_field);
+        t1.negate();
+        t1.add_assign(&t0);
+
+        t1
+    }
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp2<'a, E, F> {

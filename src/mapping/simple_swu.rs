@@ -200,8 +200,8 @@ pub(crate) fn simplified_swu_fp2<
     gx2.mul_assign(&tv2);
 
     // 16.  e2 = is_square(gx1)
-    let e2 = legendre_symbol_fp2(&gx1);
-    let e2 = e2 == LegendreSymbol::Zero || e2 == LegendreSymbol::QuadraticResidue;
+    let e2_legendre = legendre_symbol_fp2(&gx1);
+    let e2 = e2_legendre == LegendreSymbol::Zero || e2_legendre == LegendreSymbol::QuadraticResidue;
 
     // 17.   x = CMOV(x2, x1, e2)    # If is_square(gx1), x = x1, else x = x2
     let x = if e2 {
@@ -229,9 +229,13 @@ pub(crate) fn simplified_swu_fp2<
     match (u_sign, y_sign) {
         (Sign::Zero, Sign::Zero) |
         (Sign::Zero, Sign::SignPlus) | 
-        (Sign::SignPlus, Sign::Zero) => {},
+        (Sign::SignPlus, Sign::Zero) => {
+
+        },
         (Sign::SignPlus, Sign::SignPlus) |
-        (Sign::SignMinus, Sign::SignMinus) => {},
+        (Sign::SignMinus, Sign::SignMinus) => {
+
+        },
         (Sign::SignPlus, Sign::SignMinus) |
         (Sign::SignMinus, Sign::SignPlus) => {
             y.negate();

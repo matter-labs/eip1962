@@ -202,10 +202,6 @@ mod test {
 
         use ethereum_types::{U256};
 
-        // let mut multiexp_len = vec![0, 2, 4, 8, 16, 32, 64, 128];
-        let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
-        multiexp_len.reverse();
-
         use indicatif::{ProgressBar, ProgressStyle};
 
         let pb = ProgressBar::new(1u64);
@@ -321,6 +317,101 @@ mod test {
         let gas_per_second = 1_000_000 * 1_000 * BN_PAIRING_10_POINTS_GAS / ns_per_run;
 
         println!("MGAS per second on the current PC = {}", (gas_per_second as f64) / 1_000_000f64);
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_sha256_precompile() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 10000;
+
+        use parity_crypto::digest;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        let input_len = vec![0, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+
+        for i in input_len.into_iter() {
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(i, mut rng, pb, tx)| {
+                let mut input = vec![0u8; i];
+                let mut output = [0u8; 32];
+                for _ in 0..RUNS_PER_WORK_UNIT {
+
+                    rng.fill_bytes(&mut input);
+
+                    let start = std::time::Instant::now();
+                    use std::io::Write;
+
+                    let d = digest::sha256(&input);
+                    (&mut output[..]).write(&d).unwrap();
+
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send((elapsed_nanos, i)).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sums = std::collections::HashMap::new();
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok((r, i)) => {
+                    let entry = sums.entry(i).or_insert(0u128);
+                    *entry += r as u128;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const ECRECOVER_GAS: u128 = 3000;
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        for (k, v) in sums.into_iter() {
+            let ns_average = (v as u128) / (RUNS_PER_WORK_UNIT as u128);
+            let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+            println!("Hashed {} bytes for {} gas", k, gas_average);
+        }
     }
 
 }

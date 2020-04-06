@@ -11,7 +11,7 @@ use crate::representation::ElementRepr;
 use crate::traits::FieldElement;
 use crate::traits::ZeroAndOne;
 
-pub trait CurveParameters: Clone {
+pub trait CurveParameters: Clone + Send + Sync {
     type BaseFieldElement: FieldElement + ZeroAndOne;
     fn params(&self) -> <Self::BaseFieldElement as ZeroAndOne>::Params;
 }

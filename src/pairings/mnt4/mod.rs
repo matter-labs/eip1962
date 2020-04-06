@@ -10,6 +10,7 @@ use crate::pairings::PairingEngine;
 use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
 use crate::weierstrass::Group;
 
+#[derive(Clone)]
 pub struct MNT4InstanceParams<
     'a, 
         FE: ElementRepr, 
@@ -31,6 +32,7 @@ pub struct MNT4InstanceParams<
     pub force_no_naf: bool
 }
 
+#[derive(Clone)]
 pub struct MNT4Instance<
     'a, 
         FE: ElementRepr, 

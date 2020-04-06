@@ -49,6 +49,7 @@ pub trait ZeroAndOne {
     type Params;
     fn zero(f: Self::Params) -> Self;
     fn one(f: Self::Params) -> Self;
+    // fn get_params(&self) -> Self::Params;
 }
 
 pub trait FieldExtension {

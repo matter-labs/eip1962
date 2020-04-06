@@ -16,6 +16,7 @@ pub(crate) struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Rep
     pub(crate) ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
 }
 
+#[derive(Clone)]
 pub struct Bls12InstanceParams<
 'a, 
     FE: ElementRepr, 
@@ -35,6 +36,7 @@ pub struct Bls12InstanceParams<
     pub force_no_naf: bool
 }
 
+#[derive(Clone)]
 pub struct Bls12Instance<
     'a, 
         FE: ElementRepr, 
@@ -932,10 +934,6 @@ mod tests {
         let b_fp = Fp::from_repr(&base_field, U384Repr::from(1)).unwrap();
         let mut b_fp2 = fp2_non_residue.clone().inverse().unwrap();
         b_fp2.mul_by_fp(&b_fp);
-
-        println!("Fp2 nonres = {}", fp2_non_residue);
-        println!("Fp2 nonres inv = {}", fp2_non_residue.clone().inverse().unwrap());
-        println!("B_fp2 = {}", b_fp2);
 
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);

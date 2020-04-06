@@ -111,7 +111,7 @@ fn num_words(number: &MaxFieldSquaredUint) -> usize {
 }
 
 /// This trait represents an element of a field.
-pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug + 'static
+pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug + 'static + Copy + Clone
 {
     type Repr: ElementRepr;
 
@@ -146,6 +146,8 @@ impl<E: ElementRepr> Clone for PrimeField<E> {
         }
     }
 }
+
+impl<E: ElementRepr> Copy for PrimeField<E> {}
 
 impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     type Repr = E;

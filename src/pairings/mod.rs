@@ -13,7 +13,7 @@ pub enum TwistType {
     M
 }
 
-pub trait PairingEngine: Sized {
+pub trait PairingEngine: Sized + Clone + Send + Sync {
     type PairingResult: FieldElement;
     type G1: Group;
     type G2: Group;

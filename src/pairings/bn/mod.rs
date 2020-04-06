@@ -16,6 +16,7 @@ pub(crate) struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Rep
     pub(crate) ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
 }
 
+#[derive(Clone)]
 pub struct BnInstanceParams<
     'a, 
         FE: ElementRepr, 
@@ -37,6 +38,7 @@ pub struct BnInstanceParams<
     pub force_no_naf: bool
 }
 
+#[derive(Clone)]
 pub struct BnInstance<
     'a, 
         FE: ElementRepr, 
@@ -466,7 +468,7 @@ impl<
 
         let mut prepared_coeffs: Vec<_> = prepared_coeffs.into_iter().map(|el| el.into_iter()).collect();
 
-        let mut f = Fp12::one(self.fp12_extension);
+        let mut f = Fp12::one(&self.fp12_extension);
 
         for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1) {    
             f.square();

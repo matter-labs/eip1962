@@ -29,14 +29,15 @@ pub(crate) fn parse_base_field_from_encoding<
 
 pub(crate) fn decode_fp<
     'a,
+    'b,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>
     >
 (
-    bytes: &'a [u8], 
+    bytes: &'b [u8], 
     field_byte_len: usize,
     base_field: &'a F
-) -> Result<(Fp<'a, FE, F>, &'a [u8]), ApiError>
+) -> Result<(Fp<'a, FE, F>, &'b [u8]), ApiError>
 {
     let (x_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to get Fp element")?;
     let x = Fp::from_be_bytes(base_field, x_encoding, true).map_err(|_| {
@@ -46,16 +47,37 @@ pub(crate) fn decode_fp<
     Ok((x, rest))
 }
 
-pub(crate) fn decode_fp2<
+pub(crate) fn decode_fp_oversized<
     'a,
+    'b,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>
     >
 (
-    bytes: &'a [u8], 
+    bytes: &'b [u8], 
+    encoding_length: usize,
+    base_field: &'a F
+) -> Result<(Fp<'a, FE, F>, &'b [u8]), ApiError>
+{
+    let (encoding, rest) = split(bytes, encoding_length, "Input is not long enough to get Fp element")?;
+    let x = Fp::from_be_bytes_with_padding(base_field, encoding, false, true).map_err(|_| {
+        ApiError::InputError("Failed to parse Fp element".to_owned())
+    })?;
+
+    Ok((x, rest))
+}
+
+pub(crate) fn decode_fp2<
+    'a,
+    'b,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >
+(
+    bytes: &'b [u8], 
     field_byte_len: usize,
     extension_field: &'a fp2::Extension2<'a, FE, F>
-) -> Result<(fp2::Fp2<'a, FE, F>, &'a [u8]), ApiError>
+) -> Result<(fp2::Fp2<'a, FE, F>, &'b [u8]), ApiError>
 {
     let (c0_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to Fp2_c0")?;
     let c0 = Fp::from_be_bytes(extension_field.field, c0_encoding, true).map_err(|_| {
@@ -74,16 +96,46 @@ pub(crate) fn decode_fp2<
     Ok((x, rest))
 }
 
-pub(crate) fn decode_fp3<
+pub(crate) fn decode_fp2_oversized<
     'a,
+    'b,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>
     >
 (
-    bytes: &'a [u8], 
+    bytes: &'b [u8], 
+    encoding_length: usize,
+    extension_field: &'a fp2::Extension2<'a, FE, F>
+) -> Result<(fp2::Fp2<'a, FE, F>, &'b [u8]), ApiError>
+{
+    let (c0_encoding, rest) = split(bytes, encoding_length, "Input is not long enough to Fp2_c0")?;
+    let c0 = Fp::from_be_bytes_with_padding(extension_field.field, c0_encoding, false, true).map_err(|_| {
+        ApiError::InputError("Failed to parse Fp2 element".to_owned())
+    })?;
+
+    let (c1_encoding, rest) = split(rest, encoding_length, "Input is not long enough to get Fp2_c1")?;
+    let c1 = Fp::from_be_bytes_with_padding(extension_field.field, c1_encoding, false, true).map_err(|_| {
+        ApiError::InputError("Failed to parse Fp2 element".to_owned())
+    })?;
+
+    let mut x = fp2::Fp2::zero(extension_field);
+    x.c0 = c0;
+    x.c1 = c1;
+
+    Ok((x, rest))
+}
+
+pub(crate) fn decode_fp3<
+    'a,
+    'b,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>
+    >
+(
+    bytes: &'b [u8], 
     field_byte_len: usize,
     extension_field: &'a fp3::Extension3<'a, FE, F>
-) -> Result<(fp3::Fp3<'a, FE, F>, &'a [u8]), ApiError>
+) -> Result<(fp3::Fp3<'a, FE, F>, &'b [u8]), ApiError>
 {
     let (c0_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to Fp3_c0")?;
     let c0 = Fp::from_be_bytes(extension_field.field, c0_encoding, true).map_err(|_| {
@@ -114,24 +166,28 @@ pub(crate) fn serialize_fp_fixed_len<
     F: SizedPrimeField<Repr = FE>
     >
 (
-    field_byte_len: usize,
+    encoding_byte_len: usize,
     element: &'a Fp<'a, FE, F>
 ) -> Result<Vec<u8>, ApiError>
 {
-    let mut bytes: Vec<u8> = Vec::with_capacity(field_byte_len);
+    let mut bytes: Vec<u8> = vec![0u8; encoding_byte_len];
     let element = element.into_repr();
-    element.write_be(&mut bytes).map_err(|_| {
-        ApiError::OutputError("Failed to serialize Fp element".to_owned())
-    })?;
-    if bytes.len() > field_byte_len {
-        bytes.reverse();
-        bytes.truncate(field_byte_len);
-        bytes.reverse();
-    } else if bytes.len() < field_byte_len {
-        bytes.reverse();
-        bytes.resize(field_byte_len, 0u8);
-        bytes.reverse();
+    let expected_byte_len = element.as_ref().len() * 8;
+    if encoding_byte_len >= expected_byte_len {
+        let start = encoding_byte_len - expected_byte_len;
+        element.write_be(&mut bytes[start..]).map_err(|_| {
+            ApiError::OutputError("Failed to serialize Fp element".to_owned())
+        })?;
+    } else {
+        bytes.truncate(0);
+        element.write_be(&mut bytes).map_err(|_| {
+            ApiError::OutputError("Failed to serialize Fp element".to_owned())
+        })?;
+        let trim = expected_byte_len - encoding_byte_len;
+        bytes.drain(0..trim);
     }
+
+    debug_assert_eq!(bytes.len(), encoding_byte_len);
 
     Ok(bytes)
 }
@@ -142,13 +198,13 @@ pub(crate) fn serialize_fp2_fixed_len<
     F: SizedPrimeField<Repr = FE>
     >
     (
-        field_byte_len: usize,
+        encoding_byte_len: usize,
         element: &'a fp2::Fp2<'a, FE, F>
     ) -> Result<Vec<u8>, ApiError>
 {
-    let mut bytes = Vec::with_capacity(2*field_byte_len);
-    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c0)?);
-    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c1)?);
+    let mut bytes = Vec::with_capacity(2*encoding_byte_len);
+    bytes.extend(serialize_fp_fixed_len(encoding_byte_len, &element.c0)?);
+    bytes.extend(serialize_fp_fixed_len(encoding_byte_len, &element.c1)?);
 
     Ok(bytes)
 }
@@ -159,14 +215,14 @@ pub(crate) fn serialize_fp3_fixed_len<
     F: SizedPrimeField<Repr = FE>
     >
     (
-        field_byte_len: usize,
+        encoding_byte_len: usize,
         element: &'a fp3::Fp3<'a, FE, F>
     ) -> Result<Vec<u8>, ApiError>
 {
-    let mut bytes = Vec::with_capacity(3*field_byte_len);
-    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c0)?);
-    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c1)?);
-    bytes.extend(serialize_fp_fixed_len(field_byte_len, &element.c2)?);
+    let mut bytes = Vec::with_capacity(3*encoding_byte_len);
+    bytes.extend(serialize_fp_fixed_len(encoding_byte_len, &element.c0)?);
+    bytes.extend(serialize_fp_fixed_len(encoding_byte_len, &element.c1)?);
+    bytes.extend(serialize_fp_fixed_len(encoding_byte_len, &element.c2)?);
 
     Ok(bytes)
 }

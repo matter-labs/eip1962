@@ -151,8 +151,8 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         rhs == lhs
     }
 
-    pub fn point_from_xy<'b: 'a>(
-        curve: &'a WeierstrassCurve<'b, C>,
+    pub fn point_from_xy(
+        curve: &'a WeierstrassCurve<'a, C>,
         x: C::BaseFieldElement, 
         y: C::BaseFieldElement,
     ) -> CurvePoint<'a, C> {

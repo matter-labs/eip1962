@@ -42,38 +42,60 @@ pub(crate) fn parse_ab_in_base_field_from_encoding<
 pub(crate) fn serialize_g1_point<
     'a,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE> + 'a,
+    F: SizedPrimeField<Repr = FE>,
     C: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>
     >
     (
-        modulus_len: usize,
+        encoding_length: usize,
         point: &CurvePoint<'a, C>
     ) -> Result<Vec<u8>, ApiError>
 {
     let (x, y) = point.into_xy();
-    let mut result = Vec::with_capacity(2*modulus_len);
-    result.extend(serialize_fp_fixed_len(modulus_len, &x)?);
-    result.extend(serialize_fp_fixed_len(modulus_len, &y)?);
+    let mut result = Vec::with_capacity(2*encoding_length);
+    result.extend(serialize_fp_fixed_len(encoding_length, &x)?);
+    result.extend(serialize_fp_fixed_len(encoding_length, &y)?);
 
     Ok(result)
 }
 
 pub(crate) fn decode_g1_point_from_xy<
     'a,
+    'b,
     FE: ElementRepr,
-    F: SizedPrimeField<Repr = FE> + 'a,
-    C: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>
+    F: SizedPrimeField<Repr = FE>,
+    C: CurveParameters<BaseFieldElement = Fp<'b, FE, F>>
     >
     (
         bytes: &'a [u8], 
         field_byte_len: usize,
-        curve: &'a WeierstrassCurve<'a, C>
-    ) -> Result<(CurvePoint<'a, C>, &'a [u8]), ApiError>
+        curve: &'b WeierstrassCurve<'b, C>
+    ) -> Result<(CurvePoint<'b, C>, &'a [u8]), ApiError>
 {
     let (x, rest) = decode_fp(&bytes, field_byte_len, curve.params.params())?;
     let (y, rest) = decode_fp(&rest, field_byte_len, curve.params.params())?;
     
-    let p: CurvePoint<'a, C> = CurvePoint::point_from_xy(&curve, x, y);
+    let p: CurvePoint<'b, C> = CurvePoint::point_from_xy(&curve, x, y);
+    
+    Ok((p, rest))
+}
+
+pub(crate) fn decode_g1_point_from_xy_oversized<
+    'a,
+    'b,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>,
+    C: CurveParameters<BaseFieldElement = Fp<'b, FE, F>>
+    >
+    (
+        bytes: &'a [u8], 
+        encoding_length: usize,
+        curve: &'b WeierstrassCurve<'b, C>
+    ) -> Result<(CurvePoint<'b, C>, &'a [u8]), ApiError>
+{
+    let (x, rest) = decode_fp_oversized(&bytes, encoding_length, curve.params.params())?;
+    let (y, rest) = decode_fp_oversized(&rest, encoding_length, curve.params.params())?;
+    
+    let p: CurvePoint<'b, C> = CurvePoint::point_from_xy(&curve, x, y);
     
     Ok((p, rest))
 }
@@ -84,14 +106,10 @@ pub(crate) fn decode_scalar_representation<
     (
         bytes: &'a [u8], 
         order_byte_len: usize,
-        _order: &MaxGroupSizeUint,
     ) -> Result<(MaxGroupSizeUint, &'a [u8]), ApiError>
 {
     let (encoding, rest) = split(bytes, order_byte_len, "Input is not long enough to get scalar")?;
     let scalar = MaxGroupSizeUint::from_big_endian(&encoding);
-    // if &scalar > _order {
-    //     return Err(ApiError::InputError(format!("Scalar is larger than the group order, file {}, line {}", file!(), line!())));
-    // }
 
     Ok((scalar, rest))
 }

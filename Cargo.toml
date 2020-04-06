@@ -40,15 +40,15 @@ pbr = "*"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 bn = { git = "https://github.com/paritytech/bn", default-features = false }
-
 rayon = "1.*"
 indicatif = {version = "*", features = ["with_rayon"]}
 parity-crypto = {version = "0.4", features = ["publickey"]}
 ethereum-types = "0.8"
 keccak-hash = "0.4"
+eip-152 = {path = "./aux/EIP-152"}
 
 [features]
-default = ["gas_metering", "mappings"]
+default = ["eip_2537", "gas_metering", "mappings"]
 benchmarks = []
 mappings = ["once_cell", "num-bigint", "num-traits"]
 gas_metering = ["serde", "serde_json", "once_cell"]
@@ -56,6 +56,7 @@ c_api = []
 gas_metering_mode = []
 fuzzing_mode = []
 external_tests = []
+eip_2537 = ["mappings"]
 
 # [profile.dev]
 # incremental = false

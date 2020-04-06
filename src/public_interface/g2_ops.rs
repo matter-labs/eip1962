@@ -82,7 +82,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
         })?;
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp2(rest, modulus_len, &curve)?;
-        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order)?;
+        let (scalar, rest) = decode_scalar_representation(rest, order_len)?;
 
         if rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
@@ -134,7 +134,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp2<FE> {
                     return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
                 }
             }
-            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order)?;
+            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len)?;
             bases.push(p);
             scalars.push(scalar);
             global_rest = local_rest;
@@ -212,7 +212,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
         })?;
 
         let (p_0, rest) = decode_g2_point_from_xy_in_fp3(rest, modulus_len, &curve)?;
-        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order)?;
+        let (scalar, rest) = decode_scalar_representation(rest, order_len)?;
 
         if rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
@@ -264,7 +264,7 @@ impl<FE: ElementRepr> G2Api for G2ApiImplementationFp3<FE> {
                     return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
                 }
             }
-            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len, &order)?;
+            let (scalar, local_rest) = decode_scalar_representation(local_rest, order_len)?;
             bases.push(p);
             scalars.push(scalar);
             global_rest = local_rest;

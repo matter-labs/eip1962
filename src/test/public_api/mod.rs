@@ -80,7 +80,7 @@ impl<FE: ElementRepr> Tester<FE> {
         })?;
 
         let (p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
-        let (scalar, rest) = decode_scalar_representation(rest, order_len, &order)?;
+        let (scalar, rest) = decode_scalar_representation(rest, order_len)?;
 
         if rest.len() != 0 {
             return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));

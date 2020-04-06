@@ -98,25 +98,7 @@ pub const BLS12_381_FP_ONE: decl_fp!(U384Repr) = repr_into_fp!(
     U384Repr,
     BLS12_381_FIELD
 );
-
-// const BLS12_381_FP_NON_RESIDUE: Fp<'static, U384Repr, PrimeField<U384Repr>> = repr_into_fp!(
-//     BLS12_381_FP_NON_RESIDUE_REPR, 
-//     U384Repr,
-//     BLS12_381_FIELD
-// );
-
-// const BLS12_381_FP_NON_RESIDUE: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
-//     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
-//         field: &BLS12_381_FIELD,
-//         repr: BLS12_381_FP_NON_RESIDUE_REPR
-//     };
-
-// const BLS12_381_FP_ZERO: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
-//     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
-//         field: &BLS12_381_FIELD,
-//         repr: REPR_ZERO
-//     };    
-
+ 
 const BLS12_381_EXTENSION_2_FROB_COEFF_0_REPR: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
 const BLS12_381_EXTENSION_2_FROB_COEFF_1_REPR: U384Repr = U384Repr([0x43f5fffffffcaaae,0x32b7fff2ed47fffd,0x07e83a49a2e99d69,0xeca8f3318332bb7a,0xef148d1ea0f4c069,0x040ab3263eff0206]);
 

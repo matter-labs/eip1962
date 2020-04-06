@@ -414,4 +414,894 @@ mod test {
         }
     }
 
+    #[test]
+    #[ignore]
+    fn benchmark_ripemd160_precompile() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 10000;
+
+        use parity_crypto::digest;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        let input_len = vec![0, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+
+        for i in input_len.into_iter() {
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(i, mut rng, pb, tx)| {
+                let mut input = vec![0u8; i];
+                let mut output = [0u8; 20];
+                for _ in 0..RUNS_PER_WORK_UNIT {
+
+                    rng.fill_bytes(&mut input);
+
+                    let start = std::time::Instant::now();
+                    use std::io::Write;
+
+                    let d = digest::ripemd160(&input);
+                    (&mut output[..]).write(&d).unwrap();
+
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send((elapsed_nanos, i)).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sums = std::collections::HashMap::new();
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok((r, i)) => {
+                    let entry = sums.entry(i).or_insert(0u128);
+                    *entry += r as u128;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const ECRECOVER_GAS: u128 = 3000;
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        for (k, v) in sums.into_iter() {
+            let ns_average = (v as u128) / (RUNS_PER_WORK_UNIT as u128);
+            let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+            println!("Hashed {} bytes for {} gas", k, gas_average);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_blake2f_precompile() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 10000;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        let num_rounds: Vec<u32> = vec![0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+
+        for i in num_rounds.into_iter() {
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(i, mut rng, pb, tx)| {
+                use std::io::{Cursor, Write};
+                use byteorder::{BigEndian, LittleEndian};
+                use byteorder::{ReadBytesExt, WriteBytesExt};
+                use eip_152::compress;
+
+                const BLAKE2_F_ARG_LEN: usize = 213;
+                const PROOF: &str = "Checked the length of the input above; qed";
+        
+                let mut input = vec![0u8; BLAKE2_F_ARG_LEN];
+                (&mut input[0..4]).write_u32::<BigEndian>(i).expect("must write number of rounds");
+                 
+                let mut output = [0u8; 64];
+                for _ in 0..RUNS_PER_WORK_UNIT {
+                    rng.fill_bytes(&mut input[4..]);
+                    let last_byte = input[BLAKE2_F_ARG_LEN-1];
+                    input[BLAKE2_F_ARG_LEN-1] = last_byte & 1u8; // last byte is a binary flag
+
+                    let start = std::time::Instant::now();
+
+                    if input.len() != BLAKE2_F_ARG_LEN {
+                        panic!("input length for Blake2 F precompile should be exactly 213 bytes");
+                    }
+            
+                    let mut cursor = Cursor::new(&input);
+                    let rounds = cursor.read_u32::<BigEndian>().expect(PROOF);
+            
+                    // state vector, h
+                    let mut h = [0u64; 8];
+                    for state_word in &mut h {
+                        *state_word = cursor.read_u64::<LittleEndian>().expect(PROOF);
+                    }
+            
+                    // message block vector, m
+                    let mut m = [0u64; 16];
+                    for msg_word in &mut m {
+                        *msg_word = cursor.read_u64::<LittleEndian>().expect(PROOF);
+                    }
+            
+                    // 2w-bit offset counter, t
+                    let t = [
+                        cursor.read_u64::<LittleEndian>().expect(PROOF),
+                        cursor.read_u64::<LittleEndian>().expect(PROOF),
+                    ];
+            
+                    // final block indicator flag, "f"
+                    let f = match input.last() {
+                            Some(1) => true,
+                            Some(0) => false,
+                            _ => {
+                                panic!("incorrect final block indicator flag, was: {:?}", input.last());
+                            }
+                        };
+            
+                    compress(&mut h, m, t, f, rounds as usize);
+            
+                    let mut output_buf = [0u8; 8 * std::mem::size_of::<u64>()];
+                    for (i, state_word) in h.iter().enumerate() {
+                        output_buf[i*8..(i+1)*8].copy_from_slice(&state_word.to_le_bytes());
+                    }
+
+                    (&mut output[..]).write(&output_buf).unwrap();
+
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send((elapsed_nanos, i)).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sums = std::collections::HashMap::new();
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok((r, i)) => {
+                    let entry = sums.entry(i).or_insert(0u128);
+                    *entry += r as u128;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const ECRECOVER_GAS: u128 = 3000;
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        for (k, v) in sums.into_iter() {
+            let ns_average = (v as u128) / (RUNS_PER_WORK_UNIT as u128);
+            let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+            println!("Hashed {} rounds for {} gas", k, gas_average);
+        }
+    }
+
+    fn read_fr(reader: &[u8]) -> Result<bn::Fr, &'static str> {
+        let mut buf = [0u8; 32];
+        buf.copy_from_slice(&reader);
+
+        bn::Fr::from_slice(&buf[0..32]).map_err(|_| "Invalid field element")
+    }
+    
+    fn read_point(reader: &[u8]) -> Result<bn::G1, &'static str> {
+        use bn::{Fq, AffineG1, G1, Group};
+    
+        let mut buf = [0u8; 32];
+
+        buf.copy_from_slice(&reader[0..32]);
+    
+        let px = Fq::from_slice(&buf[0..32]).map_err(|_| "Invalid point x coordinate")?;
+
+        buf.copy_from_slice(&reader[32..64]);
+
+        let py = Fq::from_slice(&buf[0..32]).map_err(|_| "Invalid point y coordinate")?;
+        Ok(
+            if px == Fq::zero() && py == Fq::zero() {
+                G1::zero()
+            } else {
+                AffineG1::new(px, py).map_err(|_| "Invalid curve point")?.into()
+            }
+        )
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_bn_add_precompile() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{Rng, SeedableRng, RngCore};
+        use rand_xorshift::XorShiftRng;
+
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 1000;
+        const PARALLEL_WORKS: usize = 50;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        for i in 0..PARALLEL_WORKS {
+            let _: u8 = rng.gen();
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(_i, mut rng, pb, tx)| {
+                let mut scalar_buffer = vec![0u8; 32];
+                let mut base_point_x = vec![0u8; 32];
+                base_point_x[31] = 1;
+                let mut base_point_y = vec![0u8; 32];
+                base_point_y[31] = 2;
+                let mut base_point_encoding = vec![];
+                base_point_encoding.extend(base_point_x);
+                base_point_encoding.extend(base_point_y);
+
+                let mut input = vec![0u8; 128];
+
+                let base_point = read_point(&mut base_point_encoding).unwrap();
+
+                let mut output = vec![0u8; 32];
+
+                for _ in 0..RUNS_PER_WORK_UNIT {
+                    rng.fill_bytes(&mut scalar_buffer);
+                    scalar_buffer[0] = 0;
+
+                    let fr = read_fr(&mut scalar_buffer).unwrap();
+
+                    let p1 = AffineG1::from_jacobian(base_point * fr).unwrap();
+                    p1.x().to_big_endian(&mut input[0..32]).expect("Cannot fail since 0..32 is 32-byte length");
+                    p1.y().to_big_endian(&mut input[32..64]).expect("Cannot fail since 32..64 is 32-byte length");
+
+                    rng.fill_bytes(&mut scalar_buffer);
+                    scalar_buffer[0] = 0;
+
+                    let fr = read_fr(&mut scalar_buffer).unwrap();
+
+                    let p2 = AffineG1::from_jacobian(base_point * fr).unwrap();
+                    p2.x().to_big_endian(&mut input[64..96]).expect("Cannot fail since 0..32 is 32-byte length");
+                    p2.y().to_big_endian(&mut input[96..128]).expect("Cannot fail since 32..64 is 32-byte length");
+
+
+                    use bn::AffineG1;
+
+                    let start = std::time::Instant::now();
+
+                    let p1 = read_point(&mut input[0..64]).unwrap();
+                    let p2 = read_point(&mut input[64..128]).unwrap();
+            
+                    let mut write_buf = [0u8; 64];
+                    if let Some(sum) = AffineG1::from_jacobian(p1 + p2) {
+                        // point not at infinity
+                        sum.x().to_big_endian(&mut write_buf[0..32]).expect("Cannot fail since 0..32 is 32-byte length");
+                        sum.y().to_big_endian(&mut write_buf[32..64]).expect("Cannot fail since 32..64 is 32-byte length");
+                    }
+                    use std::io::Write;
+
+                    (&mut output).write(&write_buf).unwrap();
+                    
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send(elapsed_nanos).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sum = 0u128;
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok(r) => {
+                    sum += r;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        let ns_average = (sum as u128) / (RUNS_PER_WORK_UNIT as u128) / (PARALLEL_WORKS as u128);
+        let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+        println!("BN_ADD used {} gas on average", gas_average);
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_bn_mul_precompile() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{Rng, SeedableRng, RngCore};
+        use rand_xorshift::XorShiftRng;
+
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 1000;
+        const PARALLEL_WORKS: usize = 50;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        for i in 0..PARALLEL_WORKS {
+            let _: u8 = rng.gen();
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(_i, mut rng, pb, tx)| {
+                let mut scalar_buffer = vec![0u8; 32];
+                let mut base_point_x = vec![0u8; 32];
+                base_point_x[31] = 1;
+                let mut base_point_y = vec![0u8; 32];
+                base_point_y[31] = 2;
+                let mut base_point_encoding = vec![];
+                base_point_encoding.extend(base_point_x);
+                base_point_encoding.extend(base_point_y);
+
+                let mut input = vec![0u8; 64];
+
+                let worst_case_scalar = vec![255u8; 32];
+
+                input.extend(worst_case_scalar);
+
+                let base_point = read_point(&mut base_point_encoding).unwrap();
+
+                let mut output = vec![0u8; 32];
+
+                for _ in 0..RUNS_PER_WORK_UNIT {
+                    rng.fill_bytes(&mut scalar_buffer);
+                    scalar_buffer[0] = 0;
+
+                    let fr = read_fr(&mut scalar_buffer).unwrap();
+
+                    let p1 = AffineG1::from_jacobian(base_point * fr).unwrap();
+                    p1.x().to_big_endian(&mut input[0..32]).expect("Cannot fail since 0..32 is 32-byte length");
+                    p1.y().to_big_endian(&mut input[32..64]).expect("Cannot fail since 32..64 is 32-byte length");
+
+                    use bn::AffineG1;
+
+                    let start = std::time::Instant::now();
+
+                    let p = read_point(&mut input[0..64]).unwrap();
+                    let fr = read_fr(&mut input[64..96]).unwrap();
+            
+                    let mut write_buf = [0u8; 64];
+                    if let Some(sum) = AffineG1::from_jacobian(p * fr) {
+                        // point not at infinity
+                        sum.x().to_big_endian(&mut write_buf[0..32]).expect("Cannot fail since 0..32 is 32-byte length");
+                        sum.y().to_big_endian(&mut write_buf[32..64]).expect("Cannot fail since 32..64 is 32-byte length");
+                    }
+                    use std::io::Write;
+
+                    (&mut output).write(&write_buf).unwrap();
+                    
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send(elapsed_nanos).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sum = 0u128;
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok(r) => {
+                    sum += r;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        let ns_average = (sum as u128) / (RUNS_PER_WORK_UNIT as u128) / (PARALLEL_WORKS as u128);
+        let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+        println!("BN_ADD used {} gas on average", gas_average);
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_bn_pairing_precompile() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{Rng, RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 10000;
+
+        use ethereum_types::U256;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        let num_pairs = vec![1, 2, 3, 4, 6, 8, 16, 32];
+
+        for i in num_pairs.into_iter() {
+            let _ : u8 = rng.gen();
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(i, mut rng, pb, tx)| {
+                use bn::{AffineG1, AffineG2, G1, G2, Group, Fq, Fq2, pairing_batch, Gt};
+
+                let mut input = vec![0u8; i * (64 + 128)];
+                let mut output = [0u8; 32];
+
+                let mut scalar_buffer = vec![0u8; 32];
+
+                use std::ops::Mul;
+
+                for _ in 0..RUNS_PER_WORK_UNIT {
+                    let mut offset = 0;
+                    for _ in 0..i {
+                        rng.fill_bytes(&mut scalar_buffer);
+                        scalar_buffer[0] = 0;
+    
+                        let fr = read_fr(&mut scalar_buffer).unwrap();
+                        
+                        let p1 = bn::G1::one().mul(fr);
+                        let p1 = AffineG1::from_jacobian(p1).unwrap();
+                        p1.x().to_big_endian(&mut input[offset..(offset+32)]).expect("Cannot fail since 0..32 is 32-byte length");
+                        offset += 32;
+                        p1.y().to_big_endian(&mut input[offset..(offset+32)]).expect("Cannot fail since 32..64 is 32-byte length");
+                        offset += 32;
+
+                        rng.fill_bytes(&mut scalar_buffer);
+                        scalar_buffer[0] = 0;
+
+                        let fr = read_fr(&mut scalar_buffer).unwrap();
+
+                        let p2 = bn::G2::one().mul(fr);
+                        let p2 = AffineG2::from_jacobian(p2).unwrap();
+                        p2.x().imaginary().to_big_endian(&mut input[offset..(offset+32)]).expect("Cannot fail since 0..32 is 32-byte length");
+                        offset += 32;
+                        p2.x().real().to_big_endian(&mut input[offset..(offset+32)]).expect("Cannot fail since 0..32 is 32-byte length");
+                        offset += 32;
+
+                        p2.y().imaginary().to_big_endian(&mut input[offset..(offset+32)]).expect("Cannot fail since 0..32 is 32-byte length");
+                        offset += 32;
+                        p2.y().real().to_big_endian(&mut input[offset..(offset+32)]).expect("Cannot fail since 0..32 is 32-byte length");
+                        offset += 32;
+                    }
+
+                    let start = std::time::Instant::now();
+                    use std::io::Write;
+
+                    let ret_val = if input.is_empty() {
+                        U256::one()
+                    } else {
+                        // (a, b_a, b_b - each 64-byte affine coordinates)
+                        let elements = input.len() / 192;
+                        let mut vals = Vec::new();
+                        for idx in 0..elements {
+                            let a_x = Fq::from_slice(&input[idx*192..idx*192+32])
+                                .map_err(|_| "Invalid a argument x coordinate").unwrap();
+            
+                            let a_y = Fq::from_slice(&input[idx*192+32..idx*192+64])
+                                .map_err(|_| "Invalid a argument y coordinate").unwrap();
+            
+                            let b_a_y = Fq::from_slice(&input[idx*192+64..idx*192+96])
+                                .map_err(|_| "Invalid b argument imaginary coeff x coordinate").unwrap();
+            
+                            let b_a_x = Fq::from_slice(&input[idx*192+96..idx*192+128])
+                                .map_err(|_| "Invalid b argument imaginary coeff y coordinate").unwrap();
+            
+                            let b_b_y = Fq::from_slice(&input[idx*192+128..idx*192+160])
+                                .map_err(|_| "Invalid b argument real coeff x coordinate").unwrap();
+            
+                            let b_b_x = Fq::from_slice(&input[idx*192+160..idx*192+192])
+                                .map_err(|_| "Invalid b argument real coeff y coordinate").unwrap();
+            
+                            let b_a = Fq2::new(b_a_x, b_a_y);
+                            let b_b = Fq2::new(b_b_x, b_b_y);
+                            let b = if b_a.is_zero() && b_b.is_zero() {
+                                G2::zero()
+                            } else {
+                                G2::from(AffineG2::new(b_a, b_b).map_err(|_| "Invalid b argument - not on curve").unwrap())
+                            };
+                            let a = if a_x.is_zero() && a_y.is_zero() {
+                                G1::zero()
+                            } else {
+                                G1::from(AffineG1::new(a_x, a_y).map_err(|_| "Invalid a argument - not on curve").unwrap())
+                            };
+                            vals.push((a, b));
+                        };
+            
+                        let mul = pairing_batch(&vals);
+            
+                        if mul == Gt::one() {
+                            U256::one()
+                        } else {
+                            U256::zero()
+                        }
+                    };
+            
+                    let mut buf = [0u8; 32];
+                    ret_val.to_big_endian(&mut buf);
+                    (&mut output[..]).write(&buf).unwrap();
+
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send((elapsed_nanos, i)).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sums = std::collections::HashMap::new();
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok((r, i)) => {
+                    let entry = sums.entry(i).or_insert(0u128);
+                    *entry += r as u128;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const ECRECOVER_GAS: u128 = 3000;
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        for (k, v) in sums.into_iter() {
+            let ns_average = (v as u128) / (RUNS_PER_WORK_UNIT as u128);
+            let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+            println!("Paired {} pairs for {} gas", k, gas_average);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_keccak_function() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 1000000;
+
+        use keccak_hash;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        let input_len = vec![0, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+
+        for i in input_len.into_iter() {
+            parameters_space.push((i, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(i, mut rng, pb, tx)| {
+                let mut input = vec![0u8; i];
+                let mut output = [0u8; 32];
+                for _ in 0..RUNS_PER_WORK_UNIT {
+
+                    rng.fill_bytes(&mut input);
+
+                    let start = std::time::Instant::now();
+                    use std::io::Write;
+
+                    let d = keccak_hash::keccak(&input);
+                    (&mut output[..]).write(&d.as_bytes()).unwrap();
+
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send((elapsed_nanos, i)).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sums = std::collections::HashMap::new();
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok((r, i)) => {
+                    let entry = sums.entry(i).or_insert(0u128);
+                    *entry += r as u128;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const ECRECOVER_GAS: u128 = 3000;
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        for (k, v) in sums.into_iter() {
+            let ns_average = (v as u128) / (RUNS_PER_WORK_UNIT as u128);
+            let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+            println!("Hashed {} bytes for {} gas", k, gas_average);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_keccak_sponge_price() {
+        use std::thread;
+
+        use std::sync::mpsc::{channel, TryRecvError};
+
+        use rayon::prelude::*;
+
+        use rand::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        const RUNS_PER_WORK_UNIT: usize = 10000;
+
+        use keccak_hash;
+
+        use indicatif::{ProgressBar, ProgressStyle};
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        let mut parameters_space = vec![];
+        let (tx, rx) = channel();
+
+        let multiple = 8;
+
+        for i in 0..=(768/multiple) {
+            parameters_space.push((i*multiple, rng.clone(), pb.clone(), tx.clone()));
+        }
+
+        drop(tx);
+
+        pb.set_length((parameters_space.len() * RUNS_PER_WORK_UNIT) as u64);
+
+        let handler = thread::spawn(move || {
+            parameters_space.into_par_iter().for_each(|(i, mut rng, pb, tx)| {
+                let mut input = vec![0u8; i];
+                let mut output = [0u8; 32];
+                for _ in 0..RUNS_PER_WORK_UNIT {
+
+                    rng.fill_bytes(&mut input);
+
+                    let start = std::time::Instant::now();
+                    use std::io::Write;
+
+                    let d = keccak_hash::keccak(&input);
+                    (&mut output[..]).write(&d.as_bytes()).unwrap();
+
+                    let elapsed_nanos = start.elapsed().as_nanos();
+                    tx.send((elapsed_nanos, i)).unwrap();
+
+                    pb.inc(1);
+                }
+            });
+        });
+
+        let mut sums = std::collections::HashMap::new();
+
+        loop {
+            let subres = rx.try_recv();
+            match subres {
+                Ok((r, i)) => {
+                    let entry = sums.entry(i).or_insert(0u128);
+                    *entry += r as u128;
+                },
+                Err(TryRecvError::Empty) => {
+                    std::thread::sleep(std::time::Duration::from_millis(1000u64));
+                },
+                Err(TryRecvError::Disconnected) => {
+                    handler.join().unwrap();
+                    break;
+                }
+            }
+        }
+
+        pb.finish();
+
+        const ECRECOVER_GAS: u128 = 3000;
+
+        const GAS_PER_SECOND: u128 = 35_000_000;
+
+        println!("Using {} gas/second", GAS_PER_SECOND);
+
+        let mut as_vec: Vec<_> = sums.into_iter().collect();
+        as_vec.sort_by(|a, b| a.0.cmp(&b.0));
+
+        for (k, v) in as_vec.into_iter() {
+            let ns_average = (v as u128) / (RUNS_PER_WORK_UNIT as u128);
+            let gas_average = GAS_PER_SECOND * ns_average / 1_000_000_000u128;
+            println!("Hashed {} bytes for {} gas", k, gas_average);
+        }
+    }
 }

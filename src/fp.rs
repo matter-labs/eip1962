@@ -160,6 +160,36 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         Self::from_repr(field, repr)
     }
 
+    pub fn from_be_bytes_with_padding(
+        field: &'a F, 
+        bytes: &[u8], 
+        pad_beginning: bool, 
+        expect_prepadded_beginning: bool
+    ) -> Result<Self, RepresentationDecodingError> {
+        let mut repr = E::default();
+        let necessary_length = repr.as_ref().len() * 8;
+        if bytes.len() >= necessary_length {
+            if expect_prepadded_beginning {
+                let start = bytes.len() - necessary_length;
+                repr.read_be(&bytes[start..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+            } else {
+                if bytes.len() != necessary_length {
+                    return Err(RepresentationDecodingError::NotInField("supplied encoding is longer than expected".to_owned()));
+                }
+                repr.read_be(&bytes[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+            }
+        } else {
+            if pad_beginning {
+                let mut padded = vec![0u8; necessary_length - bytes.len()];
+                padded.extend_from_slice(bytes);
+                repr.read_be(&padded[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+            } else {
+                repr.read_be(&bytes[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes without padding, {}", e)))?;
+            }
+        }
+        Self::from_repr(field, repr)
+    }
+
     pub(crate) fn eea_inverse(&self) -> Option<Self> {
         if self.is_zero() {
             None

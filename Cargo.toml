@@ -45,10 +45,9 @@ indicatif = {version = "*", features = ["with_rayon"]}
 parity-crypto = {version = "0.4", features = ["publickey"]}
 ethereum-types = "0.8"
 keccak-hash = "0.4"
-eip-152 = {path = "./aux/EIP-152"}
 
 [features]
-default = ["eip_2537", "gas_metering", "mappings"]
+default = ["eip_2537", "gas_metering", "mappings", "eip_2357_c_api"]
 benchmarks = []
 mappings = ["once_cell", "num-bigint", "num-traits"]
 gas_metering = ["serde", "serde_json", "once_cell"]
@@ -57,6 +56,7 @@ gas_metering_mode = []
 fuzzing_mode = []
 external_tests = []
 eip_2537 = ["mappings"]
+eip_2357_c_api = ["eip_2537"]
 
 # [profile.dev]
 # incremental = false

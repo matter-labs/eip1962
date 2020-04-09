@@ -11,12 +11,31 @@ pub const SERIALIZED_G1_POINT_BYTE_LENGTH: usize = SERIALIZED_FP_BYTE_LENGTH * 2
 pub const SERIALIZED_FP2_BYTE_LENGTH: usize = SERIALIZED_FP_BYTE_LENGTH * 2;
 pub const SERIALIZED_G2_POINT_BYTE_LENGTH: usize = SERIALIZED_FP2_BYTE_LENGTH * 2;
 
+pub const SERIALIZED_PAIRING_RESULT_BYTE_LENGTH: usize = 32;
+
 use crate::public_interface::decode_fp;
 use crate::public_interface::decode_g1;
 use crate::public_interface::decode_g2;
-use crate::multiexp::peppinger;
 
 use crate::weierstrass::Group;
+use crate::multiexp::peppinger;
+use crate::pairings::PairingEngine;
+
+#[cfg(feature = "eip_2357_c_api")]
+mod c_api;
+#[cfg(feature = "eip_2357_c_api")]
+pub use self::c_api::{c_perform_operation};
+
+fn pairing_result_false() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
+    [0u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH]
+}
+
+fn pairing_result_true() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
+    let mut res = [0u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH];
+    res[31] = 1u8;
+
+    res
+}
 
 impl EIP2537Executor {
     pub fn g1_add<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
@@ -211,6 +230,85 @@ impl EIP2537Executor {
         output.copy_from_slice(&as_vec[..]);
 
         Ok(output)
+    }
+
+    pub fn pair<'a>(input: &'a [u8]) -> Result<[u8; 32], ApiError> {
+        if input.len() % (SERIALIZED_G2_POINT_BYTE_LENGTH + SERIALIZED_G1_POINT_BYTE_LENGTH) != 0 {
+            return Err(ApiError::InputError("invalid input length for pairing".to_owned()));
+        }
+        let num_pairs = input.len() / (SERIALIZED_G2_POINT_BYTE_LENGTH + SERIALIZED_G1_POINT_BYTE_LENGTH);
+
+        if num_pairs == 0 {
+            return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
+        }
+
+        let mut global_rest = input;
+
+        let mut g1_points = Vec::with_capacity(num_pairs);
+        let mut g2_points = Vec::with_capacity(num_pairs);
+
+        for _ in 0..num_pairs {
+            let (g1, rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G1_CURVE)?;
+            let (g2, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G2_CURVE)?;
+
+            global_rest = rest;
+
+            if !g1.is_on_curve() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
+                    return Err(ApiError::InputError("G1 point is not on curve".to_owned()));
+                }
+            }
+
+            if !g2.is_on_curve() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
+                    return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
+                }
+            }
+
+            if !g1.check_correct_subgroup() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
+            }
+
+            if !g2.check_correct_subgroup() {
+                if !crate::features::in_fuzzing_or_gas_metering() {
+                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                }
+            }
+
+            if !g1.is_zero() && !g2.is_zero() {
+                g1_points.push(g1);
+                g2_points.push(g2);
+            }
+        }
+
+        debug_assert!(g1_points.len() == g2_points.len());
+
+        if g1_points.len() == 0 {
+            return Ok(pairing_result_true());
+        }
+
+        let engine = &bls12_381::BLS12_381_PAIRING_ENGINE;
+
+        let pairing_result = engine.pair(&g1_points, &g2_points);
+
+        if pairing_result.is_none() {
+            return Err(ApiError::UnknownParameter("Pairing engine returned no value".to_owned()));
+        }
+
+        use crate::extension_towers::fp12_as_2_over3_over_2::Fp12;
+        use crate::traits::ZeroAndOne;
+
+        let one_fp12 = Fp12::one(&bls12_381::BLS12_381_EXTENSION_12_FIELD);
+        let pairing_result = pairing_result.unwrap();
+        let result = if pairing_result == one_fp12 {
+            pairing_result_true()
+        } else {
+            pairing_result_false()
+        };
+
+        Ok(result)
     }
 
     pub fn map_to_curve<'a>(input: &'a [u8]) -> Result<Vec<u8>, ApiError> {

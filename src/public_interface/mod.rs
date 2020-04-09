@@ -29,7 +29,6 @@ pub use self::c_api::{c_perform_operation};
 #[cfg(feature = "eip_2537")]
 pub mod eip2537;
 
-
 pub struct API;
 
 impl API {

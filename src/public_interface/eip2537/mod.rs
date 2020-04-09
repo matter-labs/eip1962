@@ -230,7 +230,7 @@ impl EIP2537Executor {
         Ok(output)
     }
 
-    pub fn pair<'a>(input: &'a [u8]) -> Result<[u8; 32], ApiError> {
+    pub fn pair<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH], ApiError> {
         if input.len() % (SERIALIZED_G2_POINT_BYTE_LENGTH + SERIALIZED_G1_POINT_BYTE_LENGTH) != 0 {
             return Err(ApiError::InputError("invalid input length for pairing".to_owned()));
         }
@@ -265,13 +265,13 @@ impl EIP2537Executor {
 
             if !g1.check_correct_subgroup() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
                 }
             }
 
             if !g2.check_correct_subgroup() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 or G2 point is not in the expected subgroup".to_owned()));
+                    return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
                 }
             }
 

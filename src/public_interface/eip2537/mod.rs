@@ -22,9 +22,7 @@ use crate::multiexp::peppinger;
 use crate::pairings::PairingEngine;
 
 #[cfg(feature = "eip_2357_c_api")]
-mod c_api;
-#[cfg(feature = "eip_2357_c_api")]
-pub use self::c_api::{c_perform_operation};
+pub mod c_api;
 
 fn pairing_result_false() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
     [0u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH]

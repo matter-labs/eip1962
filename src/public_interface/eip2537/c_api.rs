@@ -69,7 +69,7 @@ pub const BLS12_MAP_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_MAP as
 
 // this is C interface
 #[no_mangle]
-pub extern "C" fn c_perform_operation(
+pub extern "C" fn eip2537_perform_operation(
     op: ::std::os::raw::c_char,
     i: *const ::std::os::raw::c_char,
     i_len: u32,

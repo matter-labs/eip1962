@@ -447,6 +447,46 @@ mod test {
         (scalar, buff)
     }
 
+    fn make_random_g1_and_negated_with_encoding<R: Rng>(rng: &mut R) -> ((G1, G1), (Vec<u8>, Vec<u8>)) {
+        let (scalar, _) = make_random_scalar_with_encoding(rng);
+        let p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
+
+        let mut minus_p = p.clone();
+        minus_p.negate();
+
+        let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
+
+        assert!(as_vec.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
+        assert_eq!(&as_vec[..16], &[0u8; 16]);
+        assert_eq!(&as_vec[64..80], &[0u8; 16]);
+
+        let as_vec_negated = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &minus_p).unwrap();
+
+        assert!(as_vec_negated.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
+        assert_eq!(&as_vec_negated[..16], &[0u8; 16]);
+        assert_eq!(&as_vec_negated[64..80], &[0u8; 16]);
+
+        ((p, minus_p), (as_vec, as_vec_negated))
+    }
+
+    fn make_random_g2_and_negated_with_encoding<R: Rng>(rng: &mut R) -> ((G2, G2), (Vec<u8>, Vec<u8>)) {
+        let (scalar, _) = make_random_scalar_with_encoding(rng);
+        let p = bls12_381::BLS12_381_G2_GENERATOR.mul(&scalar);
+
+        let mut minus_p = p.clone();
+        minus_p.negate();
+
+        let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
+
+        assert!(as_vec.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
+
+        let as_vec_negated = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &minus_p).unwrap();
+
+        assert!(as_vec_negated.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
+
+        ((p, minus_p), (as_vec, as_vec_negated))
+    }
+
     fn make_csv_writer(path: &str) -> Option<Writer<std::fs::File>> {
         if WRITE_VECTORS {
             let mut writer = Writer::from_path(path).expect("must open a test file");
@@ -825,6 +865,70 @@ mod test {
             }
 
             pb.inc(1);
+        }
+
+        pb.finish_with_message("Completed");
+    }
+
+    #[test]
+    fn generate_pairing_vectors() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        pb.set_length(NUM_TESTS as u64);
+
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/pairing.csv");
+        assert!(writer.is_some());
+
+        let num_pairs = vec![1, 2, 3, 4, 5, 8];
+        let len = num_pairs.len();
+
+        for pairs in num_pairs.into_iter() {
+            for _ in 0..(NUM_TESTS/len) {
+                let (_, (g1_enc, minus_g1_enc)) = make_random_g1_and_negated_with_encoding(&mut rng);
+                let (_, (g2_enc, minus_g2_enc)) = make_random_g2_and_negated_with_encoding(&mut rng);
+
+                let mut input = vec![];
+                let expect_identity = pairs % 2 == 0;
+                for i in 0..pairs {
+                    if i & 3 == 0 {
+                        input.extend(g1_enc.clone());
+                        input.extend(g2_enc.clone());
+                    } else if i & 3 == 1 {
+                        input.extend(minus_g1_enc.clone());
+                        input.extend(g2_enc.clone());
+                    } else if i & 3 == 2 {
+                        input.extend(g1_enc.clone());
+                        input.extend(minus_g2_enc.clone());
+                    } else {
+                        input.extend(minus_g1_enc.clone());
+                        input.extend(minus_g2_enc.clone());
+                    }
+                }
+
+                let api_result = EIP2537Executor::pair(&input).unwrap();
+                assert!(api_result.len() == SERIALIZED_PAIRING_RESULT_BYTE_LENGTH);
+
+                if expect_identity {
+                    assert!(api_result[31] == 1u8);
+                }
+
+                if let Some(writer) = writer.as_mut() {
+                    writer.write_record(
+                        &[
+                            &hex::encode(&input[..]), 
+                            &hex::encode(&api_result[..])
+                        ],
+                    ).expect("must write a test vector");
+                }
+
+                pb.inc(1);
+            }
         }
 
         pb.finish_with_message("Completed");

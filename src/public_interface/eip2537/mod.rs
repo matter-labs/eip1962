@@ -435,7 +435,9 @@ mod test {
     
     fn make_random_g1_with_encoding<R: Rng>(rng: &mut R) -> (G1, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
-        let p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
+        
+        let mut p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
+        p.normalize();
 
         let as_vec = encode_g1(&p);
 
@@ -445,7 +447,8 @@ mod test {
     fn make_random_g2_with_encoding<R: Rng>(rng: &mut R) -> (G2, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
 
-        let p = bls12_381::BLS12_381_G2_GENERATOR.mul(&scalar);
+        let mut p = bls12_381::BLS12_381_G2_GENERATOR.mul(&scalar);
+        p.normalize();
 
         let as_vec = encode_g2(&p);
 
@@ -1071,6 +1074,88 @@ mod test {
                     &[
                         &hex::encode(&input[..]), 
                         &description
+                    ],
+                ).expect("must write a test vector");
+            }
+
+            pb.inc(1);
+        }
+
+        pb.finish_with_message("Completed");
+    }
+
+    #[test]
+    fn test_not_on_curve_g1() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        pb.set_length(NUM_TESTS as u64);
+
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/g1_not_on_curve.csv");
+
+        for _ in 0..NUM_TESTS {
+            let mut encoding = Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
+
+            let (mut p0, _) = make_random_g1_with_encoding(&mut rng);
+            make_point_not_on_curve_g1(&mut p0);
+            encoding.extend(encode_g1(&p0));
+
+            let (_, e) = make_random_scalar_with_encoding(&mut rng);
+            encoding.extend(e);
+
+            let api_result = EIP2537Executor::g1_mul(&encoding).err().unwrap().to_string();
+
+            if let Some(writer) = writer.as_mut() {
+                writer.write_record(
+                    &[
+                        &hex::encode(&encoding[..]), 
+                        &api_result
+                    ],
+                ).expect("must write a test vector");
+            }
+
+            pb.inc(1);
+        }
+
+        pb.finish_with_message("Completed");
+    }
+
+    #[test]
+    fn test_not_on_curve_g2() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        pb.set_length(NUM_TESTS as u64);
+
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/g2_not_on_curve.csv");
+
+        for _ in 0..NUM_TESTS {
+            let mut encoding = Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
+
+            let (mut p0, _) = make_random_g2_with_encoding(&mut rng);
+            make_point_not_on_curve_g2(&mut p0);
+            encoding.extend(encode_g2(&p0));
+
+            let (_, e) = make_random_scalar_with_encoding(&mut rng);
+            encoding.extend(e);
+
+            let api_result = EIP2537Executor::g2_mul(&encoding).err().unwrap().to_string();
+
+            if let Some(writer) = writer.as_mut() {
+                writer.write_record(
+                    &[
+                        &hex::encode(&encoding[..]), 
+                        &api_result
                     ],
                 ).expect("must write a test vector");
             }

@@ -262,14 +262,14 @@ impl EIP2537Executor {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
-
-            if !g1.check_correct_subgroup() {
+            // "fast" subgroup checks using empirical data
+            if g1.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
                 }
             }
 
-            if !g2.check_correct_subgroup() {
+            if g2.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
                 }
@@ -353,6 +353,8 @@ mod test {
     use num_bigint::BigUint;
     use num_traits::Num;
     use crate::fp::Fp;
+    use crate::traits::{ZeroAndOne, FieldElement};
+    use crate::square_root::*;
 
     type Scalar = crate::integers::MaxGroupSizeUint;
 
@@ -412,16 +414,30 @@ mod test {
 
         (fe, encoding)
     }
+
+    fn encode_g1(point: &G1) -> Vec<u8> {
+        let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &point).unwrap();
+
+        assert!(as_vec.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
+        assert_eq!(&as_vec[..16], &[0u8; 16]);
+        assert_eq!(&as_vec[64..80], &[0u8; 16]);
+
+        as_vec
+    }
+
+    fn encode_g2(point: &G2) -> Vec<u8> {
+        let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point).unwrap();
+
+        assert!(as_vec.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
+
+        as_vec
+    }
     
     fn make_random_g1_with_encoding<R: Rng>(rng: &mut R) -> (G1, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
         let p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
 
-        let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
-
-        assert!(as_vec.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
-        assert_eq!(&as_vec[..16], &[0u8; 16]);
-        assert_eq!(&as_vec[64..80], &[0u8; 16]);
+        let as_vec = encode_g1(&p);
 
         (p, as_vec)
     }
@@ -431,9 +447,7 @@ mod test {
 
         let p = bls12_381::BLS12_381_G2_GENERATOR.mul(&scalar);
 
-        let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
-
-        assert!(as_vec.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
+        let as_vec = encode_g2(&p);
 
         (p, as_vec)
     }
@@ -497,6 +511,82 @@ mod test {
             None
         }
     }
+
+    fn make_point_not_on_curve_g1(p: &mut G1) {
+        let one = FpElement::one(&bls12_381::BLS12_381_FIELD);
+        loop {
+            p.y.add_assign(&one);
+
+            if p.is_on_curve() == false {
+                break;
+            }
+        }   
+    }
+
+    fn make_point_not_on_curve_g2(p: &mut G2) {
+        let one = Fp2Element::one(&bls12_381::BLS12_381_EXTENSION_2_FIELD);
+        loop {
+            p.y.add_assign(&one);
+
+            if p.is_on_curve() == false {
+                break;
+            }
+        }   
+    }
+
+    fn make_g1_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G1 {
+        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let (fp, _) = make_random_fp_with_encoding(rng, &modulus);
+        let one = FpElement::one(&bls12_381::BLS12_381_FIELD);
+
+        let mut fp_candidate = fp;
+
+        loop {
+            let mut rhs = fp_candidate.clone();
+            rhs.square();
+            rhs.mul_assign(&fp_candidate);
+            rhs.add_assign(&bls12_381::BLS12_381_B_FOR_G1);
+
+            let leg = legendre_symbol_fp(&rhs);
+            if leg == LegendreSymbol::QuadraticResidue {
+                let y = sqrt_for_three_mod_four(&rhs).unwrap();
+                let point = G1::point_from_xy(&bls12_381::BLS12_381_G1_CURVE, fp_candidate.clone(), y);
+
+                if point.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                    return point;
+                }
+            } else {
+                fp_candidate.add_assign(&one);
+            }
+        }
+    }  
+
+    fn make_g2_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G2 {
+        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let (fp, _) = make_random_fp2_with_encoding(rng, &modulus);
+        let one = Fp2Element::one(&bls12_381::BLS12_381_EXTENSION_2_FIELD);
+
+        let mut fp_candidate = fp;
+
+        loop {
+            let mut rhs = fp_candidate.clone();
+            rhs.square();
+            rhs.mul_assign(&fp_candidate);
+            rhs.add_assign(&bls12_381::BLS12_381_B_FOR_G2);
+
+            let leg = legendre_symbol_fp2(&rhs);
+            if leg == LegendreSymbol::QuadraticResidue {
+                let y = sqrt_for_three_mod_four_ext2(&rhs).unwrap();
+                let point = G2::point_from_xy(&bls12_381::BLS12_381_G2_CURVE, fp_candidate.clone(), y);
+
+                if point.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                    return point;
+                }
+            } else {
+                fp_candidate.add_assign(&one);
+            }
+        }
+    }  
 
     const NUM_TESTS: usize = 100;
     const MULTIEXP_INPUT: usize = 16;
@@ -933,4 +1023,63 @@ mod test {
 
         pb.finish_with_message("Completed");
     }
+
+    #[test]
+    fn generate_negative_test_pairing_invalid_subgroup() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        pb.set_length(NUM_TESTS as u64);
+
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/invalid_subgroup_for_pairing.csv");
+        assert!(writer.is_some());
+
+        for j in 0..NUM_TESTS {
+            let (_, (g1_enc, _)) = make_random_g1_and_negated_with_encoding(&mut rng);
+            let (_, (g2_enc, _)) = make_random_g2_and_negated_with_encoding(&mut rng);
+
+            let invalid_g1 = make_g1_in_invalid_subgroup(&mut rng);
+            let invalid_g2 = make_g2_in_invalid_subgroup(&mut rng);
+
+            let invalid_g1_encoding = encode_g1(&invalid_g1);
+            let invalid_g2_encoding = encode_g2(&invalid_g2);
+
+            let mut input = vec![];
+            if j & 1 == 0 {
+                input.extend(invalid_g1_encoding.clone());
+                input.extend(g2_enc.clone());
+                input.extend(g1_enc.clone());
+                input.extend(g2_enc.clone());
+            } else {
+                input.extend(g1_enc.clone());
+                input.extend(invalid_g2_encoding.clone());
+                input.extend(g1_enc.clone());
+                input.extend(g2_enc.clone());
+            }
+
+            let api_result = EIP2537Executor::pair(&input);
+            assert!(api_result.is_err());
+            let description = api_result.err().unwrap().to_string();
+
+            if let Some(writer) = writer.as_mut() {
+                writer.write_record(
+                    &[
+                        &hex::encode(&input[..]), 
+                        &description
+                    ],
+                ).expect("must write a test vector");
+            }
+
+            pb.inc(1);
+        }
+
+        pb.finish_with_message("Completed");
+    }
+
+
 }

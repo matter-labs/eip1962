@@ -171,6 +171,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         if bytes.len() >= necessary_length {
             if expect_prepadded_beginning {
                 let start = bytes.len() - necessary_length;
+                for &b in bytes[..start].iter() {
+                    if b != 0u8 {
+                        return Err(RepresentationDecodingError::NotInField("top bytes of the padded BE encoding are NOT zeroes".to_owned()));
+                    }
+                }
                 repr.read_be(&bytes[start..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
             } else {
                 if bytes.len() != necessary_length {

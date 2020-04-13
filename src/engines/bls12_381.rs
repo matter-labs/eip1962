@@ -146,27 +146,6 @@ const BLS12_381_FP2_NON_RESIDUE: decl_fp2!(U384Repr) = repr_into_fp2!(
     BLS12_381_EXTENSION_2_FIELD
 );
 
-// const BLS12_381_FP2_NON_RESIDUE_C0: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
-// Fp::<'static, U384Repr, PrimeField<U384Repr>> {
-//     field: &BLS12_381_FIELD,
-//     repr: BLS12_381_FP2_NON_RESIDUE_C0_REPR
-// };
-
-// const BLS12_381_FP2_NON_RESIDUE_C1:Fp<'static, U384Repr, PrimeField<U384Repr>> = 
-// Fp::<'static, U384Repr, PrimeField<U384Repr>> {
-//     field: &BLS12_381_FIELD,
-//     repr: BLS12_381_FP2_NON_RESIDUE_C1_REPR
-// };
-
-// const BLS12_381_FP2_NON_RESIDUE: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
-//     Fp2::<'static, U384Repr, PrimeField<U384Repr>> {
-//         c0: BLS12_381_FP2_NON_RESIDUE_C0,
-//         c1: BLS12_381_FP2_NON_RESIDUE_C1,
-//         extension_field: &BLS12_381_EXTENSION_2_FIELD
-//     };
-
-// const BLS12_381_EXTENSION_2_FIELD: Bls12_381Extension2 = Bls12_381Extension2;
-
 pub const BLS12_381_SUBGROUP_ORDER: [u64; 4] = [
     0xffffffff00000001,
     0x53bda402fffe5bfe,
@@ -178,7 +157,7 @@ const BLS12_381_X: [u64; 1] = [0xd201000000010000];
 const BLS12_381_X_IS_NEGATIVE: bool = true;
 
 const BLS12_381_B_FOR_G1_REPR: U384Repr = U384Repr([0xaa270000000cfff3,0x53cc0032fc34000a,0x478fe97a6b0a807f,0xb1d37ebee6ba24d7,0x8ec9733bbf78ab2f,0x09d645513d83de7e]);
-const BLS12_381_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_381_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_381_FIELD,
         repr: BLS12_381_B_FOR_G1_REPR
@@ -199,13 +178,12 @@ const BLS12_381_B_FOR_G2_C1: Fp<'static, U384Repr, PrimeField<U384Repr>> =
         repr: BLS12_381_B_FOR_G2_C1_REPR
     };    
 
-const BLS12_381_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_381_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp2::<'static, U384Repr, PrimeField<U384Repr>> {
         c0: BLS12_381_B_FOR_G2_C0,
         c1: BLS12_381_B_FOR_G2_C1,
         extension_field: &BLS12_381_EXTENSION_2_FIELD
     };
-
 
 pub const BLS12_381_G1_CURVE_PARAMETERS: CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>> = 
     CurveOverFpParameters::<'static, U384Repr, PrimeField<U384Repr>> {
@@ -216,13 +194,6 @@ pub const BLS12_381_G2_CURVE_PARAMETERS: CurveOverFp2Parameters<'static, U384Rep
     CurveOverFp2Parameters::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_381_EXTENSION_2_FIELD
     };
-
-// const BLS12_381_FP2_ZERO: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
-//     Fp2::<'static, U384Repr, PrimeField<U384Repr>> {
-//         c0: BLS12_381_FP_ZERO,
-//         c1: BLS12_381_FP_ZERO,
-//         extension_field: &BLS12_381_EXTENSION_2_FIELD
-//     };
 
 pub const BLS12_381_FP2_ZERO: decl_fp2!(U384Repr) = repr_into_fp2!(
     BLS12_381_FP_ZERO, 
@@ -237,21 +208,6 @@ pub const BLS12_381_FP2_ONE: decl_fp2!(U384Repr) = repr_into_fp2!(
     U384Repr,
     BLS12_381_EXTENSION_2_FIELD
 );
-
-// const BLS12_381_FP2_NON_RESIDUE_C0_REPR: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
-// const BLS12_381_FP2_NON_RESIDUE_C1_REPR: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
-
-// const BLS12_381_FP2_NON_RESIDUE_C0: decl_fp!(U384Repr) = repr_into_fp!(
-//     BLS12_381_FP2_NON_RESIDUE_C1_REPR, 
-//     U384Repr,
-//     BLS12_381_FIELD
-// );
-
-// const BLS12_381_FP2_NON_RESIDUE_C1: decl_fp!(U384Repr) = repr_into_fp!(
-//     BLS12_381_FP2_NON_RESIDUE_C1_REPR, 
-//     U384Repr,
-//     BLS12_381_FIELD
-// );
 
 const BLS12_381_FP6_FROB_C1_0: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(

@@ -381,38 +381,53 @@ mod test {
         (x, as_vec)
     }
 
-    fn make_random_fp2_with_encoding<R: Rng>(rng: &mut R, modulus: &BigUint) -> (Fp2Element, Vec<u8>) {
+    fn make_invalid_encoding_fp<R: Rng>(rng: &mut R, modulus: &BigUint, use_overflow: bool) -> Vec<u8> {
         let mut buff = vec![0u8; 48*3];
+        rng.fill_bytes(&mut buff);
 
+        let num = BigUint::from_bytes_be(&buff);
+        let mut num = num % modulus.clone();
+
+        if use_overflow {
+            num += modulus;
+        }
+
+        let as_be = num.to_bytes_be();
+        let mut encoding = vec![0u8; 64 - as_be.len()]; 
+
+        if !use_overflow {
+            rng.fill_bytes(&mut encoding);
+        }
+
+        encoding.extend(as_be);
+
+        encoding
+    }
+
+    fn make_random_fp2_with_encoding<R: Rng>(rng: &mut R, modulus: &BigUint) -> (Fp2Element, Vec<u8>) {
         let mut encoding = Vec::with_capacity(SERIALIZED_FP2_BYTE_LENGTH);
 
-        rng.fill_bytes(&mut buff);
-        let num = BigUint::from_bytes_be(&buff);
-        let num = num % modulus.clone();
+        let (c0, c0_encoding) = make_random_fp_with_encoding(rng, &modulus);
+        let (c1, c1_encoding) = make_random_fp_with_encoding(rng, &modulus);
 
-        let c0 = Fp::from_be_bytes(&bls12_381::BLS12_381_FIELD, &num.to_bytes_be(), true).unwrap();
-
-        let as_vec = decode_fp::serialize_fp_fixed_len(SERIALIZED_FP_BYTE_LENGTH, &c0).unwrap();
-        encoding.extend(as_vec);
-
-        rng.fill_bytes(&mut buff);
-        let num = BigUint::from_bytes_be(&buff);
-        let num = num % modulus.clone();
-
-        let c1 = Fp::from_be_bytes(&bls12_381::BLS12_381_FIELD, &num.to_bytes_be(), true).unwrap();
-
-        let as_vec = decode_fp::serialize_fp_fixed_len(SERIALIZED_FP_BYTE_LENGTH, &c1).unwrap();
-        encoding.extend(as_vec);
+        encoding.extend(c0_encoding);
+        encoding.extend(c1_encoding);
 
         assert!(encoding.len() == SERIALIZED_FP2_BYTE_LENGTH);
-        assert_eq!(&encoding[..16], &[0u8; 16]);
-        assert_eq!(&encoding[64..80], &[0u8; 16]);
 
         let mut fe = bls12_381::BLS12_381_FP2_ZERO.clone();
         fe.c0 = c0;
         fe.c1 = c1;
 
         (fe, encoding)
+    }
+
+    fn make_invalid_encoding_fp2<R: Rng>(rng: &mut R, modulus: &BigUint, use_overflow: bool) -> Vec<u8> {
+        let mut encoding = Vec::with_capacity(SERIALIZED_FP2_BYTE_LENGTH);
+        encoding.extend(make_invalid_encoding_fp(rng, modulus, use_overflow));
+        encoding.extend(make_invalid_encoding_fp(rng, modulus, use_overflow));
+
+        encoding
     }
 
     fn encode_g1(point: &G1) -> Vec<u8> {
@@ -435,7 +450,7 @@ mod test {
     
     fn make_random_g1_with_encoding<R: Rng>(rng: &mut R) -> (G1, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
-        
+
         let mut p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
         p.normalize();
 
@@ -1155,6 +1170,81 @@ mod test {
                 writer.write_record(
                     &[
                         &hex::encode(&encoding[..]), 
+                        &api_result
+                    ],
+                ).expect("must write a test vector");
+            }
+
+            pb.inc(1);
+        }
+
+        pb.finish_with_message("Completed");
+    }
+
+
+    #[test]
+    fn generate_invalid_fp_encoding_vectors() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        pb.set_length(NUM_TESTS as u64);
+
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/invalid_fp_encoding.csv");
+        assert!(writer.is_some());
+        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+
+        for j in 0..NUM_TESTS {
+            let use_overflow = j & 1 == 0;
+            let input = make_invalid_encoding_fp(&mut rng, &modulus, use_overflow);
+
+            let api_result = EIP2537Executor::map_to_curve(&input).err().unwrap().to_string();
+
+            if let Some(writer) = writer.as_mut() {
+                writer.write_record(
+                    &[
+                        &hex::encode(&input[..]), 
+                        &api_result
+                    ],
+                ).expect("must write a test vector");
+            }
+
+            pb.inc(1);
+        }
+
+        pb.finish_with_message("Completed");
+    }
+
+    #[test]
+    fn generate_invalid_fp2_encoding_vectors() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let pb = ProgressBar::new(1u64);
+
+        pb.set_style(ProgressStyle::default_bar()
+            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+            .progress_chars("##-"));
+
+        pb.set_length(NUM_TESTS as u64);
+
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/invalid_fp2_encoding.csv");
+        assert!(writer.is_some());
+        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+
+        for j in 0..NUM_TESTS {
+            let use_overflow = j & 1 == 0;
+            let input = make_invalid_encoding_fp2(&mut rng, &modulus, use_overflow);
+
+            let api_result = EIP2537Executor::map_to_curve(&input).err().unwrap().to_string();
+
+            if let Some(writer) = writer.as_mut() {
+                writer.write_record(
+                    &[
+                        &hex::encode(&input[..]), 
                         &api_result
                     ],
                 ).expect("must write a test vector");

@@ -19,12 +19,12 @@
 #define BLS12_PAIR_OPERATION_RAW_VALUE 7
 #define BLS12_MAP_OPERATION_RAW_VALUE 8
 
-uint32_t c_perform_operation(char op,
-                             const char *i,
-                             uint32_t i_len,
-                             char *o,
-                             uint32_t *o_len,
-                             char *err,
-                             uint32_t *char_len);
+uint32_t eip2537_perform_operation(char op,
+                                   const char *i,
+                                   uint32_t i_len,
+                                   char *o,
+                                   uint32_t *o_len,
+                                   char *err,
+                                   uint32_t *char_len);
 
 #endif /* eip2537_bindings_h */

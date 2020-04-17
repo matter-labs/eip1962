@@ -105,8 +105,8 @@ pub(crate) fn simplified_swu_fp<
     let mut y = sqrt(&y2).expect("y2 is a square");
 
     // 20.  e3 = sgn0(u) == sgn0(y)  # Fix sign of y
-    let u_sign = sign_of_fp_be(&u);
-    let y_sign = sign_of_fp_be(&y);
+    let u_sign = sign_of_fp(&u);
+    let y_sign = sign_of_fp(&y);
 
     // 21.   y = CMOV(-y, y, e3)
 
@@ -220,8 +220,8 @@ pub(crate) fn simplified_swu_fp2<
     let mut y = sqrt_ext2(&y2).expect("y2 is a square");
 
     // 20.  e3 = sgn0(u) == sgn0(y)  # Fix sign of y
-    let u_sign = sign_of_fp2_be(&u);
-    let y_sign = sign_of_fp2_be(&y);
+    let u_sign = sign_of_fp2(&u);
+    let y_sign = sign_of_fp2(&y);
 
     // 21.   y = CMOV(-y, y, e3)
 

@@ -15,44 +15,36 @@ pub enum Sign {
     SignMinus
 }
 
-fn sign_of_fp_be<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
+fn sign_of_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
     el: &Fp<'a, E, F>
 ) -> Sign {
-    let mut el_negated = el.clone();
-    el_negated.negate();
-
-    let el_repr = el.into_repr();
-    let el_negated_repr = el_negated.into_repr();
-
-    // representations are themself big endian encodings
-    // in normal form
-
-    if el_repr > el_negated_repr {
-        // x > q - x, so x is negative
-        return Sign::SignMinus;
-    } else if el_repr < el_negated_repr {
-        return Sign::SignPlus;
+    if el.is_zero() {
+        return Sign::Zero;
     }
 
-    Sign::Zero
+    let el_repr = el.into_repr();
+
+    if el_repr.as_ref()[0] & 1 == 0 {
+        // 0 mod 2
+        return Sign::SignPlus;
+    } else {
+        return Sign::SignMinus;
+    }
 }
 
-fn sign_of_fp2_be<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
+fn sign_of_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
     el: &Fp2<'a, E, F>
 ) -> Sign {
     // compare c_0 and then c_1
-    // let sign_from_c0 = sign_of_fp_be(&el.c0);
-    let sign_from_c1 = sign_of_fp_be(&el.c1);
+    let sign_from_c0 = sign_of_fp(&el.c0);
 
-    // match sign_from_c0 {
-    match sign_from_c1 {
+    match sign_from_c0 {
         s @ Sign::SignMinus | 
         s @ Sign::SignPlus => {
             return s;
         },
         Sign::Zero => {
-            // return sign_of_fp_be(&el.c1);
-            return sign_of_fp_be(&el.c0);
+            return sign_of_fp(&el.c1);
         }
     }
 }

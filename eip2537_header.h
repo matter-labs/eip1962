@@ -17,7 +17,8 @@
 #define BLS12_G2MUL_OPERATION_RAW_VALUE 5
 #define BLS12_G2MULTIEXP_OPERATION_RAW_VALUE 6
 #define BLS12_PAIR_OPERATION_RAW_VALUE 7
-#define BLS12_MAP_OPERATION_RAW_VALUE 8
+#define BLS12_MAP_FP_TO_G1_OPERATION_RAW_VALUE 8
+#define BLS12_MAP_FP2_TO_G2_OPERATION_RAW_VALUE 9
 
 uint32_t eip2537_perform_operation(char op,
                                    const char *i,

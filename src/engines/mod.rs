@@ -425,7 +425,7 @@ mod test {
     fn test_bls12_ieft_vector_fp_to_g1_0() {
         use crate::weierstrass::Group;
 
-        let biguint = BigUint::from_str_radix("0ccb6bda9b602ab82aae21c0291623e2f639648a6ada1c76d8ffb664130fd18d98a2cc6160624148827a9726678e7cd4", 16).unwrap();
+        let biguint = BigUint::from_str_radix("07fdf49ea58e96015d61f6b5c9d1c8f277146a533ae7fbca2a8ef4c41055cd961fbc6e26979b5554e4b4f22330c0e16d", 16).unwrap();
         let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
@@ -443,7 +443,7 @@ mod test {
     fn test_bls12_ieft_vector_fp_to_g1_1() {
         use crate::weierstrass::Group;
 
-        let biguint = BigUint::from_str_radix("08accd9a1bd4b75bb2e9f014ac354a198cbf607f0061d00a6286f5544cf4f9ecc1439e3194f570cbbc7b96d1a754f231", 16).unwrap();
+        let biguint = BigUint::from_str_radix("1275ab3adbf824a169ed4b1fd669b49cf406d822f7fe90d6b2f8c601b5348436f89761bb1ad89a6fb1137cd91810e5d2", 16).unwrap();
         let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
@@ -461,7 +461,7 @@ mod test {
     fn test_bls12_ieft_vector_fp_to_g1_2() {
         use crate::weierstrass::Group;
 
-        let biguint = BigUint::from_str_radix("0a359cf072db3a39acf22f086d825fcf49d0daf241d98902342380fc5130b44e55de8f684f300bc11c44dee526413363", 16).unwrap();
+        let biguint = BigUint::from_str_radix("0e93d11d30de6d84b8578827856f5c05feef36083eef0b7b263e35ecb9b56e86299614a042e57d467fa20948e8564909", 16).unwrap();
         let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
@@ -479,7 +479,7 @@ mod test {
     fn test_bls12_ieft_vector_fp_to_g1_3() {
         use crate::weierstrass::Group;
 
-        let biguint = BigUint::from_str_radix("181d09392c52f7740d5eaae52123c1dfa4808343261d8bdbaf19e7773e5cdfd989165cd9ecc795500e5da2437dde2093", 16).unwrap();
+        let biguint = BigUint::from_str_radix("015a41481155d17074d20be6d8ec4d46632a51521cd9c916e265bd9b47343b3689979b50708c8546cbc2916b86cb1a3a", 16).unwrap();
         let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
@@ -499,8 +499,8 @@ mod test {
 
         let fp_field = &crate::engines::bls12_381::BLS12_381_FIELD;
 
-        let c0 = BigUint::from_str_radix("09367e3b485dda3925e82cc458e5009051281d3e442e94f9ef9feec44ee26375d6dc904dc1aa1f831f2aebd7b437ad12", 16).unwrap();
-        let c1 = BigUint::from_str_radix("094376a68cdc8f64bd981d59bf762f9b2960df6b135f6e09ceada2fe8d0000bbf04023492796c09f8ef04016a2e8365f", 16).unwrap();
+        let c0 = BigUint::from_str_radix("0e775d7827adf385b83e20e4445bd3fab21d7b4498426daf3c1d608b9d41e9edb5eda0df022e753b8bb4bc3bb7db4914", 16).unwrap();
+        let c1 = BigUint::from_str_radix("025fbc07711ba267b7e70c82caa70a16fbb1d470ae24ceef307f5e2000751677820b7013ad4e25492dcf30052d3e5eca", 16).unwrap();
 
         let c0 = Fp::from_be_bytes(fp_field, &c0.to_bytes_be(), true).unwrap();
         let c1 = Fp::from_be_bytes(fp_field, &c1.to_bytes_be(), true).unwrap();
@@ -528,8 +528,8 @@ mod test {
 
         let fp_field = &crate::engines::bls12_381::BLS12_381_FIELD;
 
-        let c0 = BigUint::from_str_radix("17ecd5d41a860b8886cb1210874b254f59945b089f774dcc14bc1aca7d4e3c975bce0d28510c442e9a932be5880ee5b1", 16).unwrap();
-        let c1 = BigUint::from_str_radix("0f105595e14847cc9a41fd70deb3240337678b266304100ec261add2585b991c7268bb1a325d2f871b327e8d04fd579b", 16).unwrap();
+        let c0 = BigUint::from_str_radix("045ab31ce4b5a8ba7c4b2851b64f063a66cd1223d3c85005b78e1beee65e33c90ceef0244e45fc45a5e1d6eab6644fdb", 16).unwrap();
+        let c1 = BigUint::from_str_radix("1870a7dbfd2a1deb74015a3546b20f598041bf5d5202997956a94a368d30d3f70f18cdaa1d33ce970a4e16af961cbdcb", 16).unwrap();
 
         let c0 = Fp::from_be_bytes(fp_field, &c0.to_bytes_be(), true).unwrap();
         let c1 = Fp::from_be_bytes(fp_field, &c1.to_bytes_be(), true).unwrap();
@@ -557,8 +557,8 @@ mod test {
 
         let fp_field = &crate::engines::bls12_381::BLS12_381_FIELD;
 
-        let c0 = BigUint::from_str_radix("032ae17a23a76c94745a5460cd9f1191c0ebeec7adfc4df28b0833e536b7dbabf498dc076ff16cc11c6a6ef5105df693", 16).unwrap();
-        let c1 = BigUint::from_str_radix("1107a6f450c6c9580c720190b577f52c633cf5f3defb528ae873d3723bccc8fa433014e9120a1da31abc27c674f37ae4", 16).unwrap();
+        let c0 = BigUint::from_str_radix("0b6e6135a4cd31ba980ddbd115ac48abef7ec60e226f264d7befe002c165f3a496f36f76dd524efd75d17422558d10b4", 16).unwrap();
+        let c1 = BigUint::from_str_radix("088fe329b054db8a6474f21a7fbfdf17b4c18044db299d9007af582c3d5f17d00e56d99921d4b5640fce44b05219b5de", 16).unwrap();
 
         let c0 = Fp::from_be_bytes(fp_field, &c0.to_bytes_be(), true).unwrap();
         let c1 = Fp::from_be_bytes(fp_field, &c1.to_bytes_be(), true).unwrap();
@@ -586,8 +586,8 @@ mod test {
 
         let fp_field = &crate::engines::bls12_381::BLS12_381_FIELD;
 
-        let c0 = BigUint::from_str_radix("0cda6b874f8c41862c078099aa76d607be51d913a2e3f997539a0993bda31892292818c74aa9be035f234df2576fe49a", 16).unwrap();
-        let c1 = BigUint::from_str_radix("0306162d24592a18fa8de2007d7b69d04bb7a71a5a7965d15bdcbaa4ddf9b599079fbdae9f67d55ab6dba044f9daf179", 16).unwrap();
+        let c0 = BigUint::from_str_radix("0f45b50647d67485295aa9eb2d91a877b44813677c67c8d35b2173ff3ba95f7bd0806f9ca8a1436b8b9d14ee81da4d7e", 16).unwrap();
+        let c1 = BigUint::from_str_radix("03df16a66a05e4c1188c234788f43896e0565bfb64ac49b9639e6b284cc47dad73c47bb4ea7e677db8d496beb907fbb6", 16).unwrap();
 
         let c0 = Fp::from_be_bytes(fp_field, &c0.to_bytes_be(), true).unwrap();
         let c1 = Fp::from_be_bytes(fp_field, &c1.to_bytes_be(), true).unwrap();

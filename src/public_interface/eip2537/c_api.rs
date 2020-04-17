@@ -15,7 +15,8 @@ pub enum Eip2537OperationType {
     BLS12_G2MUL = 5,
     BLS12_G2MULTIEXP = 6,
     BLS12_PAIR = 7,
-    BLS12_MAP = 8,
+    BLS12_FP_TO_G1 = 8,
+    BLS12_FP2_TO_G2 = 9,
 }
 
 impl Eip2537OperationType {
@@ -42,8 +43,11 @@ impl Eip2537OperationType {
             BLS12_PAIR_OPERATION_RAW_VALUE => {
                 Some(Eip2537OperationType::BLS12_PAIR)
             },
-            BLS12_MAP_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_MAP)
+            BLS12_MAP_FP_TO_G1_OPERATION_RAW_VALUE => {
+                Some(Eip2537OperationType::BLS12_FP_TO_G1)
+            },
+            BLS12_MAP_FP2_TO_G2_OPERATION_RAW_VALUE => {
+                Some(Eip2537OperationType::BLS12_FP2_TO_G2)
             },
             _ => {
                 None
@@ -65,7 +69,8 @@ pub const BLS12_G2MUL_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_G2MU
 pub const BLS12_G2MULTIEXP_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_G2MULTIEXP as u8;
 
 pub const BLS12_PAIR_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_PAIR as u8;
-pub const BLS12_MAP_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_MAP as u8;
+pub const BLS12_MAP_FP_TO_G1_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_FP_TO_G1 as u8;
+pub const BLS12_MAP_FP2_TO_G2_OPERATION_RAW_VALUE: u8 = Eip2537OperationType::BLS12_FP2_TO_G2 as u8;
 
 // this is C interface
 #[no_mangle]
@@ -113,7 +118,8 @@ pub extern "C" fn eip2537_perform_operation(
         Eip2537OperationType::BLS12_G2MUL => super::EIP2537Executor::g2_mul(&input).map(|r| r[..].to_vec()),
         Eip2537OperationType::BLS12_G2MULTIEXP => super::EIP2537Executor::g2_multiexp(&input).map(|r| r[..].to_vec()),
         Eip2537OperationType::BLS12_PAIR => super::EIP2537Executor::pair(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_MAP => super::EIP2537Executor::map_to_curve(&input).map(|r| r[..].to_vec()),
+        Eip2537OperationType::BLS12_FP_TO_G1 => super::EIP2537Executor::map_fp_to_g1(&input).map(|r| r[..].to_vec()),
+        Eip2537OperationType::BLS12_FP2_TO_G2 => super::EIP2537Executor::map_fp2_to_g2(&input).map(|r| r[..].to_vec()),
     };
 
     match result {

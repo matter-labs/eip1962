@@ -309,32 +309,34 @@ impl EIP2537Executor {
         Ok(result)
     }
 
-    pub fn map_to_curve<'a>(input: &'a [u8]) -> Result<Vec<u8>, ApiError> {
-        if input.len() == SERIALIZED_FP_BYTE_LENGTH {
-            return Self::map_fp_to_g1(input);
-        } else if input.len() == SERIALIZED_FP2_BYTE_LENGTH {
-            return Self::map_fp2_to_g2(input);
-        } else {
-            return Err(ApiError::InputError("invalid input length for field to curve mapping".to_owned()));
+    pub fn map_fp_to_g1<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
+        if input.len() != SERIALIZED_FP_BYTE_LENGTH {
+            return Err(ApiError::InputError("invalid input length for Fp to G1 to curve mapping".to_owned()));
         }
-    }
-
-    fn map_fp_to_g1<'a>(input: &'a [u8]) -> Result<Vec<u8>, ApiError> {
         let (fe, _) = decode_fp::decode_fp_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_FIELD)?;
         let point = mapping::fp_to_g1(&fe)?;
 
+        let mut output = [0u8; SERIALIZED_G1_POINT_BYTE_LENGTH];
         let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &point)?;
 
-        Ok(as_vec)
+        output.copy_from_slice(&as_vec[..]);
+
+        Ok(output)
     }
 
-    fn map_fp2_to_g2<'a>(input: &'a [u8]) -> Result<Vec<u8>, ApiError> {
+    pub fn map_fp2_to_g2<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
+        if input.len() != SERIALIZED_FP2_BYTE_LENGTH {
+            return Err(ApiError::InputError("invalid input length for Fp2 to G2 to curve mapping".to_owned()));
+        }
         let (fe, _) = decode_fp::decode_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_EXTENSION_2_FIELD)?;
         let point = mapping::fp2_to_g2(&fe)?;
 
+        let mut output = [0u8; SERIALIZED_G2_POINT_BYTE_LENGTH];
         let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point)?;
 
-        Ok(as_vec)
+        output.copy_from_slice(&as_vec[..]);
+
+        Ok(output)
     }
 }
 
@@ -923,7 +925,7 @@ mod test {
         for _ in 0..NUM_TESTS {
             let (_, input) = make_random_fp_with_encoding(&mut rng, &modulus);
 
-            let api_result = EIP2537Executor::map_to_curve(&input).unwrap();
+            let api_result = EIP2537Executor::map_fp_to_g1(&input).unwrap();
             assert!(api_result.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
 
             if let Some(writer) = writer.as_mut() {
@@ -960,7 +962,7 @@ mod test {
         for _ in 0..NUM_TESTS {
             let (_, input) = make_random_fp2_with_encoding(&mut rng, &modulus);
 
-            let api_result = EIP2537Executor::map_to_curve(&input).unwrap();
+            let api_result = EIP2537Executor::map_fp2_to_g2(&input).unwrap();
             assert!(api_result.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
             if let Some(writer) = writer.as_mut() {
@@ -1202,7 +1204,7 @@ mod test {
             let use_overflow = j & 1 == 0;
             let input = make_invalid_encoding_fp(&mut rng, &modulus, use_overflow);
 
-            let api_result = EIP2537Executor::map_to_curve(&input).err().unwrap().to_string();
+            let api_result = EIP2537Executor::map_fp_to_g1(&input).err().unwrap().to_string();
 
             if let Some(writer) = writer.as_mut() {
                 writer.write_record(
@@ -1239,7 +1241,7 @@ mod test {
             let use_overflow = j & 1 == 0;
             let input = make_invalid_encoding_fp2(&mut rng, &modulus, use_overflow);
 
-            let api_result = EIP2537Executor::map_to_curve(&input).err().unwrap().to_string();
+            let api_result = EIP2537Executor::map_fp2_to_g2(&input).err().unwrap().to_string();
 
             if let Some(writer) = writer.as_mut() {
                 writer.write_record(

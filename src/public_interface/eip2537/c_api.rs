@@ -5,6 +5,7 @@ pub const EIP2537_PREALLOCATE_FOR_RESULT_BYTES: usize = 64 * 2 * 2; // maximum f
 use static_assertions::const_assert;
 const_assert!(EIP2537_PREALLOCATE_FOR_RESULT_BYTES == super::SERIALIZED_G2_POINT_BYTE_LENGTH);
 
+#[allow(non_camel_case_types)]
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Eip2537OperationType {

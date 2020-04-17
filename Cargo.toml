@@ -58,14 +58,5 @@ external_tests = []
 eip_2537 = ["mappings"]
 eip_2357_c_api = ["eip_2537"]
 
-# [profile.dev]
-# incremental = false
-
-# [profile.test]
-# incremental = false
-
 [profile.release]
 incremental = false
-
-# [profile.bench]
-# incremental = false

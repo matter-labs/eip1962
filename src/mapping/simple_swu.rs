@@ -115,8 +115,10 @@ pub(crate) fn simplified_swu_fp<
         (Sign::Zero, Sign::Zero) |
         (Sign::Zero, Sign::SignPlus) | 
         (Sign::SignPlus, Sign::Zero) => {},
+
         (Sign::SignPlus, Sign::SignPlus) |
         (Sign::SignMinus, Sign::SignMinus) => {},
+        
         (Sign::SignPlus, Sign::SignMinus) |
         (Sign::SignMinus, Sign::SignPlus) => {
             y.negate();

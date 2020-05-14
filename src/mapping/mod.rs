@@ -318,6 +318,17 @@ mod test {
     use super::simple_swu::*;
     use crate::engines::bls12_381::*;
     use crate::weierstrass::curve::*;
+    use super::sign_of_fp2;
+
+    #[test]
+    fn test_sign_of_zero() {
+        let zero = str_radix_into_ext2("0", "0", 10, &BLS12_381_EXTENSION_2_FIELD);
+        let sgn = sign_of_fp2(&zero);
+        match sgn {
+            super::Sign::Zero => {},
+            _ => {panic!("invalid sign of zero")}
+        }
+    }
 
     #[test]
     fn test_mapping_g1_0() {

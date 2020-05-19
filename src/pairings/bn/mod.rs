@@ -347,7 +347,7 @@ impl<
             };
         }
 
-        let mut ell_coeffs = vec![];
+        let mut ell_coeffs = Vec::with_capacity(self.six_u_plus_2.len() * 64 * 2 + 2);
         let mut r = CurvePoint::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
 
         for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1) {
@@ -392,7 +392,7 @@ impl<
             };
         }
 
-        let mut ell_coeffs = vec![];
+        let mut ell_coeffs = Vec::with_capacity(self.six_u_plus_2.len() * 64 * 2 + 2);
 
         let mut twist_point_negated = twist_point.clone();
         twist_point_negated.negate();

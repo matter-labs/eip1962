@@ -6,8 +6,8 @@ use crate::field::SizedPrimeField;
 use crate::traits::ZeroAndOne;
 
 pub struct Fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
+    pub(crate) repr: E,
     pub(crate) field: &'a F,
-    pub(crate) repr: E
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp<'a, E, F> {
@@ -19,6 +19,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp<'a, E, F> {
         }
     }
 }
+
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Copy for Fp<'a, E, F> {}
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Ord for Fp<'a, E, F> {
     #[inline(always)]

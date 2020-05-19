@@ -34,6 +34,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp4<'a, E, F> 
     }
 }
 
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Copy for Fp4<'a, E, F> {}
+
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PartialEq for Fp4<'a, E, F> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {

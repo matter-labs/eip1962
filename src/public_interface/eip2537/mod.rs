@@ -1261,7 +1261,6 @@ mod test {
 
     #[test]
     fn dump_vectors_into_fuzzing_corpus() {
-        
         let byte_idx: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
         let file_paths = vec![
             "g1_add.csv",
@@ -1285,12 +1284,89 @@ mod test {
                 let mut output = vec![b];
                 output.extend(input);
                 let name = format!("vector_{}", counter);
-                std::fs::write(&format!("src/test/test_vectors/eip2537/fuzzing/{}", name), &output);
+                std::fs::write(&format!("src/test/test_vectors/eip2537/fuzzing/{}", name), &output).unwrap();
 
                 counter += 1;
             }
         }
     }
 
+    fn run_on_test_inputs<F: Fn(&[u8]) -> Result<Vec<u8>, ApiError>>(
+        file_path: &str,
+        expect_success: bool,
+        test_function: F 
+    ) -> bool {
+        let mut reader = csv::Reader::from_path(file_path).unwrap();
+        for r in reader.records() {
+            let r = r.unwrap();
+            let input_str = r.get(0).unwrap();
+            let input = hex::decode(input_str).unwrap();
+            let expected_output = if let Some(s) = r.get(1) {
+                hex::decode(s).unwrap()
+            } else {
+                vec![]
+            };
+
+            let value = test_function(&input);
+            match value {
+                Ok(result) => {
+                    if expected_output != result {
+                        return false;
+                    }
+                },
+                Err(..) => {
+                    if expect_success == true {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    #[test]
+    fn run_g1_add_on_vector() {
+        let p = "src/test/test_vectors/eip2537/g1_add.csv";
+        
+        let f = |input: &[u8]| EIP2537Executor::g1_add(input).map(|r| r.to_vec());
+
+        let success = run_on_test_inputs(p, true, f);
+
+        assert!(success);
+    }
+
+    #[test]
+    fn test_external_fp_to_g1_vectors() {
+        let p = "src/test/test_vectors/eip2537/extras/fp_to_g1.csv";
+        
+        let f = |input: &[u8]| EIP2537Executor::map_fp_to_g1(input).map(|r| r.to_vec());
+
+        let success = run_on_test_inputs(p, true, f);
+
+        assert!(success);
+    }
+
+    #[test]
+    fn test_external_fp2_to_g2_vectors() {
+        let p = "src/test/test_vectors/eip2537/extras/fp2_to_g2.csv";
+        
+        let f = |input: &[u8]| EIP2537Executor::map_fp2_to_g2(input).map(|r| r.to_vec());
+
+        let success = run_on_test_inputs(p, true, f);
+
+        assert!(success);
+    }
+
+    #[test]
+    fn test_external_g2_multiexp_vectors() {
+        let p = "src/test/test_vectors/eip2537/extras/g2_multiexp.csv";
+        
+        let f = |input: &[u8]| EIP2537Executor::g2_multiexp(input).map(|r| r.to_vec());
+
+        let success = run_on_test_inputs(p, true, f);
+
+        assert!(success);
+    }
 
 }

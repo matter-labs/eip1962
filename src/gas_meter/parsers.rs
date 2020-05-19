@@ -3,6 +3,7 @@ use crate::public_interface::decode_g1::*;
 use crate::public_interface::constants::*;
 use crate::errors::ApiError;
 use crate::integers::*;
+use crate::pairings::calculate_hamming_weight;
 
 
 /// return:

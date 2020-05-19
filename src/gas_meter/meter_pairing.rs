@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use super::parsers::*;
 
+use crate::pairings::calculate_hamming_weight;
 use crate::public_interface::decode_utils::*;
 use crate::public_interface::sane_limits::*;
 

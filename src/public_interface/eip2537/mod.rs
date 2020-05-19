@@ -1258,7 +1258,6 @@ mod test {
         pb.finish_with_message("Completed");
     }
 
-
     #[test]
     fn dump_vectors_into_fuzzing_corpus() {
         let byte_idx: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -1368,5 +1367,33 @@ mod test {
 
         assert!(success);
     }
+
+
+    #[test]
+    fn dump_extra_vectors_into_fuzzing_corpus() {
+        let byte_idx: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let file_paths = vec![
+            "g2_multiexp.csv",
+            "fp_to_g1.csv",
+            "fp2_to_g2.csv"
+        ];
+
+        let mut counter = 0;
+
+        for (b, f) in byte_idx.into_iter().zip(file_paths.into_iter()) {
+            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2537/extras/{}", f)).unwrap();
+            for r in reader.records() {
+                let r = r.unwrap();
+                let input = hex::decode(r.get(0).unwrap()).unwrap();
+                let mut output = vec![b];
+                output.extend(input);
+                let name = format!("extra_vector_{}", counter);
+                std::fs::write(&format!("src/test/test_vectors/eip2537/fuzzing/{}", name), &output).unwrap();
+
+                counter += 1;
+            }
+        }
+    }
+
 
 }

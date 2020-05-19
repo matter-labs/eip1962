@@ -1,5 +1,3 @@
-pub(crate) use crate::pairings::calculate_hamming_weight;
-
 use crate::integers::{MaxFieldUint, MaxGroupSizeUint, MaxLoopParametersUint};
 
 use crate::public_interface::constants::*;

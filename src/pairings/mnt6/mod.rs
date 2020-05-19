@@ -1021,6 +1021,7 @@ mod tests {
     #[test]
     fn test_ey_pendulum() {
         use crate::weierstrass::Group;
+        use crate::pairings::calculate_hamming_weight;
         use crate::field::{U640Repr};
         let modulus = BigUint::from_str_radix("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480644260294123843823582617865870693473572190965725707704312821545976965077621486794922414287", 10).unwrap();
         let base_field = new_field::<U640Repr>("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480644260294123843823582617865870693473572190965725707704312821545976965077621486794922414287", 10).unwrap();
@@ -1114,13 +1115,13 @@ mod tests {
         let ate_loop_length = BigUint::from_str_radix("19050022797317891600939264904924934656417895081121634056186244048763811669585984032184028629480168338007954582497829268616217645022027066087172884188759553810237800430314078304362451150", 10).unwrap();
 
         println!("Miller loop length is {} bits", ate_loop_length.bits());
-        println!("Miller loop hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(ate_loop_length.clone())));
+        println!("Miller loop hamming is {}", calculate_hamming_weight(&biguint_to_u64_vec(ate_loop_length.clone())));
 
         println!("Exp w0 length is {} bits", w0.bits());
-        println!("Exp w0 hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(w0.clone())));
+        println!("Exp w0 hamming is {}", calculate_hamming_weight(&biguint_to_u64_vec(w0.clone())));
 
         println!("Exp w1 length is {} bits", w1.bits());
-        println!("Exp w1 hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(w1.clone())));
+        println!("Exp w1 hamming is {}", calculate_hamming_weight(&biguint_to_u64_vec(w1.clone())));
         
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());
@@ -1181,6 +1182,7 @@ mod tests {
 
     #[test]
     fn test_sw6_curve_with_g2_in_fp() {
+        use crate::pairings::calculate_hamming_weight;
         use crate::weierstrass::Group;
         use crate::field::{U768Repr};
         let modulus = BigUint::from_str_radix("6891450384315732539396789682275657542479668912536150109513790160209623422243491736087683183289411687640864567753786613451161759120554247759349511699125301598951605099378508850372543631423596795951899700429969112842764913119068299", 10).unwrap();
@@ -1276,13 +1278,13 @@ mod tests {
         let ate_loop_length = BigUint::from_str_radix("6891450384315732539396789682275657542479668912536150109513790160209623422243491736087683183289411687640864567753786354786735746151460237106615816805591765205438850184717968966109876910955248455129124731541829539482640472797610122", 10).unwrap();
 
         println!("Miller loop length is {} bits", ate_loop_length.bits());
-        println!("Miller loop hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(ate_loop_length.clone())));
+        println!("Miller loop hamming is {}", calculate_hamming_weight(&biguint_to_u64_vec(ate_loop_length.clone())));
 
         println!("Exp w0 length is {} bits", w0.bits());
-        println!("Exp w0 hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(w0.clone())));
+        println!("Exp w0 hamming is {}", calculate_hamming_weight(&biguint_to_u64_vec(w0.clone())));
 
         println!("Exp w1 length is {} bits", w1.bits());
-        println!("Exp w1 hamming is {}", crate::public_interface::decode_utils::calculate_hamming_weight(&biguint_to_u64_vec(w1.clone())));
+        println!("Exp w1 hamming is {}", calculate_hamming_weight(&biguint_to_u64_vec(w1.clone())));
         
         assert!(p.is_on_curve());
         assert!(q.is_on_curve());

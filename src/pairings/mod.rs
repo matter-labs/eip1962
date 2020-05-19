@@ -555,8 +555,9 @@ mod test {
 
     #[test]
     fn test_print_naf_hamming() {
-
         fn calculate(x: &[u64]) -> (usize, usize, usize, usize) {
+            use crate::pairings::calculate_hamming_weight;
+
             fn bits(v: &[u64]) -> usize {
                 let mut b = v.len() * 64;
     
@@ -568,7 +569,7 @@ mod test {
             }
 
             let original_bits = bits(&x);
-            let original_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&x);
+            let original_hamming = calculate_hamming_weight(&x);
     
             let naf = super::into_ternary_wnaf(&x);
             let hamming_naf = {

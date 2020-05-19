@@ -462,6 +462,8 @@ fn make_powers(value: u64, required_power: usize) -> Result<Vec<u64>, ApiError> 
 
 #[cfg(test)]
 mod test {
+    use crate::pairings::calculate_hamming_weight;
+
     #[test]
     fn test_pairing_params_deserialization() {
         let t = &*super::MNT4_PARAMS_INSTANCE;
@@ -507,14 +509,14 @@ mod test {
         let w0 = biguint_to_u64_vec(w0);
         let w1 = biguint_to_u64_vec(w1);
 
-        let ate_bits = crate::public_interface::decode_utils::calculate_hamming_weight(&ate);
-        let ate_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&ate);
+        let ate_bits = calculate_hamming_weight(&ate);
+        let ate_hamming = calculate_hamming_weight(&ate);
 
-        let w0_bits = crate::public_interface::decode_utils::calculate_hamming_weight(&w0);
-        let w0_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&w0);
+        let w0_bits = calculate_hamming_weight(&w0);
+        let w0_hamming = calculate_hamming_weight(&w0);
 
-        let w1_bits = crate::public_interface::decode_utils::calculate_hamming_weight(&w1);
-        let w1_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&w1);
+        let w1_bits = calculate_hamming_weight(&w1);
+        let w1_hamming = calculate_hamming_weight(&w1);
         
         let gas_cost = super::calculate_mnt_pairing_cost(
             12, 
@@ -532,8 +534,8 @@ mod test {
 
     #[test]
     fn test_calculate_example_prices_bn254() {
-        let u_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0x44e992b44a6909f1]);
-        let six_u_plus_two_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0x9d797039be763ba8, 1]);
+        let u_hamming = calculate_hamming_weight(&[0x44e992b44a6909f1]);
+        let six_u_plus_two_hamming = calculate_hamming_weight(&[0x9d797039be763ba8, 1]);
         let bn_4_pairs_cost = super::calculate_bn_pairing_cost(
             4, 
             4, 
@@ -549,7 +551,7 @@ mod test {
 
     #[test]
     fn test_calculate_example_prices_bls12_381() {
-        let x_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0xd201000000010000]);
+        let x_hamming = calculate_hamming_weight(&[0xd201000000010000]);
         let x_bits = 64 - 0xd201000000010000u64.leading_zeros();
         let bls12_4_pairs_cost = super::calculate_bls12_pairing_cost(
             6, 
@@ -565,7 +567,7 @@ mod test {
 
     #[test]
     fn test_print_example_prices_bls12_381() {
-        let x_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[0xd201000000010000]);
+        let x_hamming = calculate_hamming_weight(&[0xd201000000010000]);
         let x_bits = 64 - 0xd201000000010000u64.leading_zeros();
         let bls12_1_pair_cost = super::calculate_bls12_pairing_cost(
             6, 
@@ -582,7 +584,7 @@ mod test {
     #[test]
     fn test_print_example_prices_bls12_377() {
         let x: u64 = 0x8508c00000000001;
-        let x_hamming = crate::public_interface::decode_utils::calculate_hamming_weight(&[x]);
+        let x_hamming = calculate_hamming_weight(&[x]);
         let x_bits = 64 - x.leading_zeros();
         let bls12_1_pair_cost = super::calculate_bls12_pairing_cost(
             6, 

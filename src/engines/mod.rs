@@ -423,9 +423,11 @@ mod test {
         assert!(should_be_zero.is_zero());
     }
 
+    // These test vectors are from https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-07#page-143
+
     #[cfg(feature = "mappings")]
     #[test]
-    fn test_bls12_ieft_vector_fp_to_g1_0() {
+    fn test_bls12_ietf_vector_fp_to_g1_0() {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("07fdf49ea58e96015d61f6b5c9d1c8f277146a533ae7fbca2a8ef4c41055cd961fbc6e26979b5554e4b4f22330c0e16d", 16).unwrap();
@@ -434,7 +436,9 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x), "0x1223effdbb2d38152495a864d78eee14cb0992d89a241707abb03819a91a6d2fd65854ab9a69e9aacb0cbebfd490732c");
+        assert_eq!(format!("{}", y), "0x0f925d61e0b235ecd945cbf0309291878df0d06e5d80d6b84aa4ff3e00633b26f9a7cb3523ef737d90e6d71e8b98b2d5");
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -443,7 +447,7 @@ mod test {
 
     #[cfg(feature = "mappings")]
     #[test]
-    fn test_bls12_ieft_vector_fp_to_g1_1() {
+    fn test_bls12_ietf_vector_fp_to_g1_1() {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("1275ab3adbf824a169ed4b1fd669b49cf406d822f7fe90d6b2f8c601b5348436f89761bb1ad89a6fb1137cd91810e5d2", 16).unwrap();
@@ -452,7 +456,10 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x), "0x179d3fd0b4fb1da43aad06cea1fb3f828806ddb1b1fa9424b1e3944dfdbab6e763c42636404017da03099af0dcca0fd6");
+        assert_eq!(format!("{}", y), "0x0d037cb1c6d495c0f5f22b061d23f1be3d7fe64d3c6820cfcd99b6b36fa69f7b4c1f4addba2ae7aa46fb25901ab483e4");
+
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -461,7 +468,7 @@ mod test {
 
     #[cfg(feature = "mappings")]
     #[test]
-    fn test_bls12_ieft_vector_fp_to_g1_2() {
+    fn test_bls12_ietf_vector_fp_to_g1_2() {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("0e93d11d30de6d84b8578827856f5c05feef36083eef0b7b263e35ecb9b56e86299614a042e57d467fa20948e8564909", 16).unwrap();
@@ -470,7 +477,10 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x), "0x15aa66c77eded1209db694e8b1ba49daf8b686733afaa7b68c683d0b01788dfb0617a2e2d04c0856db4981921d3004af");
+        assert_eq!(format!("{}", y), "0x0952bb2f61739dd1d201dd0a79d74cda3285403d47655ee886afe860593a8a4e51c5b77a22d2133e3a4280eaaaa8b788");
+
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -479,7 +489,7 @@ mod test {
 
     #[cfg(feature = "mappings")]
     #[test]
-    fn test_bls12_ieft_vector_fp_to_g1_3() {
+    fn test_bls12_ietf_vector_fp_to_g1_3() {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("015a41481155d17074d20be6d8ec4d46632a51521cd9c916e265bd9b47343b3689979b50708c8546cbc2916b86cb1a3a", 16).unwrap();
@@ -488,16 +498,21 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x), "0x06328ce5106e837935e8da84bd9af473422e62492930aa5f460369baad9545defa468d9399854c23a75495d2a80487ee");
+        assert_eq!(format!("{}", y), "0x094bfdfe3e552447433b5a00967498a3f1314b86ce7a7164c8a8f4131f99333b30a574607e301d5f774172c627fd0bca");
+
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
         assert!(should_be_zero.is_zero());
     }
 
+    // these test vectors are from https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-07#page-151
+
     #[cfg(feature = "mappings")]
     #[test]
-    fn test_bls12_ieft_vector_fp2_to_g2_0() {
+    fn test_bls12_ietf_vector_fp2_to_g2_0() {
         use crate::weierstrass::Group;
 
         let fp_field = &crate::engines::bls12_381::BLS12_381_FIELD;
@@ -517,7 +532,11 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp2_to_g2(&fe).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x.c0), "0x027e4bfada0b47f9f07e04aec463c7371e68f2fd0c738cd517932ea3801a35acf09db018deda57387b0f270f7a219e4d");
+        assert_eq!(format!("{}", x.c1), "0x0d4333b77becbf9f9dfa3ca928002233d1ecc854b1447e5a71f751c9042d000f42db91c1d6649a5e0ad22bd7bf7398b8");
+        assert_eq!(format!("{}", y.c0), "0x053674cba9ef516ddc218fedb37324e6c47de27f88ab7ef123b006127d738293c0277187f7e2f80a299a24d84ed03da7");
+        assert_eq!(format!("{}", y.c1), "0x0cc76dc777ea0d447e02a41004f37a0a7b1fafb6746884e8d9fc276716ccf47e4e0899548a2ec71c2bdf1a2a50e876db");
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -546,7 +565,11 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp2_to_g2(&fe).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x.c0), "0x09349f1cb5b2e55489dcd45a38545343451cc30a1681c57acd4fb0a6db125f8352c09f4a67eb7d1d8242cb7d3405f97b");
+        assert_eq!(format!("{}", x.c1), "0x18f0f87b40af67c056915dbaf48534c592524e82c1c2b50c3734d02c0172c80df780a60b5683759298a3303c5d942778");
+        assert_eq!(format!("{}", y.c0), "0x02f2d9deb2c7742512f5b8230bf0fd83ea42279d7d39779543c1a43b61c885982b611f6a7a24b514995e8a098496b811");
+        assert_eq!(format!("{}", y.c1), "0x10a2ba341bc689ab947b7941ce6ef39be17acaab067bd32bd652b471ab0792c53a2bd03bdac47f96aaafe96e441f63c0");
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -575,7 +598,11 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp2_to_g2(&fe).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x.c0), "0x149fe43777d34f0d25430dea463889bd9393bdfb4932946db23671727081c629ebb98a89604f3433fba1c67d356a4af7");
+        assert_eq!(format!("{}", x.c1), "0x19808ec5930a53c7cf5912ccce1cc33f1b3dcff24a53ce1cc4cba41fd6996dbed4843ccdd2eaf6a0cd801e562718d163");
+        assert_eq!(format!("{}", y.c0), "0x04c0d6793a766233b2982087b5f4a254f261003ccb3262ea7c50903eecef3e871d1502c293f9e063d7d293f6384f4551");
+        assert_eq!(format!("{}", y.c1), "0x04783e391c30c83f805ca271e353582fdf19d159f6a4c39b73acbb637a9b8ac820cfbe2738d683368a7c07ad020e3e33");
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -604,7 +631,11 @@ mod test {
         let mapped = crate::engines::bls12_381::mapping::fp2_to_g2(&fe).unwrap();
 
         let (x, y) = mapped.clone().into_xy();
-        println!("Mapped to x = {}, y = {}", x, y);
+        // println!("Mapped to x = {}, y = {}", x, y);
+        assert_eq!(format!("{}", x.c0), "0x0804152cbf8474669ad7d1796ab92d7ca21f32d8bed70898a748ed4e4e0ec557069003732fc86866d938538a2ae95552");
+        assert_eq!(format!("{}", x.c1), "0x0b8e0094c886487870372eb6264613a6a087c7eb9804fab789be4e47a57b29eb19b1983a51165a1b5eb025865e9fc63a");
+        assert_eq!(format!("{}", y.c0), "0x09e5c8242dd7281ad32c03fe4af3f19167770016255fb25ad9b67ec51d62fade31a1af101e8f6172ec2ee8857662be3a");
+        assert_eq!(format!("{}", y.c1), "0x14c80f068ece15a3936bb00c3c883966f75b4e8d9ddde809c11f781ab92d23a2d1d103ad48f6f3bb158bf3e3a4063449");
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 

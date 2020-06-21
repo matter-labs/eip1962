@@ -13,6 +13,24 @@ use crate::pairings::{PairingEngine, TwistType};
 use crate::engines::bls12_381::*;
 
 #[bench]
+fn bench_bls12_engine_sugroup_g1_double_and_add(b: &mut Bencher) {
+    let point = &BLS12_381_G1_GENERATOR;
+    let subgroup = &BLS12_381_SUBGROUP_ORDER;
+    b.iter(|| {
+        assert!(point.mul(&subgroup[..]).is_zero());
+    });
+}
+
+#[bench]
+fn bench_bls12_engine_g1_double_and_add_worst_case(b: &mut Bencher) {
+    let point = &BLS12_381_G1_GENERATOR;
+    let worst_case_scalar = [std::u64::MAX; 4];
+    b.iter(|| {
+        assert!(!point.mul(&worst_case_scalar[..]).is_zero());
+    });
+}
+
+#[bench]
 fn bench_bls12_engine_sugroup_g2_double_and_add(b: &mut Bencher) {
     let point = &BLS12_381_G2_GENERATOR;
     let subgroup = &BLS12_381_SUBGROUP_ORDER;
@@ -22,7 +40,7 @@ fn bench_bls12_engine_sugroup_g2_double_and_add(b: &mut Bencher) {
 }
 
 #[bench]
-fn bench_bls12_engine_sugroup_g2_double_and_add_worst_case(b: &mut Bencher) {
+fn bench_bls12_engine_g2_double_and_add_worst_case(b: &mut Bencher) {
     let point = &BLS12_381_G2_GENERATOR;
     let worst_case_scalar = [std::u64::MAX; 4];
     b.iter(|| {

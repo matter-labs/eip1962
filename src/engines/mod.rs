@@ -1,9 +1,12 @@
 #[macro_use]
 mod convenience;
 
+pub mod generic;
 pub mod bls12_381;
 pub mod bls12_377;
 
+#[cfg(feature = "eip_196")]
+pub mod bn254;
 
 #[cfg(test)]
 mod test {

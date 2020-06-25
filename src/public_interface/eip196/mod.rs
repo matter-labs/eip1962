@@ -144,13 +144,11 @@ impl EIP196Executor {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
-            // "fast" subgroup checks using empirical data
-            if g1.wnaf_mul_with_window_size(&BN254_SUBGROUP_ORDER[..], 5).is_zero() == false {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
-                }
-            }
 
+            // If point is on curve then we do not need subgroup check for G1 point on BN curves
+        
+            // But still check for G2
+            // "fast" subgroup checks using empirical data
             if g2.wnaf_mul_with_window_size(&BN254_SUBGROUP_ORDER[..], 5).is_zero() == false {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));

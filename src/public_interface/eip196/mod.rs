@@ -107,7 +107,29 @@ impl EIP196Executor {
 
         for _ in 0..num_pairs {
             let (g1, rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G1_CURVE)?;
-            let (g2, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G2_CURVE)?;
+
+            // g2 encoding in EIP 196/197 is non-standard: Fp2 element c0 + v*c1 where v is non-residue is
+            // encoded as (c1, c0) instead of usual (c0, c1)
+            let (g2, rest) = {
+                use crate::public_interface::decode_utils::split;
+
+                let (g2_encoding_bytes, rest) = split(rest, SERIALIZED_G2_POINT_BYTE_LENGTH, "not enough bytes to read G2 point")?;
+                let mut swapped_encoding = [0u8; SERIALIZED_G2_POINT_BYTE_LENGTH];
+
+                // swap for x coordinate
+                (&mut swapped_encoding[0..SERIALIZED_FP_BYTE_LENGTH]).copy_from_slice(&g2_encoding_bytes[SERIALIZED_FP_BYTE_LENGTH..(SERIALIZED_FP_BYTE_LENGTH*2)]);
+                (&mut swapped_encoding[SERIALIZED_FP_BYTE_LENGTH..(SERIALIZED_FP_BYTE_LENGTH*2)]).copy_from_slice(&g2_encoding_bytes[0..SERIALIZED_FP_BYTE_LENGTH]);
+
+                // swap for y coordinate
+                (&mut swapped_encoding[(SERIALIZED_FP_BYTE_LENGTH*2)..(SERIALIZED_FP_BYTE_LENGTH*3)]).copy_from_slice(&g2_encoding_bytes[(SERIALIZED_FP_BYTE_LENGTH*3)..(SERIALIZED_FP_BYTE_LENGTH*4)]);
+                (&mut swapped_encoding[(SERIALIZED_FP_BYTE_LENGTH*3)..(SERIALIZED_FP_BYTE_LENGTH*4)]).copy_from_slice(&g2_encoding_bytes[(SERIALIZED_FP_BYTE_LENGTH*2)..(SERIALIZED_FP_BYTE_LENGTH*3)]);
+
+
+                let (g2, _) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(&swapped_encoding[..], SERIALIZED_FP_BYTE_LENGTH, &*BN254_G2_CURVE)?;
+
+                (g2, rest)
+            };
+            
 
             global_rest = rest;
 

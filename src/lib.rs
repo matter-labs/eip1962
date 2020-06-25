@@ -269,4 +269,11 @@ mod tests {
         let mont_inverse = fe.new_mont_inverse();
         assert!(mont_inverse.is_none());
     }
+
+
+    #[test]
+    fn calculator() {
+        let field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        println!("Mont inv = {:x}", field.mont_inv);
+    }
 }

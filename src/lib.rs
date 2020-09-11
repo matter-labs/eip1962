@@ -1,6 +1,17 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 #![allow(dead_code)]
 
 #![cfg_attr(feature = "benchmarks", feature(test))]
+
+#[cfg(not(feature = "std"))]
+#[macro_use]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+mod std {
+    pub use sp_std::prelude::*;
+}
 
 extern crate byteorder;
 extern crate eth_pairings_repr_derive;
@@ -48,6 +59,7 @@ mod tests {
     extern crate rand;
     extern crate rand_xorshift;
 
+    use super::*;
     use num_bigint::BigUint;
     use num_traits::Num;
     use num_traits::Zero;
@@ -182,6 +194,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_wnaf_decomposition() {
         use crate::representation::ElementRepr;
         use crate::representation::IntoWnaf;
@@ -272,6 +285,7 @@ mod tests {
 
 
     #[test]
+    #[cfg(feature = "std")]
     fn calculator() {
         let field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         println!("Mont inv = {:x}", field.mont_inv);

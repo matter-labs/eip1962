@@ -29,13 +29,13 @@ num-bigint = {version = "0.2", optional = true }
 num-traits = {version = "0.2", optional = true }
 
 [dev-dependencies]
-num-bigint = "0.2"
-num-traits = "0.2"
-num-integer = "0.1"
-hex = "0.4"
-rand = "0.7"
-rand_xorshift = "0.2"
-csv = "1"
+num-bigint = { default-features = false, version = "0.2"}
+num-traits = { default-features = false, version = "0.2"}
+num-integer = { default-features = false, version = "0.1"}
+hex = { version = "0.4"}
+rand = { version = "0.7"}
+rand_xorshift = { version = "0.2"}
+csv = { version = "1"}
 pbr = "*"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
@@ -45,9 +45,10 @@ indicatif = {version = "*", features = ["with_rayon"]}
 parity-crypto = {version = "0.4", features = ["publickey"]}
 ethereum-types = "0.8"
 keccak-hash = "0.4"
+sp-std = { version = "2.0.0-rc6", default-features = false }
 
 [features]
-default = ["eip_2537", "gas_metering", "mappings", "eip_2357_c_api", "eip_196", "eip_196_c_api"]
+default = ["std", "eip_2537", "gas_metering", "mappings", "eip_2357_c_api", "eip_196", "eip_196_c_api"]
 benchmarks = []
 mappings = ["once_cell", "num-bigint", "num-traits"]
 gas_metering = ["serde", "serde_json", "once_cell"]
@@ -59,6 +60,6 @@ eip_2537 = ["mappings"]
 eip_2357_c_api = ["eip_2537"]
 eip_196 = ["once_cell", "num-bigint", "num-traits"]
 eip_196_c_api = ["eip_196"]
-
+std = []
 [profile.release]
 incremental = false

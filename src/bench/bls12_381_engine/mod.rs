@@ -106,6 +106,18 @@ fn bench_bls12_engine_pair_2(b: &mut Bencher) {
     });
 }
 
+#[bench]
+fn bench_bls12_engine_pair_4(b: &mut Bencher) {
+    let g1_point = BLS12_381_G1_GENERATOR.clone();
+    let g2_point = BLS12_381_G2_GENERATOR.clone();
+    let g1s = vec![g1_point; 4];
+    let g2s = vec![g2_point; 4];
+    let pairs = 
+    b.iter(|| {
+        assert!(BLS12_381_PAIRING_ENGINE.pair(&g1s, &g2s).is_some());
+    });
+}
+
 #[cfg(feature = "mappings")]
 #[bench]
 fn bench_bls12_engine_map_fp_to_g1(b: &mut Bencher) {

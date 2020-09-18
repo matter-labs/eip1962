@@ -2,7 +2,16 @@ use crate::field::{SizedPrimeField};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
 use super::fp2::{Fp2, Extension2};
+use crate::fp::Fp;
 use super::Fp6Fp12FrobeniusBaseElements;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum NonResidueMulPolicyFp6 {
+    OneOne,
+    FullOne,
+    OneFull,
+    Full
+}
 
 // this implementation assumes extension using polynomial v^3 - xi = 0
 // multiply_by_non_residue function in the extension field actually depends
@@ -381,6 +390,7 @@ pub struct Extension3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) field: &'a Extension2<'a, E, F>,
     pub(crate) frobenius_coeffs_c1: [Fp2<'a, E, F>; 6],
     pub(crate) frobenius_coeffs_c2: [Fp2<'a, E, F>; 6],
+    pub(crate) non_residue_mul_policy: NonResidueMulPolicyFp6,
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
@@ -391,6 +401,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension3Over
             field: self.field,
             frobenius_coeffs_c1: self.frobenius_coeffs_c1.clone(),
             frobenius_coeffs_c2: self.frobenius_coeffs_c2.clone(),
+            non_residue_mul_policy: self.non_residue_mul_policy,
             frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
         }
     }
@@ -400,6 +411,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
     pub (crate) fn new(non_residue: Fp2<'a, E, F>) -> Self {
         let extension_2 = &non_residue.extension_field;
 
+        let one_fp = Fp::one(extension_2.field);
+        let c0_is_one = non_residue.c0 == one_fp;
+        let c1_is_one = non_residue.c1 == one_fp;
+
+        let policy = match (c0_is_one, c1_is_one) {
+            (true, true) => NonResidueMulPolicyFp6::OneOne,
+            (true, false) => NonResidueMulPolicyFp6::FullOne,
+            (false, true) => NonResidueMulPolicyFp6::OneFull,
+            (false, false) => NonResidueMulPolicyFp6::Full,
+        };
+
         let zeros = [Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2),
                     Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2)];
         
@@ -408,6 +430,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
             field: & non_residue.extension_field,
             frobenius_coeffs_c1: zeros.clone(),
             frobenius_coeffs_c2: zeros,
+            non_residue_mul_policy: policy,
             frobenius_coeffs_are_calculated: false
         }
     }
@@ -543,9 +566,69 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
     type Element = Fp2<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
-        // this is simply a multiplication by non-residue that is Fp element cause everything else 
-        // is covered in explicit formulas for multiplications for Fp2
-        el.mul_assign(&self.non_residue);
+        // for special cases we implement Fp2 multiplication manually
+
+        // let mut v0 = self.c0.clone();
+        // v0.mul_assign(&other.c0);
+        // let mut v1 = self.c1.clone();
+        // v1.mul_assign(&other.c1);
+
+        // self.c1.add_assign(&self.c0);
+        // let mut t0 = other.c0.clone();
+        // t0.add_assign(&other.c1);
+        // self.c1.mul_assign(&t0);
+        // self.c1.sub_assign(&v0);
+        // self.c1.sub_assign(&v1);
+        // self.c0 = v0;
+        // v1.mul_by_nonresidue(self.extension_field);
+        // self.c0.add_assign(&v1);
+
+        let (v0, mut v1) = match self.non_residue_mul_policy {
+            NonResidueMulPolicyFp6::OneOne => {
+                let v0 = el.c0;
+                let v1 = el.c1;
+        
+                (v0, v1)
+            },
+            NonResidueMulPolicyFp6::OneFull => {
+                let v0 = el.c0;
+                let mut v1 = el.c1;
+                v1.mul_assign(&self.non_residue.c1);
+        
+                (v0, v1)
+            },
+            NonResidueMulPolicyFp6::FullOne => {
+                let mut v0 = el.c0;
+                v0.mul_assign(&self.non_residue.c0);
+                let v1 = el.c1;
+        
+                (v0, v1)
+            }
+            NonResidueMulPolicyFp6::Full => {
+                let mut v0 = el.c0;
+                v0.mul_assign(&self.non_residue.c0);
+                let mut v1 = el.c1;
+                v1.mul_assign(&self.non_residue.c1);
+        
+                (v0, v1)
+            }
+        };
+
+        el.c1.add_assign(&el.c0);
+        let mut t0 = self.non_residue.c0;
+        t0.add_assign(&self.non_residue.c1);
+        el.c1.mul_assign(&t0);
+        el.c1.sub_assign(&v0);
+        el.c1.sub_assign(&v1);
+        el.c0 = v0;
+        v1.mul_by_nonresidue(self.field);
+        el.c0.add_assign(&v1);
+
+
+        // // this is simply a multiplication by non-residue that is Fp element cause everything else 
+        // // is covered in explicit formulas for multiplications for Fp2
+        // el.mul_assign(&self.non_residue);
+
     }
 
 }

@@ -120,6 +120,8 @@ pub const BLS12_381_EXTENSION_2_FIELD: Extension2<'static, U384Repr, PrimeField<
         field: &BLS12_381_FIELD,
         non_residue: BLS12_381_FP_NON_RESIDUE,
         frobenius_coeffs_c1: [BLS12_381_EXTENSION_2_FROB_COEFF_0, BLS12_381_EXTENSION_2_FROB_COEFF_1],
+        non_residue_mul_policy: NonResidueMulPolicy::Negate,
+        // non_residue_mul_policy: NonResidueMulPolicy::Full,
         frobenius_coeffs_are_calculated: true
     };
 
@@ -341,6 +343,7 @@ pub const BLS12_381_EXTENSION_6_FIELD: Extension3Over2<'static, U384Repr, PrimeF
         field: &BLS12_381_EXTENSION_2_FIELD,
         frobenius_coeffs_c1: [BLS12_381_FP6_FROB_C1_0, BLS12_381_FP6_FROB_C1_1, BLS12_381_FP6_FROB_C1_2, BLS12_381_FP6_FROB_C1_3, BLS12_381_FP6_FROB_C1_4, BLS12_381_FP6_FROB_C1_5],
         frobenius_coeffs_c2: [BLS12_381_FP6_FROB_C2_0, BLS12_381_FP6_FROB_C2_1, BLS12_381_FP6_FROB_C2_2, BLS12_381_FP6_FROB_C2_3, BLS12_381_FP6_FROB_C2_4, BLS12_381_FP6_FROB_C2_5],
+        non_residue_mul_policy: NonResidueMulPolicyFp6::OneOne,
         frobenius_coeffs_are_calculated: true
     };
 

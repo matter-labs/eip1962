@@ -35,8 +35,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp2<'a, E, F> 
     #[inline(always)]
     fn clone(&self) -> Self {
         Self{
-            c0: self.c0.clone(),
-            c1: self.c1.clone(),
+            c0: self.c0,
+            c1: self.c1,
             extension_field: self.extension_field
         }
     }
@@ -62,9 +62,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp2<'a, E, F> {
     }
 
     pub fn norm(&self) -> Fp<'a, E, F> {
-        let mut t0 = self.c0.clone();
+        let mut t0 = self.c0;
         t0.square();
-        let mut t1 = self.c1.clone();
+        let mut t1 = self.c1;
         t1.square();
         t1.mul_by_nonresidue(self.extension_field);
         t1.negate();
@@ -81,7 +81,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp2<'a, E
         let zero = Fp::zero(extension_field.field);
         
         Self {
-            c0: zero.clone(),
+            c0: zero,
             c1: zero,
             extension_field: extension_field
         }
@@ -133,19 +133,19 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
         } else {
             // Guide to Pairing-based Cryptography, Algorithm 5.19.
             // v0 = c0.square()
-            let mut v0 = self.c0.clone();
+            let mut v0 = self.c0;
             v0.square();
             // v1 = c1.square()
-            let mut v1 = self.c1.clone();
+            let mut v1 = self.c1;
             v1.square();
             // v0 = v0 - beta * v1
-            let mut v1_by_nonresidue = v1.clone();
+            let mut v1_by_nonresidue = v1;
             v1_by_nonresidue.mul_by_nonresidue(self.extension_field);
             v0.sub_assign(&v1_by_nonresidue);
             v0.inverse().map(|v1| {
-                let mut c0 = self.c0.clone();
+                let mut c0 = self.c0;
                 c0.mul_assign(&v1);
-                let mut c1 = self.c1.clone();
+                let mut c1 = self.c1;
                 c1.mul_assign(&v1);
                 c1.negate();
 
@@ -160,13 +160,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
 
     fn mul_assign(&mut self, other: &Self)
     {
-        let mut v0 = self.c0.clone();
+        let mut v0 = self.c0;
         v0.mul_assign(&other.c0);
-        let mut v1 = self.c1.clone();
+        let mut v1 = self.c1;
         v1.mul_assign(&other.c1);
 
         self.c1.add_assign(&self.c0);
-        let mut t0 = other.c0.clone();
+        let mut t0 = other.c0;
         t0.add_assign(&other.c1);
         self.c1.mul_assign(&t0);
         self.c1.sub_assign(&v0);
@@ -179,22 +179,22 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
     fn square(&mut self)
     {
         // v0 = c0 - c1
-        let mut v0 = self.c0.clone();
+        let mut v0 = self.c0;
         v0.sub_assign(&self.c1);
         // v3 = c0 - beta * c1
-        let mut v3 = self.c0.clone();
-        let mut t0 = self.c1.clone();
+        let mut v3 = self.c0;
+        let mut t0 = self.c1;
         t0.mul_by_nonresidue(self.extension_field);
         v3.sub_assign(&t0);
         // v2 = c0 * c1
-        let mut v2 = self.c0.clone();
+        let mut v2 = self.c0;
         v2.mul_assign(&self.c1);
 
         // v0 = (v0 * v3) + v2
         v0.mul_assign(&v3);
         v0.add_assign(&v2);
 
-        self.c1 = v2.clone();
+        self.c1 = v2;
         self.c1.double();
         self.c0 = v0;
         v2.mul_by_nonresidue(self.extension_field);
@@ -241,9 +241,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
 // For example, BLS12-381 has non-residue = -1;
 pub struct Extension2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
     pub(crate) field: &'a F,
+    pub(crate) non_residue_mul_policy: NonResidueMulPolicy,
     pub(crate) non_residue: Fp<'a, E, F>,
     pub(crate) frobenius_coeffs_c1: [Fp<'a, E, F>; 2],
-    pub(crate) non_residue_mul_policy: NonResidueMulPolicy,
     pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
@@ -251,8 +251,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2<'a,
     fn clone(&self) -> Self {
         Self {
             field: self.field,
-            non_residue: self.non_residue.clone(),
-            frobenius_coeffs_c1: self.frobenius_coeffs_c1.clone(),
+            non_residue: self.non_residue,
+            frobenius_coeffs_c1: self.frobenius_coeffs_c1,
             non_residue_mul_policy: self.non_residue_mul_policy,
             frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
         }
@@ -318,7 +318,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         let f_0 = Fp::one(self.field);
         
         // precomputation has it by 4, so square
-        let mut f_1 = precomp.non_residue_in_q_minus_one_by_four.clone();
+        let mut f_1 = precomp.non_residue_in_q_minus_one_by_four;
         f_1.square();
 
         self.frobenius_coeffs_c1 = [f_0, f_1];

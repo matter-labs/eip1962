@@ -61,6 +61,6 @@ eip_196 = ["once_cell", "num-bigint", "num-traits"]
 eip_196_c_api = ["eip_196"]
 
 [profile.release]
-lto = "fat"
-num_cgu = "1"
+lto = "thin"
+# codegen-units = 1
 # incremental = false

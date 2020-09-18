@@ -299,7 +299,7 @@ pub const BLS12_377_EXTENSION_6_FIELD: Extension3Over2<'static, U384Repr, PrimeF
         field: &BLS12_377_EXTENSION_2_FIELD,
         frobenius_coeffs_c1: [BLS12_377_FP6_FROB_C1_0, BLS12_377_FP6_FROB_C1_1, BLS12_377_FP6_FROB_C1_2, BLS12_377_FP6_FROB_C1_3, BLS12_377_FP6_FROB_C1_4, BLS12_377_FP6_FROB_C1_5],
         frobenius_coeffs_c2: [BLS12_377_FP6_FROB_C2_0, BLS12_377_FP6_FROB_C2_1, BLS12_377_FP6_FROB_C2_2, BLS12_377_FP6_FROB_C2_3, BLS12_377_FP6_FROB_C2_4, BLS12_377_FP6_FROB_C2_5],
-        non_residue_mul_policy: NonResidueMulPolicyFp6::OneOne,
+        non_residue_mul_policy: NonResidueMulPolicyFp6::FullOne,
         frobenius_coeffs_are_calculated: true
     };
 

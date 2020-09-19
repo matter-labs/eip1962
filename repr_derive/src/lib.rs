@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "1024"]
 
 extern crate byteorder;
@@ -5,11 +6,23 @@ extern crate byteorder;
 extern crate proc_macro;
 extern crate proc_macro2;
 extern crate syn;
+
+#[cfg(not(feature = "std"))]
+#[macro_use]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+mod std {
+    pub use sp_std::*;
+}
+
+use crate::std::alloc::string::String;
+use std::str::FromStr;
+
 #[macro_use]
 extern crate quote;
 
 use quote::TokenStreamExt;
-use std::str::FromStr;
 
 #[proc_macro_derive(ElementRepresentation, attributes(NumberOfLimbs))]
 pub fn element_repr(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

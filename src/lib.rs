@@ -10,7 +10,7 @@ extern crate alloc;
 
 #[cfg(not(feature = "std"))]
 mod std {
-    pub use sp_std::prelude::*;
+    pub use sp_std::*;
 }
 
 extern crate byteorder;

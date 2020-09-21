@@ -457,9 +457,7 @@ mod test {
 
         let mut p = bls12_377::BLS12_377_G1_GENERATOR.mul(&scalar);
         p.normalize();
-
         let as_vec = encode_g1(&p);
-
         (p, as_vec)
     }
 
@@ -524,15 +522,14 @@ mod test {
     }
 
     fn make_csv_writer(path: &str) -> Option<Writer<std::fs::File>> {
-        None
-        // if WRITE_VECTORS {
-        //     let mut writer = Writer::from_path(path).expect("must open a test file");
-        //     writer.write_record(&["input", "result"]).expect("must write header");
+        if WRITE_VECTORS {
+            let mut writer = Writer::from_path(path).expect("must open a test file");
+            writer.write_record(&["input", "result"]).expect("must write header");
 
-        //     Some(writer)
-        // } else {
-        //     None
-        // }
+            Some(writer)
+        } else {
+            None
+        }
     }
 
     fn make_point_not_on_curve_g1(p: &mut G1) {
@@ -558,7 +555,7 @@ mod test {
     }
 
     fn make_g1_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G1 {
-        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+        let modulus = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
         let (fp, _) = make_random_fp_with_encoding(rng, &modulus);
         let one = FpElement::one(&bls12_377::BLS12_377_FIELD);
 
@@ -909,80 +906,6 @@ mod test {
         pb.finish_with_message("Completed");
     }
 
-    // #[test]
-    // fn generate_fp_to_g1_mapping_vectors() {
-    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-
-    //     let pb = ProgressBar::new(1u64);
-
-    //     pb.set_style(ProgressStyle::default_bar()
-    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-    //         .progress_chars("##-"));
-
-    //     pb.set_length(NUM_TESTS as u64);
-
-    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/fp_to_g1.csv");
-    //     assert!(writer.is_some());
-    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-
-    //     for _ in 0..NUM_TESTS {
-    //         let (_, input) = make_random_fp_with_encoding(&mut rng, &modulus);
-
-    //         let api_result = EIP2539Executor::map_fp_to_g1(&input).unwrap();
-    //         assert!(api_result.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
-
-    //         if let Some(writer) = writer.as_mut() {
-    //             writer.write_record(
-    //                 &[
-    //                     &hex::encode(&input[..]), 
-    //                     &hex::encode(&api_result[..])
-    //                 ],
-    //             ).expect("must write a test vector");
-    //         }
-
-    //         pb.inc(1);
-    //     }
-
-    //     pb.finish_with_message("Completed");
-    // }
-
-    // #[test]
-    // fn generate_fp2_to_g2_mapping_vectors() {
-    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-
-    //     let pb = ProgressBar::new(1u64);
-
-    //     pb.set_style(ProgressStyle::default_bar()
-    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-    //         .progress_chars("##-"));
-
-    //     pb.set_length(NUM_TESTS as u64);
-
-    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/fp2_to_g2.csv");
-    //     assert!(writer.is_some());
-    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-
-    //     for _ in 0..NUM_TESTS {
-    //         let (_, input) = make_random_fp2_with_encoding(&mut rng, &modulus);
-
-    //         let api_result = EIP2539Executor::map_fp2_to_g2(&input).unwrap();
-    //         assert!(api_result.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
-
-    //         if let Some(writer) = writer.as_mut() {
-    //             writer.write_record(
-    //                 &[
-    //                     &hex::encode(&input[..]), 
-    //                     &hex::encode(&api_result[..])
-    //                 ],
-    //             ).expect("must write a test vector");
-    //         }
-
-    //         pb.inc(1);
-    //     }
-
-    //     pb.finish_with_message("Completed");
-    // }
-
     #[test]
     fn generate_pairing_vectors() {
         let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
@@ -1186,81 +1109,6 @@ mod test {
         pb.finish_with_message("Completed");
     }
 
-
-    // #[test]
-    // fn generate_invalid_fp_encoding_vectors() {
-    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-
-    //     let pb = ProgressBar::new(1u64);
-
-    //     pb.set_style(ProgressStyle::default_bar()
-    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-    //         .progress_chars("##-"));
-
-    //     pb.set_length(NUM_TESTS as u64);
-
-    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/invalid_fp_encoding.csv");
-    //     assert!(writer.is_some());
-    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-
-    //     for j in 0..NUM_TESTS {
-    //         let use_overflow = j & 1 == 0;
-    //         let input = make_invalid_encoding_fp(&mut rng, &modulus, use_overflow);
-
-    //         let api_result = EIP2539Executor::map_fp_to_g1(&input).err().unwrap().to_string();
-
-    //         if let Some(writer) = writer.as_mut() {
-    //             writer.write_record(
-    //                 &[
-    //                     &hex::encode(&input[..]), 
-    //                     &api_result
-    //                 ],
-    //             ).expect("must write a test vector");
-    //         }
-
-    //         pb.inc(1);
-    //     }
-
-    //     pb.finish_with_message("Completed");
-    // }
-
-    // #[test]
-    // fn generate_invalid_fp2_encoding_vectors() {
-    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-
-    //     let pb = ProgressBar::new(1u64);
-
-    //     pb.set_style(ProgressStyle::default_bar()
-    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-    //         .progress_chars("##-"));
-
-    //     pb.set_length(NUM_TESTS as u64);
-
-    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/invalid_fp2_encoding.csv");
-    //     assert!(writer.is_some());
-    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-
-    //     for j in 0..NUM_TESTS {
-    //         let use_overflow = j & 1 == 0;
-    //         let input = make_invalid_encoding_fp2(&mut rng, &modulus, use_overflow);
-
-    //         let api_result = EIP2539Executor::map_fp2_to_g2(&input).err().unwrap().to_string();
-
-    //         if let Some(writer) = writer.as_mut() {
-    //             writer.write_record(
-    //                 &[
-    //                     &hex::encode(&input[..]), 
-    //                     &api_result
-    //                 ],
-    //             ).expect("must write a test vector");
-    //         }
-
-    //         pb.inc(1);
-    //     }
-
-    //     pb.finish_with_message("Completed");
-    // }
-
     #[test]
     fn dump_vectors_into_fuzzing_corpus() {
         let byte_idx: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -1272,14 +1120,12 @@ mod test {
             "g2_mul.csv",
             "g2_multiexp.csv",
             "pairing.csv",
-            "fp_to_g1.csv",
-            "fp2_to_g2.csv"
         ];
 
         let mut counter = 0;
 
         for (b, f) in byte_idx.into_iter().zip(file_paths.into_iter()) {
-            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/{}", f)).unwrap();
+            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/{}", f)).expect(&format!("failed to open {}", f));
             for r in reader.records() {
                 let r = r.unwrap();
                 let input = hex::decode(r.get(0).unwrap()).unwrap();
@@ -1298,7 +1144,7 @@ mod test {
         expect_success: bool,
         test_function: F 
     ) -> bool {
-        let mut reader = csv::Reader::from_path(file_path).unwrap();
+        let mut reader = csv::Reader::from_path(file_path).expect(&format!("failed to open {}", file_path));
         for r in reader.records() {
             let r = r.unwrap();
             let input_str = r.get(0).unwrap();
@@ -1338,28 +1184,6 @@ mod test {
         assert!(success);
     }
 
-    // #[test]
-    // fn test_external_fp_to_g1_vectors() {
-    //     let p = "src/test/test_vectors/eip2539/extras/fp_to_g1.csv";
-        
-    //     let f = |input: &[u8]| EIP2539Executor::map_fp_to_g1(input).map(|r| r.to_vec());
-
-    //     let success = run_on_test_inputs(p, true, f);
-
-    //     assert!(success);
-    // }
-
-    // #[test]
-    // fn test_external_fp2_to_g2_vectors() {
-    //     let p = "src/test/test_vectors/eip2539/extras/fp2_to_g2.csv";
-        
-    //     let f = |input: &[u8]| EIP2539Executor::map_fp2_to_g2(input).map(|r| r.to_vec());
-
-    //     let success = run_on_test_inputs(p, true, f);
-
-    //     assert!(success);
-    // }
-
     #[test]
     fn test_external_g2_multiexp_vectors() {
         let p = "src/test/test_vectors/eip2539/extras/g2_multiexp.csv";
@@ -1377,8 +1201,6 @@ mod test {
         let byte_idx: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
         let file_paths = vec![
             "g2_multiexp.csv",
-            "fp_to_g1.csv",
-            "fp2_to_g2.csv"
         ];
 
         let mut counter = 0;
@@ -1397,6 +1219,4 @@ mod test {
             }
         }
     }
-
-
 }

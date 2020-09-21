@@ -21,6 +21,7 @@ pub const BLS12_377_MODULUS_UINT: MaxFieldUint = MaxFieldUint::from_limbs(
 );
 
 pub const BLS12_377_MODULUS: U384Repr = U384Repr([0x8508c00000000001,0x170b5d4430000000,0x1ef3622fba094800,0x1a22d9f300f5138f,0xc63b05c06ca1493b,0x01ae3a4617c510ea]);
+
 const BLS12_377_R: U384Repr = U384Repr([0x02cdffffffffff68,0x51409f837fffffb1,0x9f7db3a98a7d3ff2,0x7b4e97b76e7c6305,0x4cf495bf803c84e8,0x008d6661e2fdf49a]);
 const BLS12_377_R2: U384Repr = U384Repr([0xb786686c9400cd22,0x0329fcaab00431b1,0x22a5f11162d6b46d,0xbfdf7d03827dc3ac,0x837e92f041790bf9,0x006dfccb1e914b88]);
 const BLS12_377_MONT_INV: u64 = 0x8508bfffffffffff;
@@ -112,7 +113,18 @@ pub const BLS12_377_SUBGROUP_ORDER: [u64; 4] = [
 const BLS12_377_X: [u64; 1] = [0x8508c00000000001];
 const BLS12_377_X_IS_NEGATIVE: bool = false;
 
-const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([0x862f3ffffffffd9f,0x2df720c9cffffec3,0x5f036c766febb7c9,0xd31784eab8fc7887,0x6d97513d9450ca66,0x00875f417432c17e]);
+// const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([0x862f3ffffffffd9f,0x2df720c9cffffec3,0x5f036c766febb7c9,0xd31784eab8fc7887,0x6d97513d9450ca66,0x00875f417432c17e]);
+
+// re-used from zexe implementation
+const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([        
+    0x2cdffffffffff68,
+    0x51409f837fffffb1,
+    0x9f7db3a98a7d3ff2,
+    0x7b4e97b76e7c6305,
+    0x4cf495bf803c84e8,
+    0x8d6661e2fdf49a,
+]);
+
 pub const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_377_FIELD,
@@ -120,7 +132,18 @@ pub const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> =
     };    
 
 const BLS12_377_B_FOR_G2_C0_REPR: U384Repr = U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]);
-const BLS12_377_B_FOR_G2_C1_REPR: U384Repr = U384Repr([0x01c8999999999a14,0x37d5649a266666a6,0xff91586b593cd33e,0xe5769b62db93c06d,0x2dd1f333f0509d0e,0x00e70fe9c3d27d0d]);
+
+// const BLS12_377_B_FOR_G2_C1_REPR: U384Repr = U384Repr([0x01c8999999999a14,0x37d5649a266666a6,0xff91586b593cd33e,0xe5769b62db93c06d,0x2dd1f333f0509d0e,0x00e70fe9c3d27d0d]);
+
+// re-used from zexe implementation
+const BLS12_377_B_FOR_G2_C1_REPR: U384Repr = U384Repr([
+    9255502405446297221,
+    10229180150694123945,
+    9215585410771530959,
+    13357015519562362907,
+    5437107869987383107,
+    16259554076827459,
+]);
 
 const BLS12_377_B_FOR_G2_C0: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {

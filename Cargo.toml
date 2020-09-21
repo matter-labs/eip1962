@@ -47,7 +47,7 @@ ethereum-types = "0.8"
 keccak-hash = "0.4"
 
 [features]
-default = ["eip_2537", "gas_metering", "mappings", "eip_2357_c_api", "eip_196", "eip_196_c_api"]
+default = ["eip_2537", "gas_metering", "mappings", "eip_2357_c_api", "eip_196", "eip_196_c_api", "eip_2539", "eip_2539_c_api"]
 benchmarks = []
 mappings = ["once_cell", "num-bigint", "num-traits"]
 gas_metering = ["serde", "serde_json", "once_cell"]
@@ -57,6 +57,8 @@ fuzzing_mode = []
 external_tests = []
 eip_2537 = ["mappings"]
 eip_2357_c_api = ["eip_2537"]
+eip_2539 = []
+eip_2539_c_api = ["eip_2539"]
 eip_196 = ["once_cell", "num-bigint", "num-traits"]
 eip_196_c_api = ["eip_196"]
 

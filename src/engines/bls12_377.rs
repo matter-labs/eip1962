@@ -113,7 +113,7 @@ const BLS12_377_X: [u64; 1] = [0x8508c00000000001];
 const BLS12_377_X_IS_NEGATIVE: bool = false;
 
 const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([0x862f3ffffffffd9f,0x2df720c9cffffec3,0x5f036c766febb7c9,0xd31784eab8fc7887,0x6d97513d9450ca66,0x00875f417432c17e]);
-const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_377_FIELD,
         repr: BLS12_377_B_FOR_G1_REPR
@@ -132,9 +132,9 @@ const BLS12_377_B_FOR_G2_C1: Fp<'static, U384Repr, PrimeField<U384Repr>> =
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_377_FIELD,
         repr: BLS12_377_B_FOR_G2_C1_REPR
-    };    
+    };
 
-const BLS12_377_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_377_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp2::<'static, U384Repr, PrimeField<U384Repr>> {
         c0: BLS12_377_B_FOR_G2_C0,
         c1: BLS12_377_B_FOR_G2_C1,

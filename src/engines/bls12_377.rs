@@ -113,7 +113,7 @@ pub const BLS12_377_SUBGROUP_ORDER: [u64; 4] = [
 const BLS12_377_X: [u64; 1] = [0x8508c00000000001];
 const BLS12_377_X_IS_NEGATIVE: bool = false;
 
-const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([0x862f3ffffffffd9f,0x2df720c9cffffec3,0x5f036c766febb7c9,0xd31784eab8fc7887,0x6d97513d9450ca66,0x00875f417432c17e]);
+const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([0x02cdffffffffff68,0x51409f837fffffb1,0x9f7db3a98a7d3ff2,0x7b4e97b76e7c6305,0x4cf495bf803c84e8,0x008d6661e2fdf49a]);
 const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_377_FIELD,
@@ -121,7 +121,7 @@ const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> =
     };    
 
 const BLS12_377_B_FOR_G2_C0_REPR: U384Repr = U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]);
-const BLS12_377_B_FOR_G2_C1_REPR: U384Repr = U384Repr([0x01c8999999999a14,0x37d5649a266666a6,0xff91586b593cd33e,0xe5769b62db93c06d,0x2dd1f333f0509d0e,0x00e70fe9c3d27d0d]);
+const BLS12_377_B_FOR_G2_C1_REPR: U384Repr = U384Repr([0x8072266666666685,0x8df55926899999a9,0x7fe4561ad64f34cf,0xb95da6d8b6e4f01b,0x4b747cccfc142743,0x0039c3fa70f49f43]);
 
 const BLS12_377_B_FOR_G2_C0: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
@@ -299,7 +299,7 @@ pub const BLS12_377_EXTENSION_6_FIELD: Extension3Over2<'static, U384Repr, PrimeF
         field: &BLS12_377_EXTENSION_2_FIELD,
         frobenius_coeffs_c1: [BLS12_377_FP6_FROB_C1_0, BLS12_377_FP6_FROB_C1_1, BLS12_377_FP6_FROB_C1_2, BLS12_377_FP6_FROB_C1_3, BLS12_377_FP6_FROB_C1_4, BLS12_377_FP6_FROB_C1_5],
         frobenius_coeffs_c2: [BLS12_377_FP6_FROB_C2_0, BLS12_377_FP6_FROB_C2_1, BLS12_377_FP6_FROB_C2_2, BLS12_377_FP6_FROB_C2_3, BLS12_377_FP6_FROB_C2_4, BLS12_377_FP6_FROB_C2_5],
-        non_residue_mul_policy: NonResidueMulPolicyFp6::FullOne,
+        non_residue_mul_policy: NonResidueMulPolicyFp6::ZeroOne,
         frobenius_coeffs_are_calculated: true
     };
 
@@ -561,7 +561,6 @@ mod test {
 
         res
     }
-
 
     #[test]
     fn test_g1_mul_by_zero() {

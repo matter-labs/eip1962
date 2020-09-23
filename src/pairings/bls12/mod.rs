@@ -932,8 +932,11 @@ mod tests {
         extension_12.calculate_frobenius_coeffs_with_precomp(&precomp_base).expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U384Repr::from(1)).unwrap();
+        println!("{}", b_fp.repr);
         let mut b_fp2 = fp2_non_residue.clone().inverse().unwrap();
         b_fp2.mul_by_fp(&b_fp);
+        println!("{}", b_fp2.c0.repr);
+        println!("{}", b_fp2.c1.repr);
 
         let a_fp = Fp::zero(&base_field);
         let a_fp2 = Fp2::zero(&extension_2);

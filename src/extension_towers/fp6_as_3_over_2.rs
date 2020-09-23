@@ -7,6 +7,7 @@ use super::Fp6Fp12FrobeniusBaseElements;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum NonResidueMulPolicyFp6 {
+    ZeroOne,
     OneOne,
     FullOne,
     OneFull,
@@ -412,14 +413,20 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         let extension_2 = &non_residue.extension_field;
 
         let one_fp = Fp::one(extension_2.field);
+        let zero_fp = Fp::zero(extension_2.field);
+        let c0_is_zero = non_residue.c0 == zero_fp;
         let c0_is_one = non_residue.c0 == one_fp;
         let c1_is_one = non_residue.c1 == one_fp;
 
-        let policy = match (c0_is_one, c1_is_one) {
-            (true, true) => NonResidueMulPolicyFp6::OneOne,
-            (true, false) => NonResidueMulPolicyFp6::FullOne,
-            (false, true) => NonResidueMulPolicyFp6::OneFull,
-            (false, false) => NonResidueMulPolicyFp6::Full,
+        let policy = if c0_is_zero && c1_is_one {
+            NonResidueMulPolicyFp6::ZeroOne
+        } else {
+            match (c0_is_one, c1_is_one) {
+                (true, true) => NonResidueMulPolicyFp6::OneOne,
+                (true, false) => NonResidueMulPolicyFp6::FullOne,
+                (false, true) => NonResidueMulPolicyFp6::OneFull,
+                (false, false) => NonResidueMulPolicyFp6::Full,
+            }
         };
 
         let zeros = [Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2),
@@ -584,6 +591,18 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
         // self.c0.add_assign(&v1);
 
         let (v0, mut v1) = match self.non_residue_mul_policy {
+            NonResidueMulPolicyFp6::ZeroOne => {
+                // full unroll
+                let mut v1 = el.c1;
+
+                el.c1.add_assign(&el.c0);
+                el.c1.mul_assign(&self.non_residue.c1);
+                el.c1.sub_assign(&v1);
+                v1.mul_by_nonresidue(self.field);
+                el.c0 = v1;
+
+                return;
+            }
             NonResidueMulPolicyFp6::OneOne => {
                 let v0 = el.c0;
                 let v1 = el.c1;

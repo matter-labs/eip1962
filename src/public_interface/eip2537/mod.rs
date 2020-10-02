@@ -1395,5 +1395,59 @@ mod test {
         }
     }
 
+    #[test]
+    fn print_worst_case_vectors_eip_2537() {
+        let worst_case_double_and_add_scalar_encoding = vec![255u8; SCALAR_BYTE_LENGTH];
+        let e_g1 = encode_g1(&bls12_381::BLS12_381_G1_GENERATOR);
+        let e_g2 = encode_g2(&bls12_381::BLS12_381_G2_GENERATOR);
 
+        let mut g1_worst = vec![];
+        g1_worst.extend_from_slice(&e_g1);
+        g1_worst.extend_from_slice(&worst_case_double_and_add_scalar_encoding);
+
+        let mut g2_worst = vec![];
+        g2_worst.extend_from_slice(&e_g2);
+        g2_worst.extend_from_slice(&worst_case_double_and_add_scalar_encoding);
+
+        let mut pairing_cases = vec![];
+
+        for num_pairs in vec![2,4,6] {
+            let mut enc = vec![];
+            for _ in 0..num_pairs {
+                enc.extend_from_slice(&e_g1);
+                enc.extend_from_slice(&e_g2);
+            }
+
+            pairing_cases.push((num_pairs, enc));
+        }
+
+        println!("G1 mul double and add worst case = \n{}", hex::encode(&g1_worst));
+        println!("G2 mul double and add worst case = \n{}", hex::encode(&g2_worst));
+
+        for (num_pairs, enc) in pairing_cases {
+            println!("Pairing case for {} pairs = \n{}", num_pairs, hex::encode(&enc));
+        }
+    }
+
+    #[test]
+    fn print_additions_vectors_eip_2537() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let (_, e1_0) = make_random_g1_with_encoding(&mut rng); 
+        let (_, e1_1) = make_random_g1_with_encoding(&mut rng); 
+
+        let (_, e2_0) = make_random_g2_with_encoding(&mut rng); 
+        let (_, e2_1) = make_random_g2_with_encoding(&mut rng); 
+
+        let mut g1 = vec![];
+        g1.extend_from_slice(&e1_0);
+        g1.extend_from_slice(&e1_1);
+
+        let mut g2 = vec![];
+        g2.extend_from_slice(&e2_0);
+        g2.extend_from_slice(&e2_1);
+
+        println!("G1 addition example = \n{}", hex::encode(&g1));
+        println!("G2 addition example = \n{}", hex::encode(&g2));
+    }
 }

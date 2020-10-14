@@ -174,6 +174,8 @@ impl<E: AsRef<[u64]>> Iterator for LsbBitIterator<E> {
     }
 }
 
+pub use crate::weierstrass::Group;
+
 // /// This trait represents an element of a field that has a square root operation described for it.
 // pub trait SqrtFieldElement: FieldElement {
 //     /// Returns the Legendre symbol of the field element.

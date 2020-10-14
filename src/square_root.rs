@@ -48,7 +48,7 @@ pub enum LegendreSymbol {
     QuadraticNonResidue = -1,
 }
 
-pub(crate) fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> LegendreSymbol {
+pub fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> LegendreSymbol {
     let mut modulus_minus_one_by_two = *element.field.modulus();
     modulus_minus_one_by_two.shr(1);
 
@@ -63,23 +63,10 @@ pub(crate) fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E
     }
 }
 
-pub(crate) fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> LegendreSymbol {
-    // let mut modulus_minus_one_by_two = *element.extension_field.field.modulus();
-    // modulus_minus_one_by_two.shr(1);
-
+pub fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> LegendreSymbol {
     let a = element.norm();
 
     legendre_symbol_fp(&a)
-
-    // let a = a.pow(&modulus_minus_one_by_two.as_ref());
-
-    // if a.is_zero() {
-    //     LegendreSymbol::Zero
-    // } else if a == Fp2::one(element.extension_field) {
-    //     LegendreSymbol::QuadraticResidue
-    // } else {
-    //     LegendreSymbol::QuadraticNonResidue
-    // }
 }
 
 fn sqrt_for_one_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(_element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
@@ -88,7 +75,7 @@ fn sqrt_for_one_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(_elem
     None
 }
 
-pub(crate) fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
+pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
     // this is a simple case: we compute the power 
     // we know that it's 3 mod 4, so just bit shift
 
@@ -132,7 +119,7 @@ fn sqrt_for_one_mod_sixteen<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(el
     }
 }
 
-pub(crate) fn sqrt<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
+pub fn sqrt<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
     if modulus_is_three_mod_four(element.field) {
         sqrt_for_three_mod_four(&element)
     } else {
@@ -188,7 +175,7 @@ pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeFiel
     }
 }
 
-pub(crate) fn sqrt_ext2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> Option<Fp2<'a, E, F>> {
+pub fn sqrt_ext2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> Option<Fp2<'a, E, F>> {
     if modulus_is_three_mod_four_ext2(element.extension_field) {
         sqrt_for_three_mod_four_ext2(&element)
     } else {

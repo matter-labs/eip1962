@@ -1,6 +1,6 @@
-pub(crate) mod decode_g1;
-pub(crate) mod decode_g2;
-pub(crate) mod decode_fp;
+pub mod decode_g1;
+pub mod decode_g2;
+pub mod decode_fp;
 pub(crate) mod decode_utils;
 
 #[macro_use]

@@ -85,7 +85,7 @@ const BLS12_377_FP2_NON_RESIDUE_C0_REPR: U384Repr = U384Repr([0x0000000000000000
 const BLS12_377_FP2_NON_RESIDUE_C1_REPR: U384Repr = U384Repr([0x02cdffffffffff68,0x51409f837fffffb1,0x9f7db3a98a7d3ff2,0x7b4e97b76e7c6305,0x4cf495bf803c84e8,0x008d6661e2fdf49a]);
 
 const BLS12_377_FP2_NON_RESIDUE_C0: decl_fp!(U384Repr) = repr_into_fp!(
-    BLS12_377_FP2_NON_RESIDUE_C1_REPR, 
+    BLS12_377_FP2_NON_RESIDUE_C0_REPR, 
     U384Repr,
     BLS12_377_FIELD
 );
@@ -114,7 +114,7 @@ const BLS12_377_X: [u64; 1] = [0x8508c00000000001];
 const BLS12_377_X_IS_NEGATIVE: bool = false;
 
 const BLS12_377_B_FOR_G1_REPR: U384Repr = U384Repr([0x02cdffffffffff68,0x51409f837fffffb1,0x9f7db3a98a7d3ff2,0x7b4e97b76e7c6305,0x4cf495bf803c84e8,0x008d6661e2fdf49a]);
-const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_377_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_377_FIELD,
         repr: BLS12_377_B_FOR_G1_REPR
@@ -135,7 +135,7 @@ const BLS12_377_B_FOR_G2_C1: Fp<'static, U384Repr, PrimeField<U384Repr>> =
         repr: BLS12_377_B_FOR_G2_C1_REPR
     };    
 
-const BLS12_377_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
+pub const BLS12_377_B_FOR_G2: Fp2<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp2::<'static, U384Repr, PrimeField<U384Repr>> {
         c0: BLS12_377_B_FOR_G2_C0,
         c1: BLS12_377_B_FOR_G2_C1,
@@ -184,12 +184,12 @@ const BLS12_377_FP6_FROB_C1_0: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP6_FROB_C1_1: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0x1dab52f567cdf753,0x275ba68225d3fcbf,0xd479033c31671c95,0xbaf5e01f45f5eeb2,0xc124ac0d60ff519a,0x012e21e26d3f27d6]), 
+        U384Repr([0x5892506da58478da,0x133366940ac2a74b,0x9b64a150cdf726cf,0x5cc426090a9c587e,0x5cf848adfdcd640c,0x004702bf3ac02380]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
     repr_into_fp!(
-        U384Repr([0xe8175168f936f1a3,0xa1f9faad6e240880,0x0327ea0da32ce732,0xcbc495c1e2fe7cc2,0xbef5b5eec7980fde,0x00450861e49e5fb2]), 
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
         U384Repr,
         BLS12_377_FIELD
     ),
@@ -199,7 +199,7 @@ const BLS12_377_FP6_FROB_C1_1: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP6_FROB_C1_2: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0x2c766f925a7b8727,0x03d7f6b0253d58b5,0x838ec0deec122131,0xbd5eb3e9f658bb10,0x6942bd126ed3e52e,0x01673786dd04ed6a]), 
+        U384Repr([0xdacd106da5847973,0xd8fe2454bac2a79a,0x1ada4fd6fd832edc,0xfb9868449d150908,0xd63eb8aeea32285e,0x0167d6a36f873fd0]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
@@ -214,12 +214,12 @@ const BLS12_377_FP6_FROB_C1_2: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP6_FROB_C1_3: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0xe4a79fc4d4b5361f,0x3f77620e95796e81,0xc331b835dbe63ed4,0x7d9226378f678321,0xe8d237560a8dc3e4,0x008a6a848e739d69]), 
+        U384Repr([0x823ac00000000099,0xc5cabdc0b000004f,0x7f75ae862f8c080d,0x9ed4423b9278b089,0x79467000ec64c452,0x0120d3e434c71c50]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
     repr_into_fp!(
-        U384Repr([0xa03b8e62d0fd012f,0x93c031ea435b3d76,0xafc6f5dbe5871aef,0x7cc296b19f5040e7,0xcd2bc9301cdc60ac,0x01310f7ced1c32b7]), 
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
         U384Repr,
         BLS12_377_FIELD
     ),
@@ -247,12 +247,12 @@ const BLS12_377_FP6_FROB_C2_0: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP6_FROB_C2_1: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0x88b5c17a7958b2fe,0x7f5e7e57ba07bc1c,0x6610c4919f5335d4,0x2662d66110d01894,0x528db91fde4912ee,0x01578d053afcb64e]), 
+        U384Repr([0xdacd106da5847973,0xd8fe2454bac2a79a,0x1ada4fd6fd832edc,0xfb9868449d150908,0xd63eb8aeea32285e,0x0167d6a36f873fd0]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
     repr_into_fp!(
-        U384Repr([0x7ce7510b8d5e6d45,0x0623598c82c4f51b,0xc595749a3ca4dfb7,0x4089827645e7035a,0x1d4fa3a2051729e1,0x0028dcfa7aab9072]), 
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
         U384Repr,
         BLS12_377_FIELD
     ),
@@ -262,7 +262,7 @@ const BLS12_377_FP6_FROB_C2_1: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP6_FROB_C2_2: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0xdacd106da5847973,0xd8fe2454bac2a79a,0x1ada4fd6fd832edc,0xfb9868449d150908,0xd63eb8aeea32285e,0x0167d6a36f873fd0]), 
+        U384Repr([0x2c766f925a7b8727,0x03d7f6b0253d58b5,0x838ec0deec122131,0xbd5eb3e9f658bb10,0x6942bd126ed3e52e,0x01673786dd04ed6a]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
@@ -277,12 +277,12 @@ const BLS12_377_FP6_FROB_C2_2: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP6_FROB_C2_3: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0x6693d2d815e1849f,0xb8317b4d8c16fa8f,0x417a052262ed3938,0xbb4a9f4398ca0e30,0xf0a0eca1f774c413,0x0103be639ab8b9b1]), 
+        U384Repr([0x02cdffffffffff68,0x51409f837fffffb1,0x9f7db3a98a7d3ff2,0x7b4e97b76e7c6305,0x4cf495bf803c84e8,0x008d6661e2fdf49a]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
     repr_into_fp!(
-        U384Repr([0x1e9a7f00446c4415,0xa2adab41fb145979,0x8974112b4fb7fd03,0x7ea657b93a6854e4,0xe5d71e58ba63a9d1,0x009d3c2719419801]), 
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
         U384Repr,
         BLS12_377_FIELD
     ),
@@ -321,12 +321,12 @@ const BLS12_377_FP12_FROB_C1_0: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP12_FROB_C1_1: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0x8e4881eda9715337,0x68933c1b14707f81,0xabe52b0749129354,0x039d6a8fb0acdc2e,0x77c4c0656b2dc79b,0x0102a8dbf4497b6a]), 
+        U384Repr([0x6ec47a04a3f7ca9e,0xa42e0cb968c1fa44,0x578d5187fbd2bd23,0x930eeb0ac79dd4bd,0xa24883de1e09a9ee,0x00daa7058067d46f]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
     repr_into_fp!(
-        U384Repr([0xfe29bc6ac0baf987,0xcbd4ec5004bfc592,0x12f93242a0ff802b,0x6fbab242c943d0fe,0x0362fa6af0205e6e,0x013a4205b11a7684]), 
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
         U384Repr,
         BLS12_377_FIELD
     ),
@@ -336,7 +336,7 @@ const BLS12_377_FP12_FROB_C1_1: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP12_FROB_C1_2: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0xdacd106da5847973,0xd8fe2454bac2a79a,0x1ada4fd6fd832edc,0xfb9868449d150908,0xd63eb8aeea32285e,0x0167d6a36f873fd0]), 
+        U384Repr([0x5892506da58478da,0x133366940ac2a74b,0x9b64a150cdf726cf,0x5cc426090a9c587e,0x5cf848adfdcd640c,0x004702bf3ac02380]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
@@ -351,12 +351,12 @@ const BLS12_377_FP12_FROB_C1_2: decl_fp2!(U384Repr) = repr_into_fp2!(
 
 const BLS12_377_FP12_FROB_C1_3: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0xc059cd145fe9bd8c,0xdb5711d0ca9b5c20,0xff5b91f6ceecf992,0x2c9e02f131e3fecb,0x6b1d1c9c56f21cd0,0x019d034f7fdacf4e]), 
+        U384Repr([0x982c13d9d084771f,0xfd49de0c6da34a32,0x61a530d183ab0e53,0xdf8fe44106dd9879,0x40f29b58d88472bc,0x0158723199046d5d]), 
         U384Repr,
         BLS12_377_FIELD
     ), 
     repr_into_fp!(
-        U384Repr([0xe5bf2331ea1a4ad9,0xfa109dcb130047d8,0x5322840482579c81,0xe07b400cda4647b3,0xcdbfbc15d4645c07,0x008f9a1e7e02e793]), 
+        U384Repr([0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000,0x0000000000000000]), 
         U384Repr,
         BLS12_377_FIELD
     ),
@@ -369,7 +369,7 @@ const BLS12_377_FP12_FROB_C1_5: decl_fp2!(U384Repr) = BLS12_377_FP2_ZERO;
 
 const BLS12_377_FP12_FROB_C1_6: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
-        U384Repr([0x02cdffffffffff68,0x51409f837fffffb1,0x9f7db3a98a7d3ff2,0x7b4e97b76e7c6305,0x4cf495bf803c84e8,0x008d6661e2fdf49a]), 
+        U384Repr([0x823ac00000000099,0xc5cabdc0b000004f,0x7f75ae862f8c080d,0x9ed4423b9278b089,0x79467000ec64c452,0x0120d3e434c71c50]), 
         U384Repr,
         BLS12_377_FIELD
     ), 

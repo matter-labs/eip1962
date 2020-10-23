@@ -11,7 +11,7 @@ use crate::errors::ApiError;
 use super::decode_utils::*;
 use crate::field::field_from_modulus;
 
-pub(crate) fn parse_base_field_from_encoding<
+pub fn parse_base_field_from_encoding<
     'a,
     FE: ElementRepr,
     >(encoding: &'a [u8]) -> Result<(PrimeField<FE>, usize, MaxFieldUint, &'a [u8]), ApiError>
@@ -27,7 +27,7 @@ pub(crate) fn parse_base_field_from_encoding<
     Ok((field, modulus_len, modulus, rest))
 }
 
-pub(crate) fn decode_fp<
+pub fn decode_fp<
     'a,
     'b,
     FE: ElementRepr,
@@ -47,7 +47,7 @@ pub(crate) fn decode_fp<
     Ok((x, rest))
 }
 
-pub(crate) fn decode_fp_oversized<
+pub fn decode_fp_oversized<
     'a,
     'b,
     FE: ElementRepr,
@@ -67,7 +67,7 @@ pub(crate) fn decode_fp_oversized<
     Ok((x, rest))
 }
 
-pub(crate) fn decode_fp2<
+pub fn decode_fp2<
     'a,
     'b,
     FE: ElementRepr,
@@ -96,7 +96,7 @@ pub(crate) fn decode_fp2<
     Ok((x, rest))
 }
 
-pub(crate) fn decode_fp2_oversized<
+pub fn decode_fp2_oversized<
     'a,
     'b,
     FE: ElementRepr,
@@ -125,7 +125,7 @@ pub(crate) fn decode_fp2_oversized<
     Ok((x, rest))
 }
 
-pub(crate) fn decode_fp3<
+pub fn decode_fp3<
     'a,
     'b,
     FE: ElementRepr,
@@ -160,7 +160,7 @@ pub(crate) fn decode_fp3<
     Ok((x, rest))
 }
 
-pub(crate) fn serialize_fp_fixed_len<
+pub fn serialize_fp_fixed_len<
     'a,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>
@@ -192,7 +192,7 @@ pub(crate) fn serialize_fp_fixed_len<
     Ok(bytes)
 }
 
-pub(crate) fn serialize_fp2_fixed_len<
+pub fn serialize_fp2_fixed_len<
     'a,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>
@@ -209,7 +209,7 @@ pub(crate) fn serialize_fp2_fixed_len<
     Ok(bytes)
 }
 
-pub(crate) fn serialize_fp3_fixed_len<
+pub fn serialize_fp3_fixed_len<
     'a,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>

@@ -1,6 +1,6 @@
-pub(crate) mod decode_g1;
-pub(crate) mod decode_g2;
-pub(crate) mod decode_fp;
+pub mod decode_g1;
+pub mod decode_g2;
+pub mod decode_fp;
 pub(crate) mod decode_utils;
 
 #[macro_use]
@@ -28,6 +28,9 @@ pub use self::c_api::{c_perform_operation};
 
 #[cfg(feature = "eip_2537")]
 pub mod eip2537;
+
+#[cfg(feature = "eip_2539")]
+pub mod eip2539;
 
 #[cfg(feature = "eip_196")]
 pub mod eip196;

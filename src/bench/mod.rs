@@ -5,4 +5,6 @@ mod field_ops;
 // mod gas_meter;
 mod public_interface;
 mod bls12_381_engine;
+mod bls12_377_engine;
 mod bn254_engine;
+mod eip_2537;

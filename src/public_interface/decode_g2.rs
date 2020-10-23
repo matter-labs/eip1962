@@ -15,7 +15,7 @@ use super::decode_utils::split;
 
 use crate::errors::ApiError;
 
-pub(crate) fn create_fp2_extension<
+pub fn create_fp2_extension<
     'a,
     'b,
     FE: ElementRepr,
@@ -58,7 +58,7 @@ pub(crate) fn create_fp2_extension<
     Ok((extension_2, rest))
 }
 
-pub(crate) fn create_fp3_extension<
+pub fn create_fp3_extension<
     'a,
     'b,
     FE: ElementRepr,
@@ -101,7 +101,7 @@ pub(crate) fn create_fp3_extension<
     Ok((extension_3, rest))
 }
 
-pub(crate) fn decode_g2_point_from_xy_in_fp2<
+pub fn decode_g2_point_from_xy_in_fp2<
     'a,
     'b,
     FE: ElementRepr,
@@ -122,7 +122,7 @@ pub(crate) fn decode_g2_point_from_xy_in_fp2<
     Ok((p, rest))
 }
 
-pub(crate) fn decode_g2_point_from_xy_in_fp2_oversized<
+pub fn decode_g2_point_from_xy_in_fp2_oversized<
     'a,
     'b,
     FE: ElementRepr,
@@ -143,7 +143,7 @@ pub(crate) fn decode_g2_point_from_xy_in_fp2_oversized<
     Ok((p, rest))
 }
 
-pub(crate) fn decode_g2_point_from_xy_in_fp3<
+pub fn decode_g2_point_from_xy_in_fp3<
     'a,
     'b,
     FE: ElementRepr,
@@ -164,7 +164,7 @@ pub(crate) fn decode_g2_point_from_xy_in_fp3<
     Ok((p, rest))
 }
 
-pub(crate) fn serialize_g2_point_in_fp2<
+pub fn serialize_g2_point_in_fp2<
     'a,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>,
@@ -183,7 +183,7 @@ pub(crate) fn serialize_g2_point_in_fp2<
     Ok(result)
 }
 
-pub(crate) fn serialize_g2_point_in_fp3<
+pub fn serialize_g2_point_in_fp3<
     'a,
     FE: ElementRepr,
     F: SizedPrimeField<Repr = FE>,
@@ -202,7 +202,7 @@ pub(crate) fn serialize_g2_point_in_fp3<
     Ok(result)
 }
 
-pub(crate) fn parse_ab_in_fp2_from_encoding<
+pub fn parse_ab_in_fp2_from_encoding<
     'a,
     'b,
     FE: ElementRepr,
@@ -219,7 +219,7 @@ pub(crate) fn parse_ab_in_fp2_from_encoding<
     Ok((a, b, rest))
 }
 
-pub(crate) fn parse_ab_in_fp3_from_encoding<
+pub fn parse_ab_in_fp3_from_encoding<
     'a,
     'b,
     FE: ElementRepr,

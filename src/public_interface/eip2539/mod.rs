@@ -1,6 +1,6 @@
-pub struct EIP2537Executor;
+pub struct EIP2539Executor;
 
-use crate::engines::bls12_381::{self, mapping};
+use crate::engines::bls12_377;
 use crate::public_interface::ApiError;
 
 pub const SCALAR_BYTE_LENGTH: usize = 32;
@@ -13,7 +13,7 @@ pub const SERIALIZED_G2_POINT_BYTE_LENGTH: usize = SERIALIZED_FP2_BYTE_LENGTH * 
 
 pub const SERIALIZED_PAIRING_RESULT_BYTE_LENGTH: usize = 32;
 
-use crate::public_interface::decode_fp;
+// use crate::public_interface::decode_fp;
 use crate::public_interface::decode_g1;
 use crate::public_interface::decode_g2;
 
@@ -21,7 +21,7 @@ use crate::weierstrass::Group;
 use crate::multiexp::peppinger;
 use crate::pairings::PairingEngine;
 
-#[cfg(feature = "eip_2357_c_api")]
+#[cfg(feature = "eip_2359_c_api")]
 pub mod c_api;
 
 fn pairing_result_false() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
@@ -35,14 +35,14 @@ fn pairing_result_true() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
     res
 }
 
-impl EIP2537Executor {
+impl EIP2539Executor {
     pub fn g1_add<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
         if input.len() != SERIALIZED_G1_POINT_BYTE_LENGTH * 2 {
             return Err(ApiError::InputError("invalid input length for G1 addition".to_owned()));
         }
 
-        let (mut p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G1_CURVE)?;
-        let (p_1, _) = decode_g1::decode_g1_point_from_xy_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G1_CURVE)?;
+        let (mut p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
+        let (p_1, _) = decode_g1::decode_g1_point_from_xy_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
@@ -71,7 +71,7 @@ impl EIP2537Executor {
             return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
         }
 
-        let (p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G1_CURVE)?;
+        let (p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
         let (scalar, _) = decode_g1::decode_scalar_representation(rest, SCALAR_BYTE_LENGTH)?;
 
         if !p_0.is_on_curve() {
@@ -106,7 +106,7 @@ impl EIP2537Executor {
         let mut scalars = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
-            let (p, local_rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G1_CURVE)?;
+            let (p, local_rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
             let (scalar, local_rest) = decode_g1::decode_scalar_representation(local_rest, SCALAR_BYTE_LENGTH)?;
             if !p.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -138,8 +138,8 @@ impl EIP2537Executor {
             return Err(ApiError::InputError("invalid input length for G2 addition".to_owned()));
         }
 
-        let (mut p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G2_CURVE)?;
-        let (p_1, _) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G2_CURVE)?;
+        let (mut p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
+        let (p_1, _) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
@@ -168,7 +168,7 @@ impl EIP2537Executor {
             return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
         }
 
-        let (p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G2_CURVE)?;
+        let (p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
         let (scalar, _) = decode_g1::decode_scalar_representation(rest, SCALAR_BYTE_LENGTH)?;
 
         if !p_0.is_on_curve() {
@@ -203,7 +203,7 @@ impl EIP2537Executor {
         let mut scalars = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
-            let (p, local_rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G2_CURVE)?;
+            let (p, local_rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
             let (scalar, local_rest) = decode_g1::decode_scalar_representation(local_rest, SCALAR_BYTE_LENGTH)?;
             if !p.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
@@ -246,8 +246,8 @@ impl EIP2537Executor {
         let mut g2_points = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
-            let (g1, rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G1_CURVE)?;
-            let (g2, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_G2_CURVE)?;
+            let (g1, rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
+            let (g2, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
 
             global_rest = rest;
 
@@ -263,13 +263,13 @@ impl EIP2537Executor {
                 }
             }
             // "fast" subgroup checks using empirical data
-            if g1.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+            if g1.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
                 }
             }
 
-            if g2.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+            if g2.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
                 if !crate::features::in_fuzzing_or_gas_metering() {
                     return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
                 }
@@ -287,7 +287,7 @@ impl EIP2537Executor {
             return Ok(pairing_result_true());
         }
 
-        let engine = &bls12_381::BLS12_381_PAIRING_ENGINE;
+        let engine = &bls12_377::BLS12_377_PAIRING_ENGINE;
 
         let pairing_result = engine.pair(&g1_points, &g2_points);
 
@@ -298,7 +298,7 @@ impl EIP2537Executor {
         use crate::extension_towers::fp12_as_2_over3_over_2::Fp12;
         use crate::traits::ZeroAndOne;
 
-        let one_fp12 = Fp12::one(&bls12_381::BLS12_381_EXTENSION_12_FIELD);
+        let one_fp12 = Fp12::one(&bls12_377::BLS12_377_EXTENSION_12_FIELD);
         let pairing_result = pairing_result.unwrap();
         let result = if pairing_result == one_fp12 {
             pairing_result_true()
@@ -309,35 +309,35 @@ impl EIP2537Executor {
         Ok(result)
     }
 
-    pub fn map_fp_to_g1<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
-        if input.len() != SERIALIZED_FP_BYTE_LENGTH {
-            return Err(ApiError::InputError("invalid input length for Fp to G1 to curve mapping".to_owned()));
-        }
-        let (fe, _) = decode_fp::decode_fp_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_FIELD)?;
-        let point = mapping::fp_to_g1(&fe)?;
+    // pub fn map_fp_to_g1<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
+    //     if input.len() != SERIALIZED_FP_BYTE_LENGTH {
+    //         return Err(ApiError::InputError("invalid input length for Fp to G1 to curve mapping".to_owned()));
+    //     }
+    //     let (fe, _) = decode_fp::decode_fp_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_FIELD)?;
+    //     let point = mapping::fp_to_g1(&fe)?;
 
-        let mut output = [0u8; SERIALIZED_G1_POINT_BYTE_LENGTH];
-        let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &point)?;
+    //     let mut output = [0u8; SERIALIZED_G1_POINT_BYTE_LENGTH];
+    //     let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &point)?;
 
-        output.copy_from_slice(&as_vec[..]);
+    //     output.copy_from_slice(&as_vec[..]);
 
-        Ok(output)
-    }
+    //     Ok(output)
+    // }
 
-    pub fn map_fp2_to_g2<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
-        if input.len() != SERIALIZED_FP2_BYTE_LENGTH {
-            return Err(ApiError::InputError("invalid input length for Fp2 to G2 to curve mapping".to_owned()));
-        }
-        let (fe, _) = decode_fp::decode_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_EXTENSION_2_FIELD)?;
-        let point = mapping::fp2_to_g2(&fe)?;
+    // pub fn map_fp2_to_g2<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
+    //     if input.len() != SERIALIZED_FP2_BYTE_LENGTH {
+    //         return Err(ApiError::InputError("invalid input length for Fp2 to G2 to curve mapping".to_owned()));
+    //     }
+    //     let (fe, _) = decode_fp::decode_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_EXTENSION_2_FIELD)?;
+    //     let point = mapping::fp2_to_g2(&fe)?;
 
-        let mut output = [0u8; SERIALIZED_G2_POINT_BYTE_LENGTH];
-        let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point)?;
+    //     let mut output = [0u8; SERIALIZED_G2_POINT_BYTE_LENGTH];
+    //     let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point)?;
 
-        output.copy_from_slice(&as_vec[..]);
+    //     output.copy_from_slice(&as_vec[..]);
 
-        Ok(output)
-    }
+    //     Ok(output)
+    // }
 }
 
 #[cfg(test)]
@@ -373,7 +373,7 @@ mod test {
         let num = BigUint::from_bytes_be(&buff);
         let num = num % modulus.clone();
 
-        let x = Fp::from_be_bytes(&bls12_381::BLS12_381_FIELD, &num.to_bytes_be(), true).unwrap();
+        let x = Fp::from_be_bytes(&bls12_377::BLS12_377_FIELD, &num.to_bytes_be(), true).unwrap();
 
         let as_vec = decode_fp::serialize_fp_fixed_len(SERIALIZED_FP_BYTE_LENGTH, &x).unwrap();
 
@@ -417,7 +417,7 @@ mod test {
 
         assert!(encoding.len() == SERIALIZED_FP2_BYTE_LENGTH);
 
-        let mut fe = bls12_381::BLS12_381_FP2_ZERO.clone();
+        let mut fe = bls12_377::BLS12_377_FP2_ZERO.clone();
         fe.c0 = c0;
         fe.c1 = c1;
 
@@ -453,7 +453,7 @@ mod test {
     fn make_random_g1_with_encoding<R: Rng>(rng: &mut R) -> (G1, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
 
-        let mut p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
+        let mut p = bls12_377::BLS12_377_G1_GENERATOR.mul(&scalar);
         p.normalize();
 
         let as_vec = encode_g1(&p);
@@ -464,7 +464,7 @@ mod test {
     fn make_random_g2_with_encoding<R: Rng>(rng: &mut R) -> (G2, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
 
-        let mut p = bls12_381::BLS12_381_G2_GENERATOR.mul(&scalar);
+        let mut p = bls12_377::BLS12_377_G2_GENERATOR.mul(&scalar);
         p.normalize();
 
         let as_vec = encode_g2(&p);
@@ -483,7 +483,7 @@ mod test {
 
     fn make_random_g1_and_negated_with_encoding<R: Rng>(rng: &mut R) -> ((G1, G1), (Vec<u8>, Vec<u8>)) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
-        let p = bls12_381::BLS12_381_G1_GENERATOR.mul(&scalar);
+        let p = bls12_377::BLS12_377_G1_GENERATOR.mul(&scalar);
 
         let mut minus_p = p.clone();
         minus_p.negate();
@@ -505,7 +505,7 @@ mod test {
 
     fn make_random_g2_and_negated_with_encoding<R: Rng>(rng: &mut R) -> ((G2, G2), (Vec<u8>, Vec<u8>)) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
-        let p = bls12_381::BLS12_381_G2_GENERATOR.mul(&scalar);
+        let p = bls12_377::BLS12_377_G2_GENERATOR.mul(&scalar);
 
         let mut minus_p = p.clone();
         minus_p.negate();
@@ -533,7 +533,7 @@ mod test {
     }
 
     fn make_point_not_on_curve_g1(p: &mut G1) {
-        let one = FpElement::one(&bls12_381::BLS12_381_FIELD);
+        let one = FpElement::one(&bls12_377::BLS12_377_FIELD);
         loop {
             p.y.add_assign(&one);
 
@@ -544,7 +544,7 @@ mod test {
     }
 
     fn make_point_not_on_curve_g2(p: &mut G2) {
-        let one = Fp2Element::one(&bls12_381::BLS12_381_EXTENSION_2_FIELD);
+        let one = Fp2Element::one(&bls12_377::BLS12_377_EXTENSION_2_FIELD);
         loop {
             p.y.add_assign(&one);
 
@@ -557,7 +557,7 @@ mod test {
     fn make_g1_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G1 {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let (fp, _) = make_random_fp_with_encoding(rng, &modulus);
-        let one = FpElement::one(&bls12_381::BLS12_381_FIELD);
+        let one = FpElement::one(&bls12_377::BLS12_377_FIELD);
 
         let mut fp_candidate = fp;
 
@@ -565,14 +565,14 @@ mod test {
             let mut rhs = fp_candidate.clone();
             rhs.square();
             rhs.mul_assign(&fp_candidate);
-            rhs.add_assign(&bls12_381::BLS12_381_B_FOR_G1);
+            rhs.add_assign(&bls12_377::BLS12_377_B_FOR_G1);
 
             let leg = legendre_symbol_fp(&rhs);
             if leg == LegendreSymbol::QuadraticResidue {
                 let y = sqrt_for_three_mod_four(&rhs).unwrap();
-                let point = G1::point_from_xy(&bls12_381::BLS12_381_G1_CURVE, fp_candidate.clone(), y);
+                let point = G1::point_from_xy(&bls12_377::BLS12_377_G1_CURVE, fp_candidate.clone(), y);
 
-                if point.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                if point.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
                     return point;
                 }
             } else {
@@ -584,7 +584,7 @@ mod test {
     fn make_g2_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G2 {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         let (fp, _) = make_random_fp2_with_encoding(rng, &modulus);
-        let one = Fp2Element::one(&bls12_381::BLS12_381_EXTENSION_2_FIELD);
+        let one = Fp2Element::one(&bls12_377::BLS12_377_EXTENSION_2_FIELD);
 
         let mut fp_candidate = fp;
 
@@ -592,14 +592,14 @@ mod test {
             let mut rhs = fp_candidate.clone();
             rhs.square();
             rhs.mul_assign(&fp_candidate);
-            rhs.add_assign(&bls12_381::BLS12_381_B_FOR_G2);
+            rhs.add_assign(&bls12_377::BLS12_377_B_FOR_G2);
 
             let leg = legendre_symbol_fp2(&rhs);
             if leg == LegendreSymbol::QuadraticResidue {
                 let y = sqrt_for_three_mod_four_ext2(&rhs).unwrap();
-                let point = G2::point_from_xy(&bls12_381::BLS12_381_G2_CURVE, fp_candidate.clone(), y);
+                let point = G2::point_from_xy(&bls12_377::BLS12_377_G2_CURVE, fp_candidate.clone(), y);
 
-                if point.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                if point.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
                     return point;
                 }
             } else {
@@ -624,7 +624,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/g1_add.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g1_add.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH * 2);
@@ -640,7 +640,7 @@ mod test {
             let expected = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &p0).unwrap();
             assert!(expected.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
 
-            let api_result = EIP2537Executor::g1_add(&encoding).unwrap();
+            let api_result = EIP2539Executor::g1_add(&encoding).unwrap();
 
             assert_eq!(&expected[..], &api_result[..]);
 
@@ -671,7 +671,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/g1_mul.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g1_mul.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
@@ -687,7 +687,7 @@ mod test {
             let expected = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
             assert!(expected.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
 
-            let api_result = EIP2537Executor::g1_mul(&encoding).unwrap();
+            let api_result = EIP2539Executor::g1_mul(&encoding).unwrap();
 
             assert_eq!(&expected[..], &api_result[..]);
 
@@ -718,7 +718,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/g1_multiexp.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g1_multiexp.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity((SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) * MULTIEXP_INPUT);
@@ -740,7 +740,7 @@ mod test {
             let expected = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
             assert!(expected.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
 
-            let api_result = EIP2537Executor::g1_multiexp(&encoding).unwrap();
+            let api_result = EIP2539Executor::g1_multiexp(&encoding).unwrap();
 
             assert_eq!(&expected[..], &api_result[..]);
 
@@ -771,7 +771,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/g2_add.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g2_add.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH * 2);
@@ -787,7 +787,7 @@ mod test {
             let expected = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p0).unwrap();
             assert!(expected.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
-            let api_result = EIP2537Executor::g2_add(&encoding).unwrap();
+            let api_result = EIP2539Executor::g2_add(&encoding).unwrap();
 
             assert_eq!(&expected[..], &api_result[..]);
 
@@ -818,7 +818,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/g2_mul.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g2_mul.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
@@ -834,7 +834,7 @@ mod test {
             let expected = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
             assert!(expected.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
-            let api_result = EIP2537Executor::g2_mul(&encoding).unwrap();
+            let api_result = EIP2539Executor::g2_mul(&encoding).unwrap();
 
             assert_eq!(&expected[..], &api_result[..]);
 
@@ -865,7 +865,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/g2_multiexp.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g2_multiexp.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity((SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) * MULTIEXP_INPUT);
@@ -887,7 +887,7 @@ mod test {
             let expected = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
             assert!(expected.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
-            let api_result = EIP2537Executor::g2_multiexp(&encoding).unwrap();
+            let api_result = EIP2539Executor::g2_multiexp(&encoding).unwrap();
 
             assert_eq!(&expected[..], &api_result[..]);
 
@@ -906,79 +906,79 @@ mod test {
         pb.finish_with_message("Completed");
     }
 
-    #[test]
-    fn generate_fp_to_g1_mapping_vectors() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    // #[test]
+    // fn generate_fp_to_g1_mapping_vectors() {
+    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-        let pb = ProgressBar::new(1u64);
+    //     let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+    //     pb.set_style(ProgressStyle::default_bar()
+    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+    //         .progress_chars("##-"));
 
-        pb.set_length(NUM_TESTS as u64);
+    //     pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/fp_to_g1.csv");
-        assert!(writer.is_some());
-        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/fp_to_g1.csv");
+    //     assert!(writer.is_some());
+    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
 
-        for _ in 0..NUM_TESTS {
-            let (_, input) = make_random_fp_with_encoding(&mut rng, &modulus);
+    //     for _ in 0..NUM_TESTS {
+    //         let (_, input) = make_random_fp_with_encoding(&mut rng, &modulus);
 
-            let api_result = EIP2537Executor::map_fp_to_g1(&input).unwrap();
-            assert!(api_result.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
+    //         let api_result = EIP2539Executor::map_fp_to_g1(&input).unwrap();
+    //         assert!(api_result.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
 
-            if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&input[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
-            }
+    //         if let Some(writer) = writer.as_mut() {
+    //             writer.write_record(
+    //                 &[
+    //                     &hex::encode(&input[..]), 
+    //                     &hex::encode(&api_result[..])
+    //                 ],
+    //             ).expect("must write a test vector");
+    //         }
 
-            pb.inc(1);
-        }
+    //         pb.inc(1);
+    //     }
 
-        pb.finish_with_message("Completed");
-    }
+    //     pb.finish_with_message("Completed");
+    // }
 
-    #[test]
-    fn generate_fp2_to_g2_mapping_vectors() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    // #[test]
+    // fn generate_fp2_to_g2_mapping_vectors() {
+    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-        let pb = ProgressBar::new(1u64);
+    //     let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+    //     pb.set_style(ProgressStyle::default_bar()
+    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+    //         .progress_chars("##-"));
 
-        pb.set_length(NUM_TESTS as u64);
+    //     pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/fp2_to_g2.csv");
-        assert!(writer.is_some());
-        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/fp2_to_g2.csv");
+    //     assert!(writer.is_some());
+    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
 
-        for _ in 0..NUM_TESTS {
-            let (_, input) = make_random_fp2_with_encoding(&mut rng, &modulus);
+    //     for _ in 0..NUM_TESTS {
+    //         let (_, input) = make_random_fp2_with_encoding(&mut rng, &modulus);
 
-            let api_result = EIP2537Executor::map_fp2_to_g2(&input).unwrap();
-            assert!(api_result.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
+    //         let api_result = EIP2539Executor::map_fp2_to_g2(&input).unwrap();
+    //         assert!(api_result.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
-            if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&input[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
-            }
+    //         if let Some(writer) = writer.as_mut() {
+    //             writer.write_record(
+    //                 &[
+    //                     &hex::encode(&input[..]), 
+    //                     &hex::encode(&api_result[..])
+    //                 ],
+    //             ).expect("must write a test vector");
+    //         }
 
-            pb.inc(1);
-        }
+    //         pb.inc(1);
+    //     }
 
-        pb.finish_with_message("Completed");
-    }
+    //     pb.finish_with_message("Completed");
+    // }
 
     #[test]
     fn generate_pairing_vectors() {
@@ -992,7 +992,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/pairing.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/pairing.csv");
         assert!(writer.is_some());
 
         let num_pairs = vec![1, 2, 3, 4, 5, 8];
@@ -1021,7 +1021,7 @@ mod test {
                     }
                 }
 
-                let api_result = EIP2537Executor::pair(&input).unwrap();
+                let api_result = EIP2539Executor::pair(&input).unwrap();
                 assert!(api_result.len() == SERIALIZED_PAIRING_RESULT_BYTE_LENGTH);
 
                 if expect_identity {
@@ -1056,7 +1056,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/invalid_subgroup_for_pairing.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/invalid_subgroup_for_pairing.csv");
         assert!(writer.is_some());
 
         for j in 0..NUM_TESTS {
@@ -1082,7 +1082,7 @@ mod test {
                 input.extend(g2_enc.clone());
             }
 
-            let api_result = EIP2537Executor::pair(&input);
+            let api_result = EIP2539Executor::pair(&input);
             assert!(api_result.is_err());
             let description = api_result.err().unwrap().to_string();
 
@@ -1113,7 +1113,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/g1_not_on_curve.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/g1_not_on_curve.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
@@ -1125,7 +1125,7 @@ mod test {
             let (_, e) = make_random_scalar_with_encoding(&mut rng);
             encoding.extend(e);
 
-            let api_result = EIP2537Executor::g1_mul(&encoding).err().unwrap().to_string();
+            let api_result = EIP2539Executor::g1_mul(&encoding).err().unwrap().to_string();
 
             if let Some(writer) = writer.as_mut() {
                 writer.write_record(
@@ -1154,7 +1154,7 @@ mod test {
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/g2_not_on_curve.csv");
+        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/g2_not_on_curve.csv");
 
         for _ in 0..NUM_TESTS {
             let mut encoding = Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
@@ -1166,7 +1166,7 @@ mod test {
             let (_, e) = make_random_scalar_with_encoding(&mut rng);
             encoding.extend(e);
 
-            let api_result = EIP2537Executor::g2_mul(&encoding).err().unwrap().to_string();
+            let api_result = EIP2539Executor::g2_mul(&encoding).err().unwrap().to_string();
 
             if let Some(writer) = writer.as_mut() {
                 writer.write_record(
@@ -1184,79 +1184,79 @@ mod test {
     }
 
 
-    #[test]
-    fn generate_invalid_fp_encoding_vectors() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    // #[test]
+    // fn generate_invalid_fp_encoding_vectors() {
+    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-        let pb = ProgressBar::new(1u64);
+    //     let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+    //     pb.set_style(ProgressStyle::default_bar()
+    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+    //         .progress_chars("##-"));
 
-        pb.set_length(NUM_TESTS as u64);
+    //     pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/invalid_fp_encoding.csv");
-        assert!(writer.is_some());
-        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/invalid_fp_encoding.csv");
+    //     assert!(writer.is_some());
+    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
 
-        for j in 0..NUM_TESTS {
-            let use_overflow = j & 1 == 0;
-            let input = make_invalid_encoding_fp(&mut rng, &modulus, use_overflow);
+    //     for j in 0..NUM_TESTS {
+    //         let use_overflow = j & 1 == 0;
+    //         let input = make_invalid_encoding_fp(&mut rng, &modulus, use_overflow);
 
-            let api_result = EIP2537Executor::map_fp_to_g1(&input).err().unwrap().to_string();
+    //         let api_result = EIP2539Executor::map_fp_to_g1(&input).err().unwrap().to_string();
 
-            if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&input[..]), 
-                        &api_result
-                    ],
-                ).expect("must write a test vector");
-            }
+    //         if let Some(writer) = writer.as_mut() {
+    //             writer.write_record(
+    //                 &[
+    //                     &hex::encode(&input[..]), 
+    //                     &api_result
+    //                 ],
+    //             ).expect("must write a test vector");
+    //         }
 
-            pb.inc(1);
-        }
+    //         pb.inc(1);
+    //     }
 
-        pb.finish_with_message("Completed");
-    }
+    //     pb.finish_with_message("Completed");
+    // }
 
-    #[test]
-    fn generate_invalid_fp2_encoding_vectors() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    // #[test]
+    // fn generate_invalid_fp2_encoding_vectors() {
+    //     let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-        let pb = ProgressBar::new(1u64);
+    //     let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+    //     pb.set_style(ProgressStyle::default_bar()
+    //         .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+    //         .progress_chars("##-"));
 
-        pb.set_length(NUM_TESTS as u64);
+    //     pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2537/negative/invalid_fp2_encoding.csv");
-        assert!(writer.is_some());
-        let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
+    //     let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/invalid_fp2_encoding.csv");
+    //     assert!(writer.is_some());
+    //     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
 
-        for j in 0..NUM_TESTS {
-            let use_overflow = j & 1 == 0;
-            let input = make_invalid_encoding_fp2(&mut rng, &modulus, use_overflow);
+    //     for j in 0..NUM_TESTS {
+    //         let use_overflow = j & 1 == 0;
+    //         let input = make_invalid_encoding_fp2(&mut rng, &modulus, use_overflow);
 
-            let api_result = EIP2537Executor::map_fp2_to_g2(&input).err().unwrap().to_string();
+    //         let api_result = EIP2539Executor::map_fp2_to_g2(&input).err().unwrap().to_string();
 
-            if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&input[..]), 
-                        &api_result
-                    ],
-                ).expect("must write a test vector");
-            }
+    //         if let Some(writer) = writer.as_mut() {
+    //             writer.write_record(
+    //                 &[
+    //                     &hex::encode(&input[..]), 
+    //                     &api_result
+    //                 ],
+    //             ).expect("must write a test vector");
+    //         }
 
-            pb.inc(1);
-        }
+    //         pb.inc(1);
+    //     }
 
-        pb.finish_with_message("Completed");
-    }
+    //     pb.finish_with_message("Completed");
+    // }
 
     #[test]
     fn dump_vectors_into_fuzzing_corpus() {
@@ -1276,14 +1276,14 @@ mod test {
         let mut counter = 0;
 
         for (b, f) in byte_idx.into_iter().zip(file_paths.into_iter()) {
-            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2537/{}", f)).unwrap();
+            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/{}", f)).unwrap();
             for r in reader.records() {
                 let r = r.unwrap();
                 let input = hex::decode(r.get(0).unwrap()).unwrap();
                 let mut output = vec![b];
                 output.extend(input);
                 let name = format!("vector_{}", counter);
-                std::fs::write(&format!("src/test/test_vectors/eip2537/fuzzing/{}", name), &output).unwrap();
+                std::fs::write(&format!("src/test/test_vectors/eip2539/fuzzing/{}", name), &output).unwrap();
 
                 counter += 1;
             }
@@ -1326,42 +1326,42 @@ mod test {
 
     #[test]
     fn run_g1_add_on_vector() {
-        let p = "src/test/test_vectors/eip2537/g1_add.csv";
+        let p = "src/test/test_vectors/eip2539/g1_add.csv";
         
-        let f = |input: &[u8]| EIP2537Executor::g1_add(input).map(|r| r.to_vec());
+        let f = |input: &[u8]| EIP2539Executor::g1_add(input).map(|r| r.to_vec());
 
         let success = run_on_test_inputs(p, true, f);
 
         assert!(success);
     }
 
-    #[test]
-    fn test_external_fp_to_g1_vectors() {
-        let p = "src/test/test_vectors/eip2537/extras/fp_to_g1.csv";
+    // #[test]
+    // fn test_external_fp_to_g1_vectors() {
+    //     let p = "src/test/test_vectors/eip2539/extras/fp_to_g1.csv";
         
-        let f = |input: &[u8]| EIP2537Executor::map_fp_to_g1(input).map(|r| r.to_vec());
+    //     let f = |input: &[u8]| EIP2539Executor::map_fp_to_g1(input).map(|r| r.to_vec());
 
-        let success = run_on_test_inputs(p, true, f);
+    //     let success = run_on_test_inputs(p, true, f);
 
-        assert!(success);
-    }
+    //     assert!(success);
+    // }
 
-    #[test]
-    fn test_external_fp2_to_g2_vectors() {
-        let p = "src/test/test_vectors/eip2537/extras/fp2_to_g2.csv";
+    // #[test]
+    // fn test_external_fp2_to_g2_vectors() {
+    //     let p = "src/test/test_vectors/eip2539/extras/fp2_to_g2.csv";
         
-        let f = |input: &[u8]| EIP2537Executor::map_fp2_to_g2(input).map(|r| r.to_vec());
+    //     let f = |input: &[u8]| EIP2539Executor::map_fp2_to_g2(input).map(|r| r.to_vec());
 
-        let success = run_on_test_inputs(p, true, f);
+    //     let success = run_on_test_inputs(p, true, f);
 
-        assert!(success);
-    }
+    //     assert!(success);
+    // }
 
     #[test]
     fn test_external_g2_multiexp_vectors() {
-        let p = "src/test/test_vectors/eip2537/extras/g2_multiexp.csv";
+        let p = "src/test/test_vectors/eip2539/extras/g2_multiexp.csv";
         
-        let f = |input: &[u8]| EIP2537Executor::g2_multiexp(input).map(|r| r.to_vec());
+        let f = |input: &[u8]| EIP2539Executor::g2_multiexp(input).map(|r| r.to_vec());
 
         let success = run_on_test_inputs(p, true, f);
 
@@ -1381,14 +1381,14 @@ mod test {
         let mut counter = 0;
 
         for (b, f) in byte_idx.into_iter().zip(file_paths.into_iter()) {
-            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2537/extras/{}", f)).unwrap();
+            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/extras/{}", f)).unwrap();
             for r in reader.records() {
                 let r = r.unwrap();
                 let input = hex::decode(r.get(0).unwrap()).unwrap();
                 let mut output = vec![b];
                 output.extend(input);
                 let name = format!("extra_vector_{}", counter);
-                std::fs::write(&format!("src/test/test_vectors/eip2537/fuzzing/{}", name), &output).unwrap();
+                std::fs::write(&format!("src/test/test_vectors/eip2539/fuzzing/{}", name), &output).unwrap();
 
                 counter += 1;
             }
@@ -1396,10 +1396,10 @@ mod test {
     }
 
     #[test]
-    fn print_worst_case_vectors_eip_2537() {
+    fn print_worst_case_vectors_eip_2539() {
         let worst_case_double_and_add_scalar_encoding = vec![255u8; SCALAR_BYTE_LENGTH];
-        let e_g1 = encode_g1(&bls12_381::BLS12_381_G1_GENERATOR);
-        let e_g2 = encode_g2(&bls12_381::BLS12_381_G2_GENERATOR);
+        let e_g1 = encode_g1(&bls12_377::BLS12_377_G1_GENERATOR);
+        let e_g2 = encode_g2(&bls12_377::BLS12_377_G2_GENERATOR);
 
         let mut g1_worst = vec![];
         g1_worst.extend_from_slice(&e_g1);
@@ -1430,7 +1430,7 @@ mod test {
     }
 
     #[test]
-    fn print_additions_vectors_eip_2537() {
+    fn print_additions_vectors_eip_2539() {
         let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let (_, e1_0) = make_random_g1_with_encoding(&mut rng); 
@@ -1449,5 +1449,32 @@ mod test {
 
         println!("G1 addition example = \n{}", hex::encode(&g1));
         println!("G2 addition example = \n{}", hex::encode(&g2));
+    }
+
+    #[test]
+    fn pairing_must_be_false() {
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        let mut input = Vec::with_capacity(
+            SERIALIZED_G1_POINT_BYTE_LENGTH * 2 + SERIALIZED_G2_POINT_BYTE_LENGTH * 2,
+        );
+
+        let (mut pa1, _) = make_random_g1_with_encoding(&mut rng);
+        let (mut pa2, _) = make_random_g2_with_encoding(&mut rng);
+        let (mut pb1, _) = make_random_g1_with_encoding(&mut rng);
+        let (mut pb2, _) = make_random_g2_with_encoding(&mut rng);
+
+        input.extend(encode_g1(&pa1));
+        input.extend(encode_g2(&pa2));
+        input.extend(encode_g1(&pb1));
+        input.extend(encode_g2(&pb2));
+
+        let api_result = EIP2539Executor::pair(&input).unwrap();
+        assert!(api_result.len() == SERIALIZED_PAIRING_RESULT_BYTE_LENGTH);
+
+        // println!("{}", hex::encode(&input[..]));
+
+        println!("{}", hex::encode(&api_result[..]));
     }
 }

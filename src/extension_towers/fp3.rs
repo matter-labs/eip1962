@@ -28,9 +28,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp3<'a, E, F> 
     #[inline(always)]
     fn clone(&self) -> Self {
         Self{
-            c0: self.c0.clone(),
-            c1: self.c1.clone(),
-            c2: self.c2.clone(),
+            c0: self.c0,
+            c1: self.c1,
+            c2: self.c2,
             extension_field: self.extension_field
         }
     }
@@ -65,8 +65,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp3<'a, E
         let zero = Fp::zero(extension_field.field);
         
         Self {
-            c0: zero.clone(),
-            c1: zero.clone(),
+            c0: zero,
+            c1: zero,
             c2: zero,
             extension_field: extension_field
         }
@@ -78,7 +78,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp3<'a, E
         
         Self {
             c0: one,
-            c1: zero.clone(),
+            c1: zero,
             c2: zero,
             extension_field: extension_field
         }
@@ -121,19 +121,19 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         if self.is_zero() {
             None
         } else {
-            let mut t0 = self.c0.clone();
+            let mut t0 = self.c0;
             t0.square();
-            let mut t1 = self.c1.clone();
+            let mut t1 = self.c1;
             t1.square();
-            let mut t2 = self.c2.clone();
+            let mut t2 = self.c2;
             t2.square();
-            let mut t3 = self.c0.clone();
+            let mut t3 = self.c0;
             t3.mul_assign(&self.c1);
-            let mut t4 = self.c0.clone();
+            let mut t4 = self.c0;
             t4.mul_assign(&self.c2);
-            let mut t5 = self.c1.clone();
+            let mut t5 = self.c1;
             t5.mul_assign(&self.c2);
-            let mut n5 = t5.clone();
+            let mut n5 = t5;
             n5.mul_by_nonresidue(self.extension_field);
 
             let mut s0 = t0;
@@ -144,14 +144,14 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
             let mut s2 = t1;
             s2.sub_assign(&t4); // typo in paper referenced above. should be "-" as per Scott, but is "*"
 
-            let mut a1 = self.c2.clone();
+            let mut a1 = self.c2;
             a1.mul_assign(&s1);
-            let mut a2 = self.c1.clone();
+            let mut a2 = self.c1;
             a2.mul_assign(&s2);
             let mut a3 = a1;
             a3.add_assign(&a2);
             a3.mul_by_nonresidue(self.extension_field);
-            let mut t6 = self.c0.clone();
+            let mut t6 = self.c0;
             t6.mul_assign(&s0);
             t6.add_assign(&a3);
             let t6 = t6.inverse();
@@ -161,9 +161,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
 
             let t6 = t6.expect("is not None");
 
-            let mut c0 = t6.clone();
+            let mut c0 = t6;
             c0.mul_assign(&s0);
-            let mut c1 = t6.clone();
+            let mut c1 = t6;
             c1.mul_assign(&s1);
             let mut c2 = t6;
             c2.mul_assign(&s2);
@@ -180,34 +180,34 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
 
     fn mul_assign(&mut self, other: &Self)
     {
-        let a = other.c0.clone();
-        let b = other.c1.clone();
-        let c = other.c2.clone();
+        let a = other.c0;
+        let b = other.c1;
+        let c = other.c2;
 
-        let d = self.c0.clone();
-        let e = self.c1.clone();
-        let f = self.c2.clone();
+        let d = self.c0;
+        let e = self.c1;
+        let f = self.c2;
 
-        let mut ad = d.clone();
+        let mut ad = d;
         ad.mul_assign(&a);
-        let mut be = e.clone();
+        let mut be = e;
         be.mul_assign(&b);
-        let mut cf = f.clone();
+        let mut cf = f;
         cf.mul_assign(&c);
 
-        let mut t0 = b.clone();
+        let mut t0 = b;
         t0.add_assign(&c);
 
-        let mut x = e.clone();
+        let mut x = e;
         x.add_assign(&f);
         x.mul_assign(&t0);
         x.sub_assign(&be);
         x.sub_assign(&cf);
 
-        let mut t0 = a.clone();
+        let mut t0 = a;
         t0.add_assign(&b);
 
-        let mut y = d.clone();
+        let mut y = d;
         y.add_assign(&e);
         y.mul_assign(&t0);
         y.sub_assign(&ad);
@@ -240,13 +240,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
 
     fn square(&mut self)
     {
-        let a = self.c0.clone();
-        let b = self.c1.clone();
-        let c = self.c2.clone();
+        let a = self.c0;
+        let b = self.c1;
+        let c = self.c2;
 
-        let mut s0 = a.clone();
+        let mut s0 = a;
         s0.square();
-        let mut ab = a.clone();
+        let mut ab = a;
         ab.mul_assign(&b);
         let mut s1 = ab;
         s1.double();
@@ -261,13 +261,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp3<'a,
         let mut s4 = c;
         s4.square();
 
-        self.c0 = s0.clone();
-        let mut t0 = s3.clone();
+        self.c0 = s0;
+        let mut t0 = s3;
         t0.mul_by_nonresidue(self.extension_field);
         self.c0.add_assign(&t0);
 
-        self.c1 = s1.clone();
-        let mut t1 = s4.clone();
+        self.c1 = s1;
+        let mut t1 = s4;
         t1.mul_by_nonresidue(self.extension_field);
         self.c1.add_assign(&t1);
 
@@ -332,7 +332,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         Self {
             non_residue,
             field: & field,
-            frobenius_coeffs_c1: zeros.clone(),
+            frobenius_coeffs_c1: zeros,
             frobenius_coeffs_c2: zeros,
             frobenius_coeffs_are_calculated: false
         }
@@ -372,13 +372,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         };
 
         // c1 * c1.frobenius(1) == c1^2
-        let mut f_2 = f_1.clone();
+        let mut f_2 = f_1;
         f_2.square();
 
-        let f_0_c2 = f_0.clone();
+        let f_0_c2 = f_0;
 
-        let mut f_1_c2 = f_1.clone();
-        let mut f_2_c2 = f_2.clone();
+        let mut f_1_c2 = f_1;
+        let mut f_2_c2 = f_2;
 
         f_1_c2.square();
         f_2_c2.square();
@@ -397,18 +397,18 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3<'a, E, F> {
         let f_0 = Fp::one(self.field);
 
         // precomputation has it by 6, so square
-        let mut f_1 = precomp.non_residue_in_q_minus_one_by_six.clone();
+        let mut f_1 = precomp.non_residue_in_q_minus_one_by_six;
         f_1.square();
         
         // c1 * c1.frobenius(1) == c1^2
-        let mut f_2 = f_1.clone();
+        let mut f_2 = f_1;
         // f_2.frobenius_map(1); // we could leave it formally, but it's an identity
         f_2.square();
 
-        let f_0_c2 = f_0.clone();
+        let f_0_c2 = f_0;
 
-        let mut f_1_c2 = f_1.clone();
-        let mut f_2_c2 = f_2.clone();
+        let mut f_1_c2 = f_1;
+        let mut f_2_c2 = f_2;
 
         f_1_c2.square();
         f_2_c2.square();

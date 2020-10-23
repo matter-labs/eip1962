@@ -120,6 +120,8 @@ pub const BLS12_381_EXTENSION_2_FIELD: Extension2<'static, U384Repr, PrimeField<
         field: &BLS12_381_FIELD,
         non_residue: BLS12_381_FP_NON_RESIDUE,
         frobenius_coeffs_c1: [BLS12_381_EXTENSION_2_FROB_COEFF_0, BLS12_381_EXTENSION_2_FROB_COEFF_1],
+        non_residue_mul_policy: NonResidueMulPolicy::Negate,
+        // non_residue_mul_policy: NonResidueMulPolicy::Full,
         frobenius_coeffs_are_calculated: true
     };
 
@@ -128,7 +130,7 @@ const BLS12_381_FP2_NON_RESIDUE_C0_REPR: U384Repr = U384Repr([0x760900000002fffd
 const BLS12_381_FP2_NON_RESIDUE_C1_REPR: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
 
 const BLS12_381_FP2_NON_RESIDUE_C0: decl_fp!(U384Repr) = repr_into_fp!(
-    BLS12_381_FP2_NON_RESIDUE_C1_REPR, 
+    BLS12_381_FP2_NON_RESIDUE_C0_REPR, 
     U384Repr,
     BLS12_381_FIELD
 );
@@ -341,6 +343,7 @@ pub const BLS12_381_EXTENSION_6_FIELD: Extension3Over2<'static, U384Repr, PrimeF
         field: &BLS12_381_EXTENSION_2_FIELD,
         frobenius_coeffs_c1: [BLS12_381_FP6_FROB_C1_0, BLS12_381_FP6_FROB_C1_1, BLS12_381_FP6_FROB_C1_2, BLS12_381_FP6_FROB_C1_3, BLS12_381_FP6_FROB_C1_4, BLS12_381_FP6_FROB_C1_5],
         frobenius_coeffs_c2: [BLS12_381_FP6_FROB_C2_0, BLS12_381_FP6_FROB_C2_1, BLS12_381_FP6_FROB_C2_2, BLS12_381_FP6_FROB_C2_3, BLS12_381_FP6_FROB_C2_4, BLS12_381_FP6_FROB_C2_5],
+        non_residue_mul_policy: NonResidueMulPolicyFp6::OneOne,
         frobenius_coeffs_are_calculated: true
     };
 

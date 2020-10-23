@@ -33,13 +33,42 @@ fn pairing_result_true() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
     res
 }
 
+const EXPECTED_ADDITION_INPUT_LEN: usize = SERIALIZED_G1_POINT_BYTE_LENGTH * 2;
+const EXPECTED_MULTIPLICATION_INPUT_LEN: usize = SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH;
+
+fn bufferize_input_for_add(input: &[u8]) -> [u8; EXPECTED_ADDITION_INPUT_LEN] {
+    // following the EIP-196 spec we either pad it with zeroes or ignore the rest
+
+    let mut buffer = [0u8; EXPECTED_ADDITION_INPUT_LEN];
+    let l = input.len();
+    if l <= EXPECTED_ADDITION_INPUT_LEN {
+        (&mut buffer[0..l]).copy_from_slice(&input);
+    } else {
+        buffer.copy_from_slice(&input[0..EXPECTED_ADDITION_INPUT_LEN]);
+    }
+
+    buffer
+}
+
+fn bufferize_input_for_mul(input: &[u8]) -> [u8; EXPECTED_MULTIPLICATION_INPUT_LEN] {
+    // following the EIP-196 spec we either pad it with zeroes or ignore the rest
+
+    let mut buffer = [0u8; EXPECTED_MULTIPLICATION_INPUT_LEN];
+    let l = input.len();
+    if l <= EXPECTED_MULTIPLICATION_INPUT_LEN {
+        (&mut buffer[0..l]).copy_from_slice(&input);
+    } else {
+        buffer.copy_from_slice(&input[0..EXPECTED_MULTIPLICATION_INPUT_LEN]);
+    }
+
+    buffer
+}
+
 impl EIP196Executor {
     pub fn add<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
-        if input.len() != SERIALIZED_G1_POINT_BYTE_LENGTH * 2 {
-            return Err(ApiError::InputError("invalid input length for G1 addition".to_owned()));
-        }
+        let input_buffered = bufferize_input_for_add(input);
 
-        let (mut p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G1_CURVE)?;
+        let (mut p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(&input_buffered, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G1_CURVE)?;
         let (p_1, _) = decode_g1::decode_g1_point_from_xy_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G1_CURVE)?;
 
         if !p_0.is_on_curve() {
@@ -65,11 +94,9 @@ impl EIP196Executor {
     }
 
     pub fn mul<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
-        if input.len() != SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH {
-            return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
-        }
+        let input_buffered = bufferize_input_for_mul(input);
 
-        let (p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G1_CURVE)?;
+        let (p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(&input_buffered, SERIALIZED_FP_BYTE_LENGTH, &*BN254_G1_CURVE)?;
         let (scalar, _) = decode_g1::decode_scalar_representation(rest, SCALAR_BYTE_LENGTH)?;
 
         if !p_0.is_on_curve() {

@@ -8,22 +8,22 @@ extern crate fixed_width_field;
 extern crate fixed_width_group_and_loop;
 
 mod arithmetics;
-mod traits;
-mod representation;
-mod field;
-mod fp;
-mod weierstrass;
+pub mod traits;
+pub mod representation;
+pub mod field;
+pub mod fp;
+pub mod weierstrass;
 mod mont_inverse;
 mod multiexp;
-mod extension_towers;
-mod pairings;
+pub mod extension_towers;
+pub mod pairings;
 mod sliding_window_exp;
 mod errors;
-mod integers;
+pub mod integers;
 mod features;
 mod wnaf;
-mod square_root;
-mod engines;
+pub mod square_root;
+pub mod engines;
 
 #[cfg(feature = "mappings")]
 mod mapping;

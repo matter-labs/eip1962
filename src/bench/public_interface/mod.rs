@@ -4,10 +4,42 @@ use self::rust_test::Bencher;
 use crate::public_interface::PairingApi;
 
 #[bench]
+fn bench_bls12_381_pairing_2_through_the_api(b: &mut Bencher) {
+    use crate::test::pairings::bls12::assemble_bls12_381;
+
+    let calldata = assemble_bls12_381(2);
+
+    b.iter(|| {
+        assert_eq!(crate::public_interface::PublicPairingApi::pair(&calldata).unwrap()[0], 1u8);
+    });
+}
+
+#[bench]
 fn bench_bls12_381_pairing_4_through_the_api(b: &mut Bencher) {
     use crate::test::pairings::bls12::assemble_bls12_381;
 
     let calldata = assemble_bls12_381(4);
+
+    b.iter(|| {
+        assert_eq!(crate::public_interface::PublicPairingApi::pair(&calldata).unwrap()[0], 1u8);
+    });
+}
+#[bench]
+fn bench_bls12_381_pairing_6_through_the_api(b: &mut Bencher) {
+    use crate::test::pairings::bls12::assemble_bls12_381;
+
+    let calldata = assemble_bls12_381(6);
+
+    b.iter(|| {
+        assert_eq!(crate::public_interface::PublicPairingApi::pair(&calldata).unwrap()[0], 1u8);
+    });
+}
+
+#[bench]
+fn bench_bls12_377_pairing_2_through_the_api(b: &mut Bencher) {
+    use crate::test::pairings::bls12::assemble_bls12_377;
+
+    let calldata = assemble_bls12_377(2);
 
     b.iter(|| {
         assert_eq!(crate::public_interface::PublicPairingApi::pair(&calldata).unwrap()[0], 1u8);
@@ -19,6 +51,17 @@ fn bench_bls12_377_pairing_4_through_the_api(b: &mut Bencher) {
     use crate::test::pairings::bls12::assemble_bls12_377;
 
     let calldata = assemble_bls12_377(4);
+
+    b.iter(|| {
+        assert_eq!(crate::public_interface::PublicPairingApi::pair(&calldata).unwrap()[0], 1u8);
+    });
+}
+
+#[bench]
+fn bench_bls12_377_pairing_6_through_the_api(b: &mut Bencher) {
+    use crate::test::pairings::bls12::assemble_bls12_377;
+
+    let calldata = assemble_bls12_377(6);
 
     b.iter(|| {
         assert_eq!(crate::public_interface::PublicPairingApi::pair(&calldata).unwrap()[0], 1u8);

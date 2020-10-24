@@ -346,6 +346,7 @@ mod test {
     use rand::{Rng};
     use rand::{SeedableRng};
     use rand_xorshift::XorShiftRng;
+    use crate::public_interface::decode_fp;
 
     use indicatif::{ProgressBar, ProgressStyle};
 

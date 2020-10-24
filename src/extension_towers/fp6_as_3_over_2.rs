@@ -423,8 +423,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         } else {
             match (c0_is_one, c1_is_one) {
                 (true, true) => NonResidueMulPolicyFp6::OneOne,
-                (true, false) => NonResidueMulPolicyFp6::FullOne,
-                (false, true) => NonResidueMulPolicyFp6::OneFull,
+                (false, true) => NonResidueMulPolicyFp6::FullOne,
+                (true, false) => NonResidueMulPolicyFp6::OneFull,
                 (false, false) => NonResidueMulPolicyFp6::Full,
             }
         };
@@ -592,6 +592,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
 
         let (v0, mut v1) = match self.non_residue_mul_policy {
             NonResidueMulPolicyFp6::ZeroOne => {
+                debug_assert_eq!(Fp::zero(self.field.field), self.non_residue.c0);
+                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c1);
+
                 // full unroll
                 let mut v1 = el.c1;
 
@@ -604,12 +607,15 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
                 return;
             }
             NonResidueMulPolicyFp6::OneOne => {
+                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c0);
+                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c1);
                 let v0 = el.c0;
                 let v1 = el.c1;
         
                 (v0, v1)
             },
             NonResidueMulPolicyFp6::OneFull => {
+                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c0);
                 let v0 = el.c0;
                 let mut v1 = el.c1;
                 v1.mul_assign(&self.non_residue.c1);
@@ -617,6 +623,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
                 (v0, v1)
             },
             NonResidueMulPolicyFp6::FullOne => {
+                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c1);
                 let mut v0 = el.c0;
                 v0.mul_assign(&self.non_residue.c0);
                 let v1 = el.c1;

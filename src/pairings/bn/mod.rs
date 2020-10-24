@@ -761,7 +761,7 @@ mod tests {
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
         extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
-
+        
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
         extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
 

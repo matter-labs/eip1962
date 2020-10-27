@@ -276,4 +276,12 @@ mod tests {
         let field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
         println!("Mont inv = {:x}", field.mont_inv);
     }
+
+    #[test]
+    fn calculator_bn254() {
+        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        println!("Mont inv = {:x}", field.mont_inv);
+        println!("R = 1 in mont form = {}", field.mont_r);
+        println!("R^2 = {}", field.mont_r2);
+    }
 }

@@ -338,7 +338,8 @@ mod test {
         let (x_prime, y_prime) = simplified_swu_fp(
             &random_el, 
             &swu, 
-            &BLS12_381_G1_CURVE_ISOGENY
+            &BLS12_381_G1_CURVE_ISOGENY,
+            None
         );
 
         let (x, y) = apply_isogeny_map(
@@ -360,7 +361,8 @@ mod test {
         let (x_prime, y_prime) = simplified_swu_fp2(
             &random_el, 
             &swu, 
-            &BLS12_381_G2_CURVE_ISOGENY
+            &BLS12_381_G2_CURVE_ISOGENY,
+            None,
         );
 
         let (x, y) = apply_isogeny_map(

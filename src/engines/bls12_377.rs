@@ -515,6 +515,21 @@ pub const BLS12_377_PAIRING_ENGINE: Bls12Instance<
     x_naf: Vec::new()
 };
 
+use crate::square_root::SqrtContext;
+
+pub const BLS12_377_T_REPR: [u64; 6] = [0x7510c00000021423, 0x88bee82520005c2d, 0x67cc03d44e3c7bcd, 0x1701b28524ec688b, 0xe9185f1443ab18ec, 0x06b8];
+pub const BLS12_377_T_MINUS_ONE_OVER_TWO_REPR: [u64; 6] = [0xba88600000010a11, 0xc45f741290002e16, 0xb3e601ea271e3de6, 0x0b80d94292763445, 0x748c2f8a21d58c76, 0x035c];
+pub const BLS12_377_T_PLUS_ONE_OVER_TWO_REPR: [u64; 6] = [0xba88600000010a12, 0xc45f741290002e16, 0xb3e601ea271e3de6, 0x0b80d94292763445, 0x748c2f8a21d58c76, 0x035c];
+pub const BLS12_377_ROOT_OF_UNITY_RAW_REPR: [u64; 6] = [0x1c104955744e6e0f, 0xf1bd15c3898dd1af, 0x76da78169a7f3950, 0xee086c1fe367c337, 0xf95564f4cbc1b61f, 0x00f3c1414ef58c54];
+
+pub const BLS12_377_FQ_SQRT_CONTEXT: SqrtContext::<'static> = SqrtContext {
+    t_repr: &BLS12_377_T_REPR,
+    t_plus_1_over_2_repr: &BLS12_377_T_PLUS_ONE_OVER_TWO_REPR,
+    /// 2^s * t = MODULUS - 1 with t odd
+    root_of_unity_raw_repr: &BLS12_377_ROOT_OF_UNITY_RAW_REPR,
+    s: 46u64,
+};
+
 #[cfg(test)]
 mod test {
     use crate::traits::FieldElement;

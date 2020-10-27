@@ -683,7 +683,8 @@ pub mod mapping {
         let (x_prime, y_prime) = simplified_swu_fp(
             el, 
             &swu, 
-            coerce_static(el, &BLS12_381_G1_CURVE_ISOGENY)
+            coerce_static(el, &BLS12_381_G1_CURVE_ISOGENY),
+            None
         );
 
         let (x, y) = apply_isogeny_map(
@@ -712,7 +713,8 @@ pub mod mapping {
         let (x_prime, y_prime) = simplified_swu_fp2(
             el, 
             &swu, 
-            coerce_static(el, &BLS12_381_G2_CURVE_ISOGENY)
+            coerce_static(el, &BLS12_381_G2_CURVE_ISOGENY),
+            None
         );
 
         let (x, y) = apply_isogeny_map(

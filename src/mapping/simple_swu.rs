@@ -18,13 +18,15 @@ pub struct SwuParameters<C: CurveParameters> {
 
 pub(crate) fn simplified_swu_fp<
     'a,
+    'b,
     E: ElementRepr, 
     F: SizedPrimeField<Repr = E>, 
     C: CurveParameters<BaseFieldElement = Fp<'a, E, F>>
 > (
     u: &C::BaseFieldElement,
     params: &SwuParameters<C>,
-    curve: &WeierstrassCurve<'a, C>
+    curve: &WeierstrassCurve<'a, C>,
+    sqrt_ctx: Option<SqrtContext<'b>>
 ) -> (C::BaseFieldElement, C::BaseFieldElement) {
     let one = Fp::one(u.field);
 
@@ -102,7 +104,7 @@ pub(crate) fn simplified_swu_fp<
         gx2
     };
     // 19.   y = sqrt(y2)
-    let mut y = sqrt(&y2).expect("y2 is a square");
+    let mut y = sqrt(&y2, sqrt_ctx).expect("y2 is a square");
 
     // 20.  e3 = sgn0(u) == sgn0(y)  # Fix sign of y
     let u_sign = sign_of_fp(&u);
@@ -135,13 +137,15 @@ pub(crate) fn simplified_swu_fp<
 
 pub(crate) fn simplified_swu_fp2<
     'a, 
+    'b,
     E: ElementRepr, 
     F: SizedPrimeField<Repr = E>, 
     C: CurveParameters<BaseFieldElement = Fp2<'a, E, F>>
 > (
     u: &Fp2<'a, E, F>,
     params: &SwuParameters<C>,
-    curve: &WeierstrassCurve<'a, C>
+    curve: &WeierstrassCurve<'a, C>,
+    sqrt_ctx: Option<SqrtContext<'b>>
 ) -> (Fp2<'a, E, F>, Fp2<'a, E, F>)  {
     let one = Fp2::one(u.extension_field);
 
@@ -219,7 +223,7 @@ pub(crate) fn simplified_swu_fp2<
         gx2
     };
     // 19.   y = sqrt(y2)
-    let mut y = sqrt_ext2(&y2).expect("y2 is a square");
+    let mut y = sqrt_ext2(&y2, sqrt_ctx).expect("y2 is a square");
 
     // 20.  e3 = sgn0(u) == sgn0(y)  # Fix sign of y
     let u_sign = sign_of_fp2(&u);

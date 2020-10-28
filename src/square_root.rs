@@ -8,6 +8,7 @@ use crate::traits::ZeroAndOne;
 #[derive(Clone, Copy, Debug)]
 pub struct SqrtContext<'a>{
     pub t_repr: &'a [u64],
+    pub t_minus_1_over_2_repr: &'a [u64],
     pub t_plus_1_over_2_repr: &'a [u64],
     /// 2^s * t = MODULUS - 1 with t odd
     pub root_of_unity_raw_repr: &'a [u64],
@@ -78,12 +79,6 @@ pub fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(ele
     legendre_symbol_fp(&a)
 }
 
-fn sqrt_for_one_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(_element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
-    // TODO, or consider too slow
-    
-    None
-}
-
 pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
     // this is a simple case: we compute the power 
     // we know that it's 3 mod 4, so just bit shift
@@ -106,6 +101,91 @@ pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>
         a.mul_assign(&element);
 
         Some(a)
+    }
+}
+
+pub fn sqrt_for_one_mod_four<'a, 'b, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>, ctx: &SqrtContext<'b>) -> Option<Fp<'a, E, F>> {
+    if element.is_zero() {
+        return Some(element.clone());
+    }
+
+    // p - 1 = 2^s * t
+
+    let w = element.pow(ctx.t_minus_1_over_2_repr);
+    let mut x = w;
+    x.mul_assign(&element);
+
+    // b = x^t = w * w * x = y * w
+    let mut b = w;
+    b.mul_assign(&x);
+
+    let field = element.field;
+    let mut repr = E::default();
+    let len_to_copy = ctx.root_of_unity_raw_repr.len();
+    debug_assert_eq!(len_to_copy, repr.as_ref().len());
+    repr.as_mut()[..len_to_copy].copy_from_slice(ctx.root_of_unity_raw_repr);
+
+    // 2^s root of unity, so it's some non-residue n^t
+    let mut g = if let Ok(g) = Fp::from_raw_repr(field, repr) {
+        g
+    } else {
+        return None;
+    };
+
+    let one = Fp::one(field);
+
+    // initial check
+
+    let mut tmp = b;
+    for _ in 0..ctx.s {
+        tmp.square();
+    }
+
+    if tmp != one {
+        return None;
+    }
+
+    // we did the initial check, now loop
+
+    let mut r = ctx.s;
+
+    // this is "while m != 0"
+    loop {
+        let mut m = 0;
+        let mut t = b;
+        while t != one {
+            t.square();
+            m += 1;
+        }
+    
+        if m == 0 {
+            return Some(x);
+        }
+
+        if m == r {
+            // this is QNR
+            return None
+        }
+
+        assert!(m < r, "r = {}, m = {}", r, m);
+
+        // otherwise - update
+        
+        // g^2^(r-m-1)
+        let mut t0 = g;
+        for _ in 0..(r-m-1) {
+            t0.square();
+        }
+
+        // g^2^(r-m)
+        let mut t1 = t0;
+        t1.square();
+
+        x.mul_assign(&t0);
+        b.mul_assign(&t1);
+
+        g = t1;
+        r = m;
     }
 }
 
@@ -234,8 +314,9 @@ pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeFiel
     }
 }
 
-
-pub(crate) fn sqrt_for_one_mod_sixteen_ext_2<'a, 'b, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>, ctx: &SqrtContext<'b>) -> Option<Fp2<'a, E, F>> {
+pub(crate) fn complex_ext2_sqrt<'a, 'b, E: ElementRepr, F: SizedPrimeField<Repr = E>, SF>(element: &Fp2<'a, E, F>, ctx: &SqrtContext<'b>, fp_sqrt_fn: SF) -> Option<Fp2<'a, E, F>> 
+    where SF: Fn(&Fp<'a, E, F>, &SqrtContext<'_>) -> Option<Fp<'a, E, F>>
+{
     // https://eprint.iacr.org/2012/685.pdf (algorithm 8)
 
     if element.is_zero() {
@@ -254,7 +335,7 @@ pub(crate) fn sqrt_for_one_mod_sixteen_ext_2<'a, 'b, E: ElementRepr, F: SizedPri
         if gamma == LegendreSymbol::QuadraticNonResidue {
             None
         } else {
-            let alpha = sqrt_for_one_mod_sixteen(&alpha, ctx)?;
+            let alpha = fp_sqrt_fn(&alpha, ctx)?;
             let mut delta = element.c0;
             delta.add_assign(&alpha);
             delta.mul_assign(&two_inv);
@@ -266,7 +347,7 @@ pub(crate) fn sqrt_for_one_mod_sixteen_ext_2<'a, 'b, E: ElementRepr, F: SizedPri
                 delta.mul_assign(&two_inv);
             }
 
-            let x0 = sqrt_for_one_mod_sixteen(&delta, ctx)?;
+            let x0 = fp_sqrt_fn(&delta, ctx)?;
             let x0_inv = x0.inverse()?;
 
             let mut x1 = element.c1;
@@ -285,15 +366,29 @@ pub(crate) fn sqrt_for_one_mod_sixteen_ext_2<'a, 'b, E: ElementRepr, F: SizedPri
 pub fn sqrt_ext2<'a, 'b, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>, ctx: Option<SqrtContext<'b>>) -> Option<Fp2<'a, E, F>> {
     if modulus_is_three_mod_four_ext2(element.extension_field) {
         sqrt_for_three_mod_four_ext2(&element)
-    } else if modulus_is_one_mod_sixteen_ext2(element.extension_field) {
+    } else {
         let ctx = if let Some(ctx) = ctx.as_ref() {
             ctx
         } else {
             return None
         };
-        sqrt_for_one_mod_sixteen_ext_2(element, ctx)
-    } else {
-        None
+
+        // if we can do extraction of the base field using 1 mod 16
+        if modulus_is_one_mod_sixteen(element.extension_field.field) {
+            let extraction_fn = |el: &Fp<'a, E, F>, inner_ctx: &SqrtContext<'_>| {
+                sqrt_for_one_mod_sixteen(el, inner_ctx)
+            };
+
+            complex_ext2_sqrt(element, ctx, extraction_fn)
+        } else if modulus_is_one_mod_four(element.extension_field.field) {
+            let extraction_fn = |el: &Fp<'a, E, F>, inner_ctx: &SqrtContext<'_>| {
+                sqrt_for_one_mod_four(el, inner_ctx)
+            };
+
+            complex_ext2_sqrt(element, ctx, extraction_fn)
+        } else {
+            None
+        }
     }
 }
 
@@ -382,5 +477,86 @@ mod test {
         }
 
         assert!(roots_found > 0);
+    }
+
+    #[test]
+    fn test_bls12_377_sqrt_as_one_mod_4() {
+        let base_field = &crate::engines::bls12_377::BLS12_377_FIELD;
+        let extension = &crate::engines::bls12_377::BLS12_377_EXTENSION_2_FIELD;
+        let ctx = crate::engines::bls12_377::BLS12_377_FQ_SQRT_CONTEXT;
+        let one = crate::engines::bls12_377::BLS12_377_FP_ONE;
+        // simple check that root of unity is actually a root of unity
+        let mut repr = U384Repr::default();
+        repr.as_mut().copy_from_slice(&ctx.root_of_unity_raw_repr);
+        let may_be_one = Fp::from_raw_repr(base_field, repr).unwrap();
+        assert_eq!(legendre_symbol_fp(&may_be_one), LegendreSymbol::QuadraticNonResidue);
+        let may_be_one = may_be_one.pow(&[1u64 << ctx.s]);
+
+        assert_eq!(one, may_be_one);
+        // now let's compute some square root
+        let mut el = one;
+        for _ in 0..1024 {
+            let may_be_fp_sqrt = sqrt_for_one_mod_four(&el, &ctx);
+            if let Some(sqrt) = may_be_fp_sqrt {
+                let mut tmp = sqrt;
+                tmp.square();
+
+                assert_eq!(tmp, el);
+            }
+
+            el.add_assign(&one);
+        }
+
+        use rand::{Rng, SeedableRng};
+        use rand_xorshift::XorShiftRng;
+
+        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut roots_found = 0;
+        // now try on random
+        for _ in 0..100000 {
+            for limb in repr.as_mut().iter_mut() {
+                *limb = rng.gen();
+            }
+
+            if let Ok(el) = Fp::from_repr(base_field, repr) {
+                if let Some(sqrt) = sqrt_for_one_mod_four(&el, &ctx) {
+                    let mut tmp = sqrt;
+                    tmp.square();
+    
+                    assert_eq!(tmp, el);
+                    roots_found += 1;
+                }
+            }
+        }
+
+        assert!(roots_found > 0);
+        // roots_found = 0;
+
+        // // and on random fp2
+        // for _ in 0..1000000 {
+        //     for limb in repr.as_mut().iter_mut() {
+        //         *limb = rng.gen();
+        //     }
+
+        //     if let Ok(c0) = Fp::from_repr(base_field, repr) {
+        //         for limb in repr.as_mut().iter_mut() {
+        //             *limb = rng.gen();
+        //         }
+        //         if let Ok(c1) = Fp::from_repr(base_field, repr) {
+        //             let mut el = Fp2::zero(extension);
+        //             el.c0 = c0;
+        //             el.c1 = c1;
+        //             if let Some(sqrt) = sqrt_ext2(&el, Some(ctx)) {
+        //                 let mut tmp = sqrt;
+        //                 tmp.square();
+        
+        //                 assert_eq!(tmp, el);
+        //                 roots_found += 1;
+        //             }
+        //         }
+        //     }
+        // }
+
+        // assert!(roots_found > 0);
     }
 }

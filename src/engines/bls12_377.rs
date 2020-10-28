@@ -524,6 +524,7 @@ pub const BLS12_377_ROOT_OF_UNITY_RAW_REPR: [u64; 6] = [0x1c104955744e6e0f, 0xf1
 
 pub const BLS12_377_FQ_SQRT_CONTEXT: SqrtContext::<'static> = SqrtContext {
     t_repr: &BLS12_377_T_REPR,
+    t_minus_1_over_2_repr: &BLS12_377_T_MINUS_ONE_OVER_TWO_REPR,
     t_plus_1_over_2_repr: &BLS12_377_T_PLUS_ONE_OVER_TWO_REPR,
     /// 2^s * t = MODULUS - 1 with t odd
     root_of_unity_raw_repr: &BLS12_377_ROOT_OF_UNITY_RAW_REPR,

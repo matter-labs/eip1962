@@ -61,6 +61,7 @@ eip_196 = ["once_cell", "num-bigint", "num-traits"]
 eip_196_c_api = ["eip_196"]
 eip_2539 = []
 eip_2359_c_api = ["eip_2539"]
+asm = []
 
 [profile.release]
 lto = "thin"

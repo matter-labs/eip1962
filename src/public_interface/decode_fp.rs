@@ -80,12 +80,12 @@ pub fn decode_fp2<
 ) -> Result<(fp2::Fp2<'a, FE, F>, &'b [u8]), ApiError>
 {
     let (c0_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to Fp2_c0")?;
-    let c0 = Fp::from_be_bytes(extension_field.field, c0_encoding, true).map_err(|e| {
+    let c0 = Fp::from_be_bytes(extension_field.field(), c0_encoding, true).map_err(|e| {
         ApiError::InputError(format!("Failed to parse Fp2.c0 element, {}", e))
     })?;
 
     let (c1_encoding, rest) = split(rest, field_byte_len, "Input is not long enough to get Fp2_c1")?;
-    let c1 = Fp::from_be_bytes(extension_field.field, c1_encoding, true).map_err(|e| {
+    let c1 = Fp::from_be_bytes(extension_field.field(), c1_encoding, true).map_err(|e| {
         ApiError::InputError(format!("Failed to parse Fp2.c1 element, {}", e))
     })?;
 
@@ -109,12 +109,12 @@ pub fn decode_fp2_oversized<
 ) -> Result<(fp2::Fp2<'a, FE, F>, &'b [u8]), ApiError>
 {
     let (c0_encoding, rest) = split(bytes, encoding_length, "Input is not long enough to Fp2_c0")?;
-    let c0 = Fp::from_be_bytes_with_padding(extension_field.field, c0_encoding, false, true).map_err(|e| {
+    let c0 = Fp::from_be_bytes_with_padding(extension_field.field(), c0_encoding, false, true).map_err(|e| {
         ApiError::InputError(format!("Failed to parse Fp.c0 element, {}", e))
     })?;
 
     let (c1_encoding, rest) = split(rest, encoding_length, "Input is not long enough to get Fp2_c1")?;
-    let c1 = Fp::from_be_bytes_with_padding(extension_field.field, c1_encoding, false, true).map_err(|e| {
+    let c1 = Fp::from_be_bytes_with_padding(extension_field.field(), c1_encoding, false, true).map_err(|e| {
         ApiError::InputError(format!("Failed to parse Fp2.c1 element, {}", e))
     })?;
 
@@ -138,17 +138,17 @@ pub fn decode_fp3<
 ) -> Result<(fp3::Fp3<'a, FE, F>, &'b [u8]), ApiError>
 {
     let (c0_encoding, rest) = split(bytes, field_byte_len, "Input is not long enough to Fp3_c0")?;
-    let c0 = Fp::from_be_bytes(extension_field.field, c0_encoding, true).map_err(|_| {
+    let c0 = Fp::from_be_bytes(extension_field.field(), c0_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse Fp3 element".to_owned())
     })?;
 
     let (c1_encoding, rest) = split(rest, field_byte_len, "Input is not long enough to Fp3_c1")?;
-    let c1 = Fp::from_be_bytes(extension_field.field, c1_encoding, true).map_err(|_| {
+    let c1 = Fp::from_be_bytes(extension_field.field(), c1_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse Fp3 element".to_owned())
     })?;
 
     let (c2_encoding, rest) = split(rest, field_byte_len, "Input is not long enough to Fp3_c2")?;
-    let c2 = Fp::from_be_bytes(extension_field.field, c2_encoding, true).map_err(|_| {
+    let c2 = Fp::from_be_bytes(extension_field.field(), c2_encoding, true).map_err(|_| {
         ApiError::InputError("Failed to parse Fp3element".to_owned())
     })?;
 

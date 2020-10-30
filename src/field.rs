@@ -126,12 +126,12 @@ pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug + 'static + Cop
 
 #[derive(Debug)]
 pub struct PrimeField<E: ElementRepr> {
-    pub mont_power: u64,
-    pub modulus_bits: u64,
+    pub mont_inv: u64,
     pub modulus: E,
     pub mont_r: E,
     pub mont_r2: E,
-    pub mont_inv: u64
+    pub mont_power: u64,
+    pub modulus_bits: u64,
 }
 
 impl<E: ElementRepr> Clone for PrimeField<E> {

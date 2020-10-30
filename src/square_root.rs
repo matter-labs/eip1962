@@ -40,15 +40,15 @@ pub(crate) fn modulus_is_one_mod_sixteen<E: ElementRepr, F: SizedPrimeField<Repr
 }
 
 pub(crate) fn modulus_is_one_mod_four_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &Extension2<E, F>) -> bool {
-    modulus_is_one_mod_four(field.field)
+    modulus_is_one_mod_four(field.field())
 }
 
 pub(crate) fn modulus_is_three_mod_four_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &Extension2<E, F>) -> bool {
-    modulus_is_three_mod_four(field.field)
+    modulus_is_three_mod_four(field.field())
 }
 
 pub(crate) fn modulus_is_one_mod_sixteen_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &Extension2<E, F>) -> bool {
-    modulus_is_one_mod_sixteen(field.field)
+    modulus_is_one_mod_sixteen(field.field())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -273,7 +273,7 @@ pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeFiel
     if element.is_zero() {
         Some(element.clone())
     } else {
-        let mut modulus_minus_three_by_four = *element.extension_field.field.modulus();
+        let mut modulus_minus_three_by_four = *element.extension_field.field().modulus();
         modulus_minus_three_by_four.shr(2);
         let mut a1 = element.pow(&modulus_minus_three_by_four.as_ref());
 
@@ -297,10 +297,10 @@ pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeFiel
 
             if alpha == minus_one_fp2 {
                 let mut tmp = Fp2::zero(element.extension_field);
-                tmp.c1 = Fp::one(element.extension_field.field);
+                tmp.c1 = Fp::one(element.extension_field.field());
                 a1.mul_assign(&tmp);
             } else {
-                let mut modulus_minus_one_by_two = *element.extension_field.field.modulus();
+                let mut modulus_minus_one_by_two = *element.extension_field.field().modulus();
                 modulus_minus_one_by_two.shr(1);
 
                 alpha.add_assign(&one_fp2);
@@ -323,7 +323,7 @@ pub(crate) fn complex_ext2_sqrt<'a, 'b, E: ElementRepr, F: SizedPrimeField<Repr 
         Some(element.clone())
     } else {
         let extension_field = element.extension_field;
-        let base_field = extension_field.field;
+        let base_field = extension_field.field();
 
         let mut two = Fp::one(base_field);
         two.double();
@@ -374,13 +374,13 @@ pub fn sqrt_ext2<'a, 'b, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: 
         };
 
         // if we can do extraction of the base field using 1 mod 16
-        if modulus_is_one_mod_sixteen(element.extension_field.field) {
+        if modulus_is_one_mod_sixteen(element.extension_field.field()) {
             let extraction_fn = |el: &Fp<'a, E, F>, inner_ctx: &SqrtContext<'_>| {
                 sqrt_for_one_mod_sixteen(el, inner_ctx)
             };
 
             complex_ext2_sqrt(element, ctx, extraction_fn)
-        } else if modulus_is_one_mod_four(element.extension_field.field) {
+        } else if modulus_is_one_mod_four(element.extension_field.field()) {
             let extraction_fn = |el: &Fp<'a, E, F>, inner_ctx: &SqrtContext<'_>| {
                 sqrt_for_one_mod_four(el, inner_ctx)
             };

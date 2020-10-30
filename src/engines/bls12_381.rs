@@ -40,7 +40,7 @@ impl FieldExtension for Bls12_381Extension6 {
         el.c1.add_assign(&el.c0);
 
         // non-residue c0 + c1
-        let mut t0 = Fp::one(el.extension_field.field);
+        let mut t0 = Fp::one(el.extension_field.field());
         t0.double();
 
         el.c1.mul_assign(&t0);
@@ -117,7 +117,7 @@ const BLS12_381_EXTENSION_2_FROB_COEFF_1: decl_fp!(U384Repr) = repr_into_fp!(
 
 pub const BLS12_381_EXTENSION_2_FIELD: Extension2<'static, U384Repr, PrimeField<U384Repr>> = 
     Extension2::<'static, U384Repr, PrimeField<U384Repr>> {
-        field: &BLS12_381_FIELD,
+        // field: &BLS12_381_FIELD,
         non_residue: BLS12_381_FP_NON_RESIDUE,
         frobenius_coeffs_c1: [BLS12_381_EXTENSION_2_FROB_COEFF_0, BLS12_381_EXTENSION_2_FROB_COEFF_1],
         non_residue_mul_policy: NonResidueMulPolicy::Negate,
@@ -340,7 +340,7 @@ const BLS12_381_FP6_FROB_C2_5: decl_fp2!(U384Repr) = BLS12_381_FP2_ZERO;
 pub const BLS12_381_EXTENSION_6_FIELD: Extension3Over2<'static, U384Repr, PrimeField<U384Repr>> = 
     Extension3Over2::<'static, U384Repr, PrimeField<U384Repr>> {
         non_residue: BLS12_381_FP2_NON_RESIDUE,
-        field: &BLS12_381_EXTENSION_2_FIELD,
+        // field: &BLS12_381_EXTENSION_2_FIELD,
         frobenius_coeffs_c1: [BLS12_381_FP6_FROB_C1_0, BLS12_381_FP6_FROB_C1_1, BLS12_381_FP6_FROB_C1_2, BLS12_381_FP6_FROB_C1_3, BLS12_381_FP6_FROB_C1_4, BLS12_381_FP6_FROB_C1_5],
         frobenius_coeffs_c2: [BLS12_381_FP6_FROB_C2_0, BLS12_381_FP6_FROB_C2_1, BLS12_381_FP6_FROB_C2_2, BLS12_381_FP6_FROB_C2_3, BLS12_381_FP6_FROB_C2_4, BLS12_381_FP6_FROB_C2_5],
         non_residue_mul_policy: NonResidueMulPolicyFp6::OneOne,
@@ -443,7 +443,7 @@ const BLS12_381_FP6_ZERO: Fp6<'static, U384Repr, PrimeField<U384Repr>> =
 pub const BLS12_381_EXTENSION_12_FIELD: Extension2Over3Over2<'static, U384Repr, PrimeField<U384Repr>> = 
 Extension2Over3Over2::<'static, U384Repr, PrimeField<U384Repr>> {
     non_residue: BLS12_381_FP6_ZERO,
-    field: &BLS12_381_EXTENSION_6_FIELD,
+    // field: &BLS12_381_EXTENSION_6_FIELD,
     frobenius_coeffs_c1: [
             BLS12_381_FP12_FROB_C1_0, BLS12_381_FP12_FROB_C1_1,
             BLS12_381_FP12_FROB_C1_2, BLS12_381_FP12_FROB_C1_3,

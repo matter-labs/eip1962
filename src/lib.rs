@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 #![cfg_attr(feature = "benchmarks", feature(test))]
+#![cfg_attr(feature = "asm", feature(asm))]
 
 extern crate byteorder;
 extern crate eth_pairings_repr_derive;

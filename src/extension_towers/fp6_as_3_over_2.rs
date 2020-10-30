@@ -140,7 +140,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp6<'a, E
     type Params = &'a Extension3Over2<'a, E, F>;
 
     fn zero(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
-        let zero = Fp2::zero(extension_field.field);
+        let zero = Fp2::zero(extension_field.field());
         
         Self {
             c0: zero,
@@ -151,8 +151,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp6<'a, E
     }
 
     fn one(extension_field: &'a Extension3Over2<'a, E, F>) -> Self {
-        let zero = Fp2::zero(extension_field.field);
-        let one = Fp2::one(extension_field.field);
+        let field = extension_field.field();
+        let zero = Fp2::zero(field);
+        let one = Fp2::one(field);
         
         Self {
             c0: one,
@@ -387,19 +388,19 @@ use crate::integers::*;
 
 // For example, BLS12-381 has non-residue = 1 + u;
 pub struct Extension3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    pub(crate) field: &'a Extension2<'a, E, F>,
-    pub(crate) non_residue_mul_policy: NonResidueMulPolicyFp6,
+    // pub(crate) field: &'a Extension2<'a, E, F>,
     pub(crate) non_residue: Fp2<'a, E, F>,
+    pub(crate) non_residue_mul_policy: NonResidueMulPolicyFp6,
+    pub(crate) frobenius_coeffs_are_calculated: bool,
     pub(crate) frobenius_coeffs_c1: [Fp2<'a, E, F>; 6],
     pub(crate) frobenius_coeffs_c2: [Fp2<'a, E, F>; 6],
-    pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension3Over2<'a, E, F> {
     fn clone(&self) -> Self {
         Self {
             non_residue: self.non_residue,
-            field: self.field,
+            // field: self.field,
             frobenius_coeffs_c1: self.frobenius_coeffs_c1,
             frobenius_coeffs_c2: self.frobenius_coeffs_c2,
             non_residue_mul_policy: self.non_residue_mul_policy,
@@ -409,11 +410,16 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension3Over
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F> {
+    #[inline(always)]
+    pub fn field(&self) -> &'a Extension2<'a, E, F> {
+        self.non_residue.extension_field
+    }
+
     pub (crate) fn new(non_residue: Fp2<'a, E, F>) -> Self {
         let extension_2 = &non_residue.extension_field;
-
-        let one_fp = Fp::one(extension_2.field);
-        let zero_fp = Fp::zero(extension_2.field);
+        let base_field = extension_2.field();
+        let one_fp = Fp::one(base_field);
+        let zero_fp = Fp::zero(base_field);
         let c0_is_zero = non_residue.c0 == zero_fp;
         let c0_is_one = non_residue.c0 == one_fp;
         let c1_is_one = non_residue.c1 == one_fp;
@@ -434,7 +440,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         
         Self {
             non_residue: non_residue,
-            field: & non_residue.extension_field,
+            // field: & non_residue.extension_field,
             frobenius_coeffs_c1: zeros,
             frobenius_coeffs_c2: zeros,
             non_residue_mul_policy: policy,
@@ -449,7 +455,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
     ) -> Result<(), ()> {
         // NON_RESIDUE**(((q^0) - 1) / 3)
         let non_residue = &self.non_residue;
-        let f_0 = Fp2::one(self.field);
+        let field = self.field();
+        let f_0 = Fp2::one(field);
 
         // then
         // c1 = Fp2**( (q^1 - 1) / 3) has to be calculated
@@ -496,8 +503,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         f_3.frobenius_map(1);
         f_3.mul_assign(&f_1);
 
-        let f_4 = Fp2::zero(self.field);
-        let f_5 = Fp2::zero(self.field);
+        let f_4 = Fp2::zero(field);
+        let f_5 = Fp2::zero(field);
 
         let f_0_c2 = f_0;
 
@@ -524,7 +531,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         &mut self,
         precomp: &Fp6Fp12FrobeniusBaseElements<'a, E, F>
     ) -> Result<(), ()> {
-        let f_0 = Fp2::one(self.field);
+        let field = self.field();
+        let f_0 = Fp2::one(field);
         let mut f_1 = precomp.non_residue_in_q_minus_one_by_six;
         f_1.square();
 
@@ -542,8 +550,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension3Over2<'a, E, F
         f_3.frobenius_map(1);
         f_3.mul_assign(&f_1);
 
-        let f_4 = Fp2::zero(self.field);
-        let f_5 = Fp2::zero(self.field);
+        let f_4 = Fp2::zero(field);
+        let f_5 = Fp2::zero(field);
 
         let f_0_c2 = f_0;
 
@@ -592,8 +600,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
 
         let (v0, mut v1) = match self.non_residue_mul_policy {
             NonResidueMulPolicyFp6::ZeroOne => {
-                debug_assert_eq!(Fp::zero(self.field.field), self.non_residue.c0);
-                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c1);
+                debug_assert_eq!(Fp::zero(self.field().field()), self.non_residue.c0);
+                debug_assert_eq!(Fp::one(self.field().field()), self.non_residue.c1);
 
                 // full unroll
                 let mut v1 = el.c1;
@@ -601,21 +609,21 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
                 el.c1.add_assign(&el.c0);
                 el.c1.mul_assign(&self.non_residue.c1);
                 el.c1.sub_assign(&v1);
-                v1.mul_by_nonresidue(self.field);
+                v1.mul_by_nonresidue(self.field());
                 el.c0 = v1;
 
                 return;
             }
             NonResidueMulPolicyFp6::OneOne => {
-                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c0);
-                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c1);
+                debug_assert_eq!(Fp::one(self.field().field()), self.non_residue.c0);
+                debug_assert_eq!(Fp::one(self.field().field()), self.non_residue.c1);
                 let v0 = el.c0;
                 let v1 = el.c1;
         
                 (v0, v1)
             },
             NonResidueMulPolicyFp6::OneFull => {
-                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c0);
+                debug_assert_eq!(Fp::one(self.field().field()), self.non_residue.c0);
                 let v0 = el.c0;
                 let mut v1 = el.c1;
                 v1.mul_assign(&self.non_residue.c1);
@@ -623,7 +631,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
                 (v0, v1)
             },
             NonResidueMulPolicyFp6::FullOne => {
-                debug_assert_eq!(Fp::one(self.field.field), self.non_residue.c1);
+                debug_assert_eq!(Fp::one(self.field().field()), self.non_residue.c1);
                 let mut v0 = el.c0;
                 v0.mul_assign(&self.non_residue.c0);
                 let v1 = el.c1;
@@ -647,7 +655,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
         el.c1.sub_assign(&v0);
         el.c1.sub_assign(&v1);
         el.c0 = v0;
-        v1.mul_by_nonresidue(self.field);
+        v1.mul_by_nonresidue(self.field());
         el.c0.add_assign(&v1);
 
         // This could have been a simple fallback

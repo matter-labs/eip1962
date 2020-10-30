@@ -1,5 +1,7 @@
 #![recursion_limit = "1024"]
 
+#![cfg_attr(feature = "asm", feature(asm))]
+
 extern crate byteorder;
 
 extern crate proc_macro;
@@ -110,6 +112,88 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             .chain((0..limbs).map(|_| quote!{0})),
         proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
     );
+
+    // Implement montgomery reduction for some number of limbs
+    fn add_nocarry_impl(limbs: usize) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+        
+        for i in 0..limbs {
+            if i == 0 {
+                gen.extend(quote!{
+                    let (tmp, carry) = (self.0)[#i].overflowing_add((other.0)[#i]);
+                    (self.0)[#i] = tmp;
+                });
+            } else if i != limbs-1 {
+                gen.extend(quote!{
+                    let (tmp, carry1) = (self.0)[#i].overflowing_add((other.0)[#i]);
+                    let (tmp, carry2) = tmp.overflowing_add(carry as u64);
+                    let carry = carry1 | carry2;
+                    (self.0)[#i] = tmp;
+                });
+            } else {
+                gen.extend(quote!{
+                    let (tmp, carry1) = (self.0)[#i].overflowing_add((other.0)[#i]);
+                    let (tmp, carry2) = tmp.overflowing_add(carry as u64);
+                    let _ = carry1 | carry2;
+                    (self.0)[#i] = tmp;
+                });
+            }
+        }
+
+        gen
+
+        // let mut gen = proc_macro2::TokenStream::new();
+
+        // gen.extend(quote!{
+        //     use std::arch::x86_64::_addcarry_u64;
+
+        //     let mut carry: u8 = 0;
+        // });
+
+        // for i in 0..limbs {
+        //     if i != limbs - 1 {
+        //         gen.extend(quote!{
+        //             carry = unsafe { _addcarry_u64(carry, (self.0)[#i], (other.0)[#i], &mut (self.0)[#i]) };
+        //         });
+        //     } else {
+        //         gen.extend(quote!{
+        //             let _ = unsafe { _addcarry_u64(carry, (self.0)[#i], (other.0)[#i], &mut (self.0)[#i]) };
+        //         });
+        //     }
+        // }
+
+        // gen
+    }
+
+    // Implement montgomery reduction for some number of limbs
+    fn sub_noborrow_impl(limbs: usize) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+
+        for i in 0..limbs {
+            if i == 0 {
+                gen.extend(quote!{
+                    let (tmp, borrow) = (self.0)[#i].overflowing_sub((other.0)[#i]);
+                    (self.0)[#i] = tmp;
+                });
+            } else if i != limbs - 1{
+                gen.extend(quote!{
+                    let (tmp, borrow1) = (self.0)[#i].overflowing_sub((other.0)[#i]);
+                    let (tmp, borrow2) = tmp.overflowing_sub(borrow as u64);
+                    let borrow = borrow1 | borrow2;
+                    (self.0)[#i] = tmp;
+                });
+            } else {
+                gen.extend(quote!{
+                    let (tmp, borrow1) = (self.0)[#i].overflowing_sub((other.0)[#i]);
+                    let (tmp, borrow2) = tmp.overflowing_sub(borrow as u64);
+                    let _ = borrow1 | borrow2;
+                    (self.0)[#i] = tmp;
+                });
+            }
+        }
+
+        gen
+    }
 
     // Implement montgomery reduction for some number of limbs
     fn mont_impl(limbs: usize) -> proc_macro2::TokenStream {
@@ -244,6 +328,7 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         gen
     }
 
+    #[allow(dead_code)]
     fn mul_impl(
         a: proc_macro2::TokenStream,
         b: proc_macro2::TokenStream,
@@ -290,9 +375,198 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         gen
     }
 
+    #[allow(dead_code)]
+    fn mulx_mul_impl(
+        a: proc_macro2::TokenStream,
+        b: proc_macro2::TokenStream,
+        limbs: usize,
+    ) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+
+        let intermediate_limbs = limbs * 2;
+        gen.extend(quote!{
+            let mut result = [0u64; #intermediate_limbs];
+        });
+
+        gen.extend(quote!{
+            let base = #b.0[0];
+        });
+
+        gen.extend(quote!{
+            let (hi, lo) = crate::arithmetics::mulx(#a.0[0], base);
+            result[0] = lo;
+        });
+
+        for j in 1..limbs {
+            let dst = j;
+            gen.extend(quote!{
+                let (hhi, lo) = crate::arithmetics::mulx(#a.0[#j], base);
+                let (lo, carry) = lo.overflowing_add(hi);
+                result[#dst] = lo;
+                let hi = hhi + (carry as u64);
+            });
+        }
+        gen.extend(quote!{
+            result[#limbs] = hi;
+        });
+        // now result up to limbs (inclusive) is non-zero
+
+        for i in 1..limbs {
+            let dst = i;
+            gen.extend(quote!{
+                let base = #b.0[#i];
+                let existing = result[#dst];
+            });
+
+            gen.extend(quote!{
+                let (hhi, lo) = crate::arithmetics::mulx(#a.0[0], base);
+                // update low with existing value
+                let (lo, carry_from_existing) = lo.overflowing_add(existing);
+                result[#dst] = lo;
+                let hi = hhi + (carry_from_existing as u64);
+            });
+    
+            for j in 1..limbs {
+                let dst = j + i;
+                gen.extend(quote!{
+                    let existing = result[#dst];
+                    let (hhi, lo) = crate::arithmetics::mulx(#a.0[#j], base);
+                    // we need to add hi and existing to lo
+                    let (tmp, carry_from_hi) = lo.overflowing_add(hi);
+                    let hi = hhi + (carry_from_hi as u64);
+                    let (lo, carry_from_existing) = tmp.overflowing_add(existing);
+                    result[#dst] = lo;
+                    let hi = hi + (carry_from_existing as u64);
+                    // let carry = carry_from_hi | carry_from_existing;
+
+                    // let hi = hhi + (carry as u64); // there can be no overflow here
+                });
+            }
+
+            let dst = limbs + i;
+            gen.extend(quote!{
+                result[#dst] = hi;
+            });
+        }
+
+        let mut mont_calling = proc_macro2::TokenStream::new();
+        mont_calling.append_separated(
+            (0..(limbs * 2)).map(|i| get_temp(i)),
+            proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
+        );
+
+        gen.extend(quote!{
+            let [#mont_calling] = result;
+        });
+
+        gen.extend(quote!{
+            self.mont_partial_reduce(modulus, mont_inv, #mont_calling);
+        });
+
+        gen
+    }
+
+    #[allow(dead_code)]
+    fn mulx_mul_impl_unroll_inner_only(
+        a: proc_macro2::TokenStream,
+        b: proc_macro2::TokenStream,
+        limbs: usize,
+    ) -> proc_macro2::TokenStream {
+        let mut gen = proc_macro2::TokenStream::new();
+
+        let intermediate_limbs = limbs * 2;
+        gen.extend(quote!{
+            let mut result = [0u64; #intermediate_limbs];
+        });
+
+        gen.extend(quote!{
+            let base = #b.0[0];
+        });
+
+        gen.extend(quote!{
+            let (hi, lo) = crate::arithmetics::mulx(#a.0[0], base);
+            result[0] = lo;
+        });
+
+        for j in 1..limbs {
+            let dst = j;
+            gen.extend(quote!{
+                let (hhi, lo) = crate::arithmetics::mulx(#a.0[#j], base);
+                let (lo, carry) = lo.overflowing_add(hi);
+                result[#dst] = lo;
+                let hi = hhi + (carry as u64);
+            });
+        }
+        gen.extend(quote!{
+            result[#limbs] = hi;
+        });
+        // now result up to limbs (inclusive) is non-zero
+
+        let mut subgen = proc_macro2::TokenStream::new();
+
+        subgen.extend(quote!{
+            let base = #b.0[i];
+            let existing = result[i];
+        });
+
+        subgen.extend(quote!{
+            let (hhi, lo) = crate::arithmetics::mulx(#a.0[0], base);
+            // update low with existing value
+            let (lo, carry_from_existing) = lo.overflowing_add(existing);
+            result[i] = lo;
+            let hi = hhi + (carry_from_existing as u64);
+        });
+
+        for j in 1..limbs {
+            subgen.extend(quote!{
+                let existing = result[i + #j];
+                let (hhi, lo) = crate::arithmetics::mulx(#a.0[#j], base);
+                // we need to add hi and existing to lo
+                let (tmp, carry_from_hi) = lo.overflowing_add(hi);
+                let hi = hhi + (carry_from_hi as u64);
+                let (lo, carry_from_existing) = tmp.overflowing_add(existing);
+                result[i + #j] = lo;
+                let hi = hi + (carry_from_existing as u64);
+            });
+        }
+
+        subgen.extend(quote!{
+            result[#limbs + i] = hi;
+        });
+
+        // start outer 
+        gen.extend(quote!{
+            for i in 1..#limbs {
+                #subgen
+            }
+        });
+
+        // end outer
+
+        let mut mont_calling = proc_macro2::TokenStream::new();
+        mont_calling.append_separated(
+            (0..(limbs * 2)).map(|i| get_temp(i)),
+            proc_macro2::Punct::new(',', proc_macro2::Spacing::Alone),
+        );
+
+        gen.extend(quote!{
+            let [#mont_calling] = result;
+        });
+
+        gen.extend(quote!{
+            self.mont_partial_reduce(modulus, mont_inv, #mont_calling);
+        });
+
+        gen
+    }
+
     let squaring_impl = sqr_impl(quote!{self}, limbs);
-    let multiply_impl = mul_impl(quote!{self}, quote!{other}, limbs);
+    // let multiply_impl = mul_impl(quote!{self}, quote!{other}, limbs);
+    let add_nocarry_impl = add_nocarry_impl(limbs);
+    let sub_noborrow_impl = sub_noborrow_impl(limbs);
     let montgomery_impl = mont_impl(limbs);
+    // let mulx_mul_impl = mulx_mul_impl_unroll_inner_only(quote!{self}, quote!{other}, limbs);
+    let mulx_mul_impl = mulx_mul_impl(quote!{self}, quote!{other}, limbs);
 
     quote! {
 
@@ -302,22 +576,6 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         );
 
         impl #repr {
-            // #[inline(always)]
-            // fn mont_reduce(
-            //     &mut self,
-            //     modulus: &#repr,
-            //     mont_inv: u64,
-            //     #mont_paramlist
-            // )
-            // {
-            //     // The Montgomery reduction here is based on Algorithm 14.32 in
-            //     // Handbook of Applied Cryptography
-            //     // <http://cacr.uwaterloo.ca/hac/about/chap14.pdf>.
-
-            //     #montgomery_impl
-            //     self.reduce(modulus);
-            // }
-
             #[inline(always)]
             fn mont_partial_reduce(
                 &mut self,
@@ -405,7 +663,6 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
         }
 
         impl crate::representation::IntoWnaf for #repr {
-            #[inline]
             fn wnaf(&self, window: u32) -> Vec<i64> {
                 let mut res = vec![];
 
@@ -544,26 +801,31 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
 
             #[inline(always)]
             fn add_nocarry(&mut self, other: &#repr) {
-                let mut carry = 0;
+                #add_nocarry_impl
 
-                for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
-                    *a = crate::arithmetics::adc(*a, *b, &mut carry);
-                }
+                // let mut carry = 0;
+
+                // for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
+                //     *a = crate::arithmetics::adc(*a, *b, &mut carry);
+                // }
             }
 
             #[inline(always)]
             fn sub_noborrow(&mut self, other: &#repr) {
-                let mut borrow = 0;
+                #sub_noborrow_impl
 
-                for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
-                    *a = crate::arithmetics::sbb(*a, *b, &mut borrow);
-                }
+                // let mut borrow = 0;
+
+                // for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
+                //     *a = crate::arithmetics::sbb(*a, *b, &mut borrow);
+                // }
             }
 
             #[inline]
             fn mont_mul_assign(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
             {
-                #multiply_impl
+                #mulx_mul_impl
+                // #multiply_impl
                 self.reduce(modulus);
             }
 
@@ -577,7 +839,8 @@ fn prime_field_repr_impl(repr: &syn::Ident, limbs: usize) -> proc_macro2::TokenS
             #[inline]
             fn mont_mul_assign_with_partial_reduction(&mut self, other: &#repr, modulus: &#repr, mont_inv: u64)
             {
-                #multiply_impl
+                #mulx_mul_impl
+                // #multiply_impl
             }
 
             #[inline]

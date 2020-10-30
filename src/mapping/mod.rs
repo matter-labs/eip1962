@@ -71,8 +71,8 @@ mod constants {
     pub(crate) fn str_radix_into_ext2<'a>(c0: &str, c1: &str, radix: u32, extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>) -> Fp2<'a, U384Repr, PrimeField<U384Repr>> {
         let biguint_c0 = BigUint::from_str_radix(c0, radix).unwrap();
         let biguint_c1 = BigUint::from_str_radix(c1, radix).unwrap();
-        let c0 = Fp::from_be_bytes(extension.field, &biguint_c0.to_bytes_be(), true).unwrap();
-        let c1 = Fp::from_be_bytes(extension.field, &biguint_c1.to_bytes_be(), true).unwrap();
+        let c0 = Fp::from_be_bytes(extension.field(), &biguint_c0.to_bytes_be(), true).unwrap();
+        let c1 = Fp::from_be_bytes(extension.field(), &biguint_c1.to_bytes_be(), true).unwrap();
 
         let mut el = Fp2::zero(extension);
         el.c0 = c0;

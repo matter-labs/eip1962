@@ -60,7 +60,7 @@ fn bench_bls12_381_sqrt_in_fp_with_modulus_check(b: &mut Bencher) {
     el.negate();
 
     b.iter(|| {
-        let _ = sqrt(&el).unwrap();
+        let _ = sqrt(&el, None).unwrap();
     });
 }
 

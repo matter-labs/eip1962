@@ -78,7 +78,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp2<'a, E
     type Params = &'a Extension2<'a, E, F>;
 
     fn zero(extension_field: &'a Extension2<'a, E, F>) -> Self {
-        let zero = Fp::zero(extension_field.field);
+        let zero = Fp::zero(extension_field.field());
         
         Self {
             c0: zero,
@@ -89,8 +89,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp2<'a, E
 
     #[inline(always)]
     fn one(extension_field: &'a Extension2<'a, E, F>) -> Self {
-        let zero = Fp::zero(extension_field.field);
-        let one = Fp::one(extension_field.field);
+        let zero = Fp::zero(extension_field.field());
+        let one = Fp::one(extension_field.field());
         
         Self {
             c0: one,
@@ -240,17 +240,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp2<'a,
 
 // For example, BLS12-381 has non-residue = -1;
 pub struct Extension2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
-    pub(crate) field: &'a F,
-    pub(crate) non_residue_mul_policy: NonResidueMulPolicy,
+    // pub(crate) field: &'a F,
     pub(crate) non_residue: Fp<'a, E, F>,
+    pub(crate) non_residue_mul_policy: NonResidueMulPolicy,
+    pub(crate) frobenius_coeffs_are_calculated: bool,
     pub(crate) frobenius_coeffs_c1: [Fp<'a, E, F>; 2],
-    pub(crate) frobenius_coeffs_are_calculated: bool
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2<'a, E, F> {
     fn clone(&self) -> Self {
         Self {
-            field: self.field,
+            // field: self.field,
             non_residue: self.non_residue,
             frobenius_coeffs_c1: self.frobenius_coeffs_c1,
             non_residue_mul_policy: self.non_residue_mul_policy,
@@ -260,6 +260,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2<'a,
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
+    #[inline(always)]
+    pub fn field(&self) -> &'a F {
+        self.non_residue.field
+    }
     pub (crate) fn new(non_residue: Fp<'a, E, F>) -> Self {
         let field = non_residue.field;
 
@@ -276,7 +280,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         
         Self {
             non_residue,
-            field: & field,
+            // field: & field,
             frobenius_coeffs_c1: zeros,
             non_residue_mul_policy: policy,
             frobenius_coeffs_are_calculated: false
@@ -298,7 +302,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         let non_residue = &self.non_residue;
 
         // NONRESIDUE**(((q^0) - 1) / 2)
-        let f_0 = Fp::one(self.field);
+        let f_0 = Fp::one(self.field());
 
         // NONRESIDUE**(((q^1) - 1) / 2)
         let power = *modulus >> 1;
@@ -315,7 +319,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2<'a, E, F> {
         &mut self,
         precomp: &Fp2Fp4FrobeniusBaseElements<'a, E, F>
     ) -> Result<(), ()> {    
-        let f_0 = Fp::one(self.field);
+        let f_0 = Fp::one(self.field());
         
         // precomputation has it by 4, so square
         let mut f_1 = precomp.non_residue_in_q_minus_one_by_four;

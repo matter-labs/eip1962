@@ -6,9 +6,9 @@ pub(crate) fn calculate_window_table<F: FieldElement>(base: &F, window: usize) -
     let mut table: Vec<F> = vec![];
     table.reserve(1 << (window - 1));
 
-    let mut acc = base.clone();
+    let mut acc = *base;
     table.push(acc.clone());
-    let mut square = acc.clone();
+    let mut square = acc;
     square.square();
 
     // pushed 1*G, 3*G, 5*G, etc (notation abuse, it's actually exp)
@@ -48,7 +48,7 @@ impl<F: FieldElement> WindowExpBase<F> {
         for s in scalars.iter() {
             let wnaf = s.windows(self.window_size as u32);
 
-            let mut res = self.one.clone();
+            let mut res = self.one;
             let mut found_nonzero = false;
 
             for w in wnaf.into_iter().rev() {
@@ -156,13 +156,13 @@ mod tests {
                     0xb85045b68181585d,
                     0x30644e72e131a029];
 
-        let mut square = base.clone();
+        let mut square = base;
         square.square();
 
-        let mut cube = base.clone();
+        let mut cube = base;
         cube.mul_assign(&square);
 
-        let mut fifth = cube.clone();
+        let mut fifth = cube;
         fifth.mul_assign(&square);
 
         let naive_result = base.pow(&scalar[..]);

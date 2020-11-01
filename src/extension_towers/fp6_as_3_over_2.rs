@@ -64,6 +64,42 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp6<'a, E, F> {
 }
 
 impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp6<'a, E, F> {
+    pub fn mul_by_0(
+        &mut self,
+        c0: & Fp2<'a, E, F>,
+    ) {
+        let mut a_a = self.c0;
+        a_a.mul_assign(c0);
+
+        let t1 = a_a;
+
+        let mut t3 = *c0;
+        {
+            let mut tmp = self.c0;
+            tmp.add_assign(&self.c2);
+
+            t3.mul_assign(&tmp);
+            t3.sub_assign(&a_a);
+        }
+
+        let mut t2 = *c0;
+        {
+            let mut tmp = self.c0;
+            tmp.add_assign(&self.c1);
+
+            t2.mul_assign(&tmp);
+            t2.sub_assign(&a_a);
+        }
+
+        self.c0 = t1;
+        self.c1 = t2;
+        self.c2 = t3;
+
+        // let mut tmp = Self::zero(self.extension_field);
+        // tmp.c0 = *c0;
+        // self.mul_assign(&tmp);
+    }
+
     pub fn mul_by_1(&mut self, c1: &Fp2<'a, E, F>) {
         let mut b_b = self.c1;
         b_b.mul_assign(c1);

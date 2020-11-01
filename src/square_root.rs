@@ -91,7 +91,7 @@ pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>
     let mut minus_one = Fp::one(element.field);
     minus_one.negate();
 
-    let mut tmp = a.clone();
+    let mut tmp = a;
     tmp.square();
     tmp.mul_assign(&element);
 
@@ -277,17 +277,17 @@ pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeFiel
         modulus_minus_three_by_four.shr(2);
         let mut a1 = element.pow(&modulus_minus_three_by_four.as_ref());
 
-        let mut alpha = a1.clone();
+        let mut alpha = a1;
         alpha.square();
         alpha.mul_assign(&element);
 
-        let mut a0 = alpha.clone();
+        let mut a0 = alpha;
         a0.frobenius_map(1);
         a0.mul_assign(&alpha);
 
         let one_fp2 = Fp2::one(element.extension_field);
 
-        let mut minus_one_fp2 = one_fp2.clone();
+        let mut minus_one_fp2 = one_fp2;
         minus_one_fp2.negate();
 
         if a0 == minus_one_fp2 {

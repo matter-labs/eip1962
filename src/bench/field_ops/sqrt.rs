@@ -84,7 +84,7 @@ fn bench_bls12_381_sqrt_in_fp2(b: &mut Bencher) {
     four.double();
 
     let mut fp2_el = Fp2::zero(&extension_2);
-    fp2_el.c0 = four.clone();
+    fp2_el.c0 = four;
     fp2_el.c1 = four.clone();
 
     fp2_el.square();

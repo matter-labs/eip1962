@@ -25,10 +25,10 @@ pub(crate) fn apply_isogeny_map<
     debug_assert_eq!(params.map_degree + 1, params.k3.len());
     debug_assert_eq!(params.map_degree + 1, params.k4.len());
 
-    let mut x_num = params.k1[params.map_degree].clone();
-    let mut x_den = params.k2[params.map_degree].clone();
-    let mut y_num = params.k3[params.map_degree].clone();
-    let mut y_den = params.k4[params.map_degree].clone();
+    let mut x_num = params.k1[params.map_degree];
+    let mut x_den = params.k2[params.map_degree];
+    let mut y_num = params.k3[params.map_degree];
+    let mut y_den = params.k4[params.map_degree];
 
     // horner rule
     for i in (0..params.map_degree).rev() {

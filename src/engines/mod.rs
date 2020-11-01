@@ -8,8 +8,19 @@ pub mod bls12_377;
 #[cfg(feature = "eip_196")]
 pub mod bn254;
 
+pub(crate) fn print_single(r: &[u64]) {
+    let mut limb_string = vec![];
+    for limb in r {
+        let t = format!("0x{:016x}", limb);
+        limb_string.push(t);
+    }
+
+    println!("{}", limb_string.join(","));
+}
+
 #[cfg(test)]
 mod test {
+    use super::*;
     use crate::representation::*;
     use crate::field::*;
     use crate::traits::*;
@@ -19,16 +30,6 @@ mod test {
     use num_traits::Num;
     use crate::pairings::TwistType;
     use crate::integers::MaxFieldUint;
-
-    fn print_single(r: &[u64]) {
-        let mut limb_string = vec![];
-        for limb in r {
-            let t = format!("0x{:016x}", limb);
-            limb_string.push(t);
-        }
-
-        println!("{}", limb_string.join(","));
-    }
 
     fn pretty_print_field_constants<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &F) {
         println!("Modulus:");
@@ -153,6 +154,12 @@ mod test {
 
         let b = BigUint::from(4u64);
 
+        let beta = BigUint::from_str_radix("5f19672fdf76ce51ba69c6076a0f77eaddb3a93be6f89688de17d813620a00022e01fffffffefffe", 16).unwrap();
+        let modulus_uint = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+        let field = field_from_modulus::<U384Repr>(&modulus_uint).unwrap();
+        let beta = Fp::from_be_bytes(&field, &beta.to_bytes_be(), true).unwrap();
+        print_single(beta.repr.as_ref());
+
         let p_x = BigUint::from_str_radix("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10).unwrap();
         let p_y = BigUint::from_str_radix("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10).unwrap();
 
@@ -191,7 +198,7 @@ mod test {
         let fp2_non_residue_c0 = BigUint::from(0u64);
         let fp2_non_residue_c1 = BigUint::from(1u64);
 
-        let b = BigUint::from(4u64);
+        let b = BigUint::from(1u64);
 
         let p_x = BigUint::from_str_radix("008848defe740a67c8fc6225bf87ff5485951e2caa9d41bb188282c8bd37cb5cd5481512ffcd394eeab9b16eb21be9ef", 16).unwrap();
         let p_y = BigUint::from_str_radix("01914a69c5102eff1f674f5d30afeec4bd7fb348ca3e52d96d182ad44fb82305c2fe3d3634a9591afd82de55559c8ea6", 16).unwrap();

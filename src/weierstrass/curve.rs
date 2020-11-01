@@ -4,24 +4,26 @@ use super::CurveParameters;
 use crate::traits::ZeroAndOne;
 
 pub struct WeierstrassCurve<'a, C: CurveParameters> {
-    pub(crate) a: C::BaseFieldElement,
-    pub(crate) b: C::BaseFieldElement,
     pub(crate) curve_type: CurveType,
+    pub(crate) params: &'a C,
+    pub(crate) b: C::BaseFieldElement,
+    pub(crate) a: C::BaseFieldElement,
     pub(crate) subgroup_order_repr: &'a [u64],
-    pub(crate) params: &'a C
 }
 
 impl<'a, C: CurveParameters> Clone for WeierstrassCurve<'a, C> {
     fn clone(&self) -> Self {
         Self {
-            a: self.a.clone(),
-            b: self.b.clone(),
+            a: self.a,
+            b: self.b,
             curve_type: self.curve_type,
             subgroup_order_repr: self.subgroup_order_repr,
             params: self.params
         }
     }
 }
+
+impl<'a, C: CurveParameters> Copy for WeierstrassCurve<'a, C> {}
 
 impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
     pub(crate) fn new(
@@ -59,7 +61,7 @@ pub struct CurvePoint<'a, C: CurveParameters> {
 }
 
 impl<'a, C: CurveParameters> Clone for CurvePoint<'a, C> {
-    #[inline(always)]
+    #[inline]
     fn clone(&self) -> Self {
         Self {
             curve: &self.curve,
@@ -70,10 +72,12 @@ impl<'a, C: CurveParameters> Clone for CurvePoint<'a, C> {
     }
 }
 
+impl<'a, C: CurveParameters> Copy for CurvePoint<'a, C> {}
+
 pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
     let mut prod = Vec::with_capacity(v.len());
     let one = C::BaseFieldElement::one(v[0].curve.params.params());
-    let mut tmp = one.clone();
+    let mut tmp = one;
     for g in v.iter_mut()
                 // Ignore normalized elements
                 .filter(|g| !g.is_normalized())
@@ -98,9 +102,9 @@ pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
                     .zip(prod.into_iter().rev().skip(1).chain(Some(one.clone())))
     {
         // tmp := tmp * g.z; g.z := tmp * s = 1/z
-        let mut newtmp = tmp.clone();
+        let mut newtmp = tmp;
         newtmp.mul_assign(&g.z);
-        g.z = tmp.clone();
+        g.z = tmp;
         g.z.mul_assign(&s);
         tmp = newtmp;
     }
@@ -109,12 +113,12 @@ pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
     for g in v.iter_mut()
                 .filter(|g| !g.is_normalized())
     {
-        let mut z = g.z.clone(); // 1/z
+        let mut z = g.z; // 1/z
         z.square(); // 1/z^2
         g.x.mul_assign(&z); // x/z^2
         z.mul_assign(&g.z); // 1/z^3
         g.y.mul_assign(&z); // y/z^3
-        g.z = one.clone(); // z = 1
+        g.z = one; // z = 1
     }
 }
 
@@ -135,15 +139,15 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         
         debug_assert!(self.is_normalized());
 
-        let mut rhs = self.y.clone();
+        let mut rhs = self.y;
         rhs.square();
 
-        let mut lhs = self.curve.b.clone();
-        let mut ax = self.x.clone();
+        let mut lhs = self.curve.b;
+        let mut ax = self.x;
         ax.mul_assign(&self.curve.a);
         lhs.add_assign(&ax);
 
-        let mut x_3 = self.x.clone();
+        let mut x_3 = self.x;
         x_3.square();
         x_3.mul_assign(&self.x);
         lhs.add_assign(&x_3);
@@ -189,7 +193,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
         match self.z.inverse() {
             Some(z_inv) => {
-                let mut zinv_powered = z_inv.clone();
+                let mut zinv_powered = z_inv;
                 zinv_powered.square();
 
                 // X/Z^2
@@ -213,7 +217,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
                     C::BaseFieldElement::zero(self.curve.params.params()));
         }
 
-        let mut point = self.clone();
+        let mut point = *self;
 
         if point.is_normalized() {
             (point.x, point.y)
@@ -231,10 +235,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
         let z_inv = self.z.inverse().unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
 
-        let mut x = self.x.clone();
+        let mut x = self.x;
         x.mul_assign(&z_inv);
 
-        let mut y = self.y.clone();
+        let mut y = self.y;
         y.mul_assign(&z_inv);
 
         (x, y)
@@ -242,9 +246,9 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
     
     fn add_assign_generic_impl(&mut self, other: &Self) {
         if self.is_zero() {
-            self.x = other.x.clone();
-            self.y = other.y.clone();
-            self.z = other.z.clone();
+            self.x = other.x;
+            self.y = other.y;
+            self.z = other.z;
             return;
         }
 
@@ -261,28 +265,28 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-add-2007-bl
 
         // Z1Z1 = Z1^2
-        let mut z1z1 = self.z.clone();
+        let mut z1z1 = self.z;
         z1z1.square();
 
         // Z2Z2 = Z2^2
-        let mut z2z2 = other.z.clone();
+        let mut z2z2 = other.z;
         z2z2.square();
 
         // U1 = X1*Z2Z2
-        let mut u1 = self.x.clone();
+        let mut u1 = self.x;
         u1.mul_assign(&z2z2);
 
         // U2 = X2*Z1Z1
-        let mut u2 = other.x.clone();
+        let mut u2 = other.x;
         u2.mul_assign(&z1z1);
 
         // S1 = Y1*Z2*Z2Z2
-        let mut s1 = self.y.clone();
+        let mut s1 = self.y;
         s1.mul_assign(&other.z);
         s1.mul_assign(&z2z2);
 
         // S2 = Y2*Z1*Z1Z1
-        let mut s2 = other.y.clone();
+        let mut s2 = other.y;
         s2.mul_assign(&self.z);
         s2.mul_assign(&z1z1);
 
@@ -301,36 +305,36 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             }
 
             // H = U2-U1
-            let mut h = u2.clone();
+            let mut h = u2;
             h.sub_assign(&u1);
 
             // I = (2*H)^2
-            let mut i = h.clone();
+            let mut i = h;
             i.double();
             i.square();
 
             // J = H*I
-            let mut j = h.clone();
+            let mut j = h;
             j.mul_assign(&i);
 
             // r = 2*(S2-S1)
-            let mut r = s2.clone();
+            let mut r = s2;
             r.sub_assign(&s1);
             r.double();
 
             // V = U1*I
-            let mut v = u1.clone();
+            let mut v = u1;
             v.mul_assign(&i);
 
             // X3 = r^2 - J - 2*V
-            self.x = r.clone();
+            self.x = r;
             self.x.square();
             self.x.sub_assign(&j);
             self.x.sub_assign(&v);
             self.x.sub_assign(&v);
 
             // Y3 = r*(V - X3) - 2*S1*J
-            self.y = v.clone();
+            self.y = v;
             self.y.sub_assign(&self.x);
             self.y.mul_assign(&r);
             s1.mul_assign(&j); // S1 = S1 * J * 2
@@ -352,10 +356,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         }
 
         if self.is_zero() {
-            *self = other.clone();
-            // self.x = other.x.clone();
-            // self.y = other.y.clone();
-            // self.z = other.z.clone();
+            *self = *other;
             return;
         }
 
@@ -368,15 +369,15 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-madd-2007-bl
 
         // Z1Z1 = Z1^2
-        let mut z1z1 = self.z.clone();
+        let mut z1z1 = self.z;
         z1z1.square();
 
         // U2 = X2*Z1Z1
-        let mut u2 = other.x.clone();
+        let mut u2 = other.x;
         u2.mul_assign(&z1z1);
 
         // S2 = Y2*Z1*Z1Z1
-        let mut s2 = other.y.clone();
+        let mut s2 = other.y;
         s2.mul_assign(&self.z);
         s2.mul_assign(&z1z1);
 
@@ -387,33 +388,33 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             // If we're adding -a and a together, self.z becomes zero as H becomes zero.
 
             // H = U2-X1
-            let mut h = u2.clone();
+            let mut h = u2;
             h.sub_assign(&self.x);
 
             // HH = H^2
-            let mut hh = h.clone();
+            let mut hh = h;
             hh.square();
 
             // I = 4*HH
-            let mut i = hh.clone();
+            let mut i = hh;
             i.double();
             i.double();
 
             // J = H*I
-            let mut j = h.clone();
+            let mut j = h;
             j.mul_assign(&i);
 
             // r = 2*(S2-Y1)
-            let mut r = s2.clone();
+            let mut r = s2;
             r.sub_assign(&self.y);
             r.double();
 
             // V = X1*I
-            let mut v = self.x.clone();
+            let mut v = self.x;
             v.mul_assign(&i);
 
             // X3 = r^2 - J - 2*V
-            self.x = r.clone();
+            self.x = r;
             self.x.square();
             self.x.sub_assign(&j);
             self.x.sub_assign(&v);
@@ -422,7 +423,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             // Y3 = r*(V-X3)-2*Y1*J
             j.mul_assign(&self.y); // J = 2*Y1*J
             j.double();
-            self.y = v.clone();
+            self.y = v;
             self.y.sub_assign(&self.x);
             self.y.mul_assign(&r);
             self.y.sub_assign(&j);
@@ -483,19 +484,19 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
         let index_for_positive = (1 << (window_size-2)) as usize;
 
-        let mut two_self = self.clone();
+        let mut two_self = *self;
         two_self.double();
 
-        let mut precomp = self.clone();
-        precomp_table[index_for_positive] = precomp.clone();
-        let mut neg_precomp = precomp.clone();
+        let mut precomp = *self;
+        precomp_table[index_for_positive] = precomp;
+        let mut neg_precomp = precomp;
         neg_precomp.negate();
         precomp_table[index_for_positive-1] = neg_precomp;
 
         for i in 1..index_for_positive {
             precomp.add_assign(&two_self);
-            precomp_table[index_for_positive+i] = precomp.clone();
-            let mut neg_precomp = precomp.clone();
+            precomp_table[index_for_positive+i] = precomp;
+            let mut neg_precomp = precomp;
             neg_precomp.negate();
             precomp_table[index_for_positive-1-i] = neg_precomp;
         }
@@ -559,22 +560,22 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#doubling-dbl-2007-bl
 
         // A = X1^2
-        let mut a = self.x.clone();
+        let mut a = self.x;
         a.square();
 
         // B = Y1^2
-        let mut b = self.y.clone();
+        let mut b = self.y;
         b.square();
 
         // C = B^2 = Y1^4
-        let mut c = b.clone();
+        let mut c = b;
         c.square();
 
-        let mut z_2 = self.z.clone();
+        let mut z_2 = self.z;
         z_2.square();
 
         // D = 2*((X1+B)2-A-C)
-        let mut d = self.x.clone();
+        let mut d = self.x;
         d.add_assign(&b);
         d.square();
         d.sub_assign(&a);
@@ -582,23 +583,23 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         d.double();
 
         // E = 3*A + curve_a*z^4
-        let mut e = a.clone();
+        let mut e = a;
         e.double();
         e.add_assign(&a);
 
         // curve_a*z^4
-        let mut a_z_4 = z_2.clone();
+        let mut a_z_4 = z_2;
         a_z_4.square();
         a_z_4.mul_assign(&self.curve.a);
 
         e.add_assign(&a_z_4);
 
         // T = D^2
-        let mut t = d.clone();
+        let mut t = d;
         t.double();
 
         // F = E^2 - 2*D
-        let mut f = e.clone();
+        let mut f = e;
         f.square();
         f.sub_assign(&t);
 
@@ -632,19 +633,19 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
 
         // A = X1^2
-        let mut a = self.x.clone();
+        let mut a = self.x;
         a.square();
 
         // B = Y1^2
-        let mut b = self.y.clone();
+        let mut b = self.y;
         b.square();
 
         // C = B^2
-        let mut c = b.clone();
+        let mut c = b;
         c.square();
 
         // D = 2*((X1+B)2-A-C)
-        let mut d = self.x.clone();
+        let mut d = self.x;
         d.add_assign(&b);
         d.square();
         d.sub_assign(&a);
@@ -652,12 +653,12 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         d.double();
 
         // E = 3*A
-        let mut e = a.clone();
+        let mut e = a;
         e.double();
         e.add_assign(&a);
 
         // F = E^2
-        let mut f = e.clone();
+        let mut f = e;
         f.square();
 
         // Z3 = 2*Y1*Z1
@@ -705,7 +706,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
     }
 
     fn sub_assign(&mut self, other: &Self) {
-        let mut other_neg = other.clone();
+        let mut other_neg = *other;
         other_neg.negate();
         self.add_assign(&other_neg);
     }

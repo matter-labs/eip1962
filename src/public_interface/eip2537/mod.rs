@@ -1,6 +1,6 @@
 pub struct EIP2537Executor;
 
-use crate::engines::bls12_381::{self, mapping};
+use crate::engines::bls12_381;
 use crate::public_interface::ApiError;
 
 pub const SCALAR_BYTE_LENGTH: usize = 32;
@@ -262,18 +262,34 @@ impl EIP2537Executor {
                     return Err(ApiError::InputError("G2 point is not on curve".to_owned()));
                 }
             }
-            // "fast" subgroup checks using empirical data
-            if g1.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
-                }
-            }
 
-            if g2.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
-                if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
+            if cfg!(feature = "fast_bls12_381_subgroup") {
+                if bls12_381::subgroup_check::is_in_proper_subgroup_g1(&g1) == false {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
+                    }
+                }
+                if bls12_381::subgroup_check::is_in_proper_subgroup_g2(&g2) == false {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
+                    }
+                }
+            } else {
+                // "fast" subgroup checks using empirical data
+                if g1.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
+                    }
+                }
+
+                if g2.wnaf_mul_with_window_size(&bls12_381::BLS12_381_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                    if !crate::features::in_fuzzing_or_gas_metering() {
+                        return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
+                    }
                 }
             }
+        
+
 
             if !g1.is_zero() && !g2.is_zero() {
                 g1_points.push(g1);
@@ -314,7 +330,7 @@ impl EIP2537Executor {
             return Err(ApiError::InputError("invalid input length for Fp to G1 to curve mapping".to_owned()));
         }
         let (fe, _) = decode_fp::decode_fp_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_FIELD)?;
-        let point = mapping::fp_to_g1(&fe)?;
+        let point = bls12_381::mapping::fp_to_g1(&fe)?;
 
         let mut output = [0u8; SERIALIZED_G1_POINT_BYTE_LENGTH];
         let as_vec = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &point)?;
@@ -329,7 +345,7 @@ impl EIP2537Executor {
             return Err(ApiError::InputError("invalid input length for Fp2 to G2 to curve mapping".to_owned()));
         }
         let (fe, _) = decode_fp::decode_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_381::BLS12_381_EXTENSION_2_FIELD)?;
-        let point = mapping::fp2_to_g2(&fe)?;
+        let point = bls12_381::mapping::fp2_to_g2(&fe)?;
 
         let mut output = [0u8; SERIALIZED_G2_POINT_BYTE_LENGTH];
         let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point)?;
@@ -357,14 +373,15 @@ mod test {
     use crate::fp::Fp;
     use crate::traits::{ZeroAndOne, FieldElement};
     use crate::square_root::*;
+    use crate::engines::bls12_381::*;
 
-    type Scalar = crate::integers::MaxGroupSizeUint;
+    // type Scalar = crate::integers::MaxGroupSizeUint;
 
-    type FpElement = crate::fp::Fp<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>;
-    type Fp2Element = crate::extension_towers::fp2::Fp2<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>;
+    // type FpElement = crate::fp::Fp<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>;
+    // type Fp2Element = crate::extension_towers::fp2::Fp2<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>;
 
-    type G1 = crate::weierstrass::curve::CurvePoint<'static, crate::weierstrass::CurveOverFpParameters<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>>;
-    type G2 = crate::weierstrass::curve::CurvePoint<'static, crate::weierstrass::CurveOverFp2Parameters<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>>;
+    // type G1 = crate::weierstrass::curve::CurvePoint<'static, crate::weierstrass::CurveOverFpParameters<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>>;
+    // type G2 = crate::weierstrass::curve::CurvePoint<'static, crate::weierstrass::CurveOverFp2Parameters<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>>;
 
     fn make_random_fp_with_encoding<R: Rng>(rng: &mut R, modulus: &BigUint) -> (FpElement, Vec<u8>) {
         let mut buff = vec![0u8; 48*3];
@@ -1042,6 +1059,89 @@ mod test {
         }
 
         pb.finish_with_message("Completed");
+    }
+
+    #[test]
+    fn calculate_endo_params_for_g1() {
+        let z_squared_minus_one = [0x00000000ffffffff, 0xac45a4010001a402];
+
+        let g1 = BLS12_381_G1_GENERATOR;
+        let x = g1.x;
+        let y = g1.y;
+
+        let mut endo_result = g1.mul(&z_squared_minus_one);
+        endo_result.normalize();
+
+        assert_eq!(endo_result.y, y);
+
+        let mut beta = endo_result.x;
+        let x_inv = x.inverse().unwrap();
+        beta.mul_assign(&x_inv);
+
+        for el in beta.repr.as_ref() {
+            println!("{:#x}", el);
+        }
+    }
+
+    #[test]
+    fn test_fast_subgroup_check_g1() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        for _ in 0..10000 {
+            let ((mut g1, _), _) = make_random_g1_and_negated_with_encoding(&mut rng);
+            g1.normalize();
+            let is_in_subgroup = subgroup_check::is_in_proper_subgroup_g1(&g1);
+            assert!(is_in_subgroup);
+            let mut g1 = make_g1_in_invalid_subgroup(&mut rng);
+            g1.normalize();
+            let is_in_subgroup = subgroup_check::is_in_proper_subgroup_g1(&g1);
+            assert!(!is_in_subgroup);
+        }
+    }
+
+    #[test]
+    fn test_fp6_mul_by_0() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+        for _ in 0..1000 {
+            let ((mut g2_0, _), _) = make_random_g2_and_negated_with_encoding(&mut rng);
+            g2_0.normalize();
+            let ((mut g2_1, _), _) = make_random_g2_and_negated_with_encoding(&mut rng);
+            g2_1.normalize();
+
+            let mut fp6 = Fp6Element::zero(&BLS12_381_EXTENSION_6_FIELD);
+            fp6.c0 = g2_0.x;
+            fp6.c1 = g2_0.y;
+            fp6.c2 = g2_1.x;
+
+            let fp2 = g2_1.y;
+
+            let mut fp6_2 = Fp6Element::zero(&BLS12_381_EXTENSION_6_FIELD);
+            fp6_2.c0 = fp2;
+
+            let mut a = fp6;
+            a.mul_by_0(&fp2);
+
+            let mut b = fp6;
+            b.mul_assign(&fp6_2);
+
+            assert_eq!(a, b);
+        }
+    }
+
+    #[test]
+    fn test_fast_subgroup_check_g2() {
+        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        for _ in 0..1000 {
+            let ((mut g2, _), _) = make_random_g2_and_negated_with_encoding(&mut rng);
+            g2.normalize();
+            let is_in_subgroup = subgroup_check::is_in_proper_subgroup_g2(&g2);
+            assert!(is_in_subgroup);
+            let mut g2 = make_g2_in_invalid_subgroup(&mut rng);
+            g2.normalize();
+            let is_in_subgroup = subgroup_check::is_in_proper_subgroup_g2(&g2);
+            assert!(!is_in_subgroup);
+        }
     }
 
     #[test]

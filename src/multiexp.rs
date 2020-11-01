@@ -24,7 +24,7 @@ pub(crate) fn peppinger<'a, C: CurveParameters>
     let mut buckets = Vec::with_capacity((1 << c) - 1);
 
     while cur <= num_bits {
-        let mut acc = zero_point.clone();
+        let mut acc = zero_point;
 
         buckets.truncate(0);
         buckets.resize((1 << c) - 1, zero_point.clone());
@@ -41,7 +41,7 @@ pub(crate) fn peppinger<'a, C: CurveParameters>
             // right_shift_representation(s, c as u64);
         }
 
-        let mut running_sum = zero_point.clone();
+        let mut running_sum = zero_point;
         for exp in buckets.iter().rev() {
             running_sum.add_assign(exp);
             acc.add_assign(&running_sum);
@@ -52,7 +52,7 @@ pub(crate) fn peppinger<'a, C: CurveParameters>
         cur += c;
     }
 
-    let mut acc = zero_point.clone();
+    let mut acc = zero_point;
 
     for window in windows.into_iter().rev() {
         for _ in 0..c {

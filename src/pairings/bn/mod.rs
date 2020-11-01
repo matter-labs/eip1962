@@ -124,9 +124,9 @@ impl<
         p: & CurvePoint<'a, CB>,
     ) {
         debug_assert!(p.is_normalized());
-        let mut c0 = coeffs.0.clone();
-        let mut c1 = coeffs.1.clone();
-        let mut c2 = coeffs.2.clone();
+        let mut c0 = coeffs.0;
+        let mut c1 = coeffs.1;
+        let mut c2 = coeffs.2;
 
         match self.twist_type {
             TwistType::M => {
@@ -157,22 +157,22 @@ impl<
         // Use adapted formulas from ZEXE instead
 
         // X*Y/2
-        let mut a = r.x.clone();
+        let mut a = r.x;
         a.mul_assign(&r.y);
         a.mul_by_fp(two_inv);
         
         // Y^2
-        let mut b = r.y.clone();
+        let mut b = r.y;
         b.square();
 
         // Z^2
-        let mut c = r.z.clone();
+        let mut c = r.z;
         c.square();
 
-        let mut e = self.curve_twist.b.clone();
+        let mut e = self.curve_twist.b;
 
         // 3*Z^2
-        let mut t0 = c.clone();
+        let mut t0 = c;
         t0.double();
         t0.add_assign(&c);
 
@@ -180,46 +180,46 @@ impl<
         e.mul_assign(&t0);
 
         // 9*b*Z^2
-        let mut f = e.clone();
+        let mut f = e;
         f.double();
         f.add_assign(&e);
 
         // (Y^2 + 9*b*Z^2)/2
-        let mut g = b.clone();
+        let mut g = b;
         g.add_assign(&f);
         g.mul_by_fp(two_inv);
         
         // (Y + Z)^2
-        let mut h = r.y.clone();
+        let mut h = r.y;
         h.add_assign(&r.z);
         h.square();
 
         // (Y^2 + Z^2)
-        let mut t1 = b.clone();
+        let mut t1 = b;
         t1.add_assign(&c);
 
         // 2*Y*Z
         h.sub_assign(&t1);
 
         // 3*b*Z^2 - Y^2
-        let mut i = e.clone();
+        let mut i = e;
         i.sub_assign(&b);
 
         // X^2
-        let mut j = r.x.clone();
+        let mut j = r.x;
         j.square();
 
         // (3*b*Z^2)^2
-        let mut e_square = e.clone();
+        let mut e_square = e;
         e_square.square();
 
         // X = (Y^2 - 9*b*Z^2)*X*Y/2
-        r.x = b.clone();
+        r.x = b;
         r.x.sub_assign(&f);
         r.x.mul_assign(&a);
 
         // 27*b^2*Z^4
-        let mut e_square_by_3 = e_square.clone();
+        let mut e_square_by_3 = e_square;
         e_square_by_3.double();
         e_square_by_3.add_assign(&e_square);
 
@@ -229,11 +229,11 @@ impl<
         r.y.sub_assign(&e_square_by_3);
 
         // Z = 2*Y^3*Z
-        r.z = b.clone();
+        r.z = b;
         r.z.mul_assign(&h);
 
         // 3*X^2
-        let mut j_by_three = j.clone();
+        let mut j_by_three = j;
         j_by_three.double();
         j_by_three.add_assign(&j);
 
@@ -261,49 +261,49 @@ impl<
         // use adapted zexe formulas too instead of ones from pairing crate
         // Capitals are coors of R (homogenious), normals are coordinates of Q (affine)
         // Y - y*Z
-        let mut theta = q.y.clone();
+        let mut theta = q.y;
         theta.mul_assign(&r.z);
         theta.negate();
         theta.add_assign(&r.y);
 
         // X - x*Z
-        let mut lambda = q.x.clone();
+        let mut lambda = q.x;
         lambda.mul_assign(&r.z);
         lambda.negate();
         lambda.add_assign(&r.x);
 
         // Theta^2
-        let mut c = theta.clone();
+        let mut c = theta;
         c.square();
         
         // Lambda^2
-        let mut d = lambda.clone();
+        let mut d = lambda;
         d.square();
 
         // Lambda^3
-        let mut e = lambda.clone();
+        let mut e = lambda;
         e.mul_assign(&d);
 
         // Theta^2 * Z
-        let mut f = r.z.clone();
+        let mut f = r.z;
         f.mul_assign(&c);
 
         // Lambda^2 * X
-        let mut g = r.x.clone();
+        let mut g = r.x;
         g.mul_assign(&d);
 
         // Lambda^3 + Theta^2 * Z - 2*Lambda^2 * X
-        let mut h = g.clone();
+        let mut h = g;
         h.double();
         h.negate();
         h.add_assign(&e);
         h.add_assign(&f);
         
-        r.x = lambda.clone();
+        r.x = lambda;
         r.x.mul_assign(&h);
 
         // (Lambda^2 * X - H)*Theta
-        let mut t0 = g.clone();
+        let mut t0 = g;
         t0.sub_assign(&h);
         t0.mul_assign(&theta);
 
@@ -316,11 +316,11 @@ impl<
         r.z.mul_assign(&e);
 
         // Lambda*y
-        let mut t1 = lambda.clone();
+        let mut t1 = lambda;
         t1.mul_assign(&q.y);
         
         // Theta*x - Lambda*y
-        let mut j = theta.clone();
+        let mut j = theta;
         j.mul_assign(&q.x);
         j.sub_assign(&t1);
 
@@ -363,7 +363,7 @@ impl<
             r.negate();
         }
 
-        let mut q = twist_point.clone();
+        let mut q = *twist_point;
 
         q.x.c1.negate();
         q.x.mul_assign(&self.fp6_extension.frobenius_coeffs_c1[1]);
@@ -373,7 +373,7 @@ impl<
 
         ell_coeffs.push(self.addition_step(&mut r, &q));
 
-        let mut minusq2 = twist_point.clone();
+        let mut minusq2 = *twist_point;
         minusq2.x.mul_assign(&self.fp6_extension.frobenius_coeffs_c1[2]);
 
         ell_coeffs.push(self.addition_step(&mut r, &minusq2));
@@ -394,7 +394,7 @@ impl<
 
         let mut ell_coeffs = Vec::with_capacity(self.six_u_plus_2.len() * 64 * 2 + 2);
 
-        let mut twist_point_negated = twist_point.clone();
+        let mut twist_point_negated = *twist_point;
         twist_point_negated.negate();
 
         let mut r = CurvePoint::<CTW>::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
@@ -423,7 +423,7 @@ impl<
             r.negate();
         }
 
-        let mut q = twist_point.clone();
+        let mut q = *twist_point;
 
         q.x.c1.negate();
         q.x.mul_assign(&self.fp6_extension.frobenius_coeffs_c1[1]);
@@ -433,7 +433,7 @@ impl<
 
         ell_coeffs.push(self.addition_step(&mut r, &q));
 
-        let mut minusq2 = twist_point.clone();
+        let mut minusq2 = *twist_point;
         minusq2.x.mul_assign(&self.fp6_extension.frobenius_coeffs_c1[2]);
 
         ell_coeffs.push(self.addition_step(&mut r, &minusq2));
@@ -575,66 +575,66 @@ impl<
         // https://eprint.iacr.org/2012/232.pdf
 
         // f1 = r.conjugate() = f^(p^6)
-        let mut f1 = f.clone();
+        let mut f1 = *f;
         // f1.conjugate();
         f1.frobenius_map(6);
 
         match f.inverse() {
             Some(mut f2) => {
-                let mut r = f1.clone();
+                let mut r = f1;
                 r.mul_assign(&f2);
 
-                f2 = r.clone();
+                f2 = r;
 
                 r.frobenius_map(2);
                 r.mul_assign(&f2);
 
-                let mut fp = r.clone();
+                let mut fp = r;
                 fp.frobenius_map(1);
 
-	            let mut fp2 = r.clone();
+	            let mut fp2 = r;
                 fp2.frobenius_map(2);
-                let mut fp3 = fp2.clone();
+                let mut fp3 = fp2;
                 fp3.frobenius_map(1);
 
-                let mut fu = r.clone();
+                let mut fu = r;
                 self.exp_by_x(&mut fu);
 
-                let mut fu2 = fu.clone();
+                let mut fu2 = fu;
                 self.exp_by_x(&mut fu2);
 
-                let mut fu3 = fu2.clone();
+                let mut fu3 = fu2;
                 self.exp_by_x(&mut fu3);
 
-                let mut y3 = fu.clone();
+                let mut y3 = fu;
                 y3.frobenius_map(1);
 
-                let mut fu2p = fu2.clone();
+                let mut fu2p = fu2;
                 fu2p.frobenius_map(1);
 
-                let mut fu3p = fu3.clone();
+                let mut fu3p = fu3;
                 fu3p.frobenius_map(1);
 
-                let mut y2 = fu2.clone();
+                let mut y2 = fu2;
                 y2.frobenius_map(2);
 
-                let mut y0 = fp.clone();
+                let mut y0 = fp;
                 y0.mul_assign(&fp2);
                 y0.mul_assign(&fp3);
 
-                let mut y1 = r.clone();
+                let mut y1 = r;
                 y1.conjugate();
 
-                let mut y5 = fu2.clone();
+                let mut y5 = fu2;
                 y5.conjugate();
 
                 y3.conjugate();
 
-                let mut y4 = fu.clone();
+                let mut y4 = fu;
                 y4.mul_assign(&fu2p);
                 y4.conjugate();
 
-                let mut y6 = fu3.clone();
+                let mut y6 = fu3;
                 y6.mul_assign(&fu3p);
                 y6.conjugate();
 
@@ -642,7 +642,7 @@ impl<
                 y6.mul_assign(&y4);
                 y6.mul_assign(&y5);
 
-                let mut t1 = y3.clone();
+                let mut t1 = y3;
                 t1.mul_assign(&y5);
                 t1.mul_assign(&y6);
 
@@ -652,7 +652,7 @@ impl<
                 t1.mul_assign(&y6);
                 t1.square();
 
-                let mut t0 = t1.clone();
+                let mut t0 = t1;
                 t0.mul_assign(&y1);
 
                 t1.mul_assign(&y0);
@@ -756,8 +756,8 @@ mod tests {
         let mut fp2_non_residue = Fp2::zero(&extension_2);
         let fp_9_repr = U256Repr::from(9u64);
         let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
-        fp2_non_residue.c0 = fp_9.clone();
-        fp2_non_residue.c1 = one.clone();
+        fp2_non_residue.c0 = fp_9;
+        fp2_non_residue.c1 = one;
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
         extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
@@ -881,8 +881,8 @@ mod tests {
         let mut fp2_non_residue = Fp2::zero(&extension_2);
         let fp_9_repr = U256Repr::from(9u64);
         let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
-        fp2_non_residue.c0 = fp_9.clone();
-        fp2_non_residue.c1 = one.clone();
+        fp2_non_residue.c0 = fp_9;
+        fp2_non_residue.c1 = one;
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
         extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");

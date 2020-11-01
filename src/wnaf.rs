@@ -6,15 +6,15 @@ pub(crate) fn calculate_wnaf_table<F: FieldElement>(base: &F, window: usize) -> 
     let mut table: Vec<F> = vec![];
     table.reserve(1 << (window - 1));
 
-    let mut acc = base.clone();
+    let mut acc = *base;
 
-    let mut double = acc.clone();
+    let mut double = acc;
     double.double();
 
     // pushed 1*G, 3*G, 5*G, etc
 
     for _ in 0..(1 << (window - 1)) {
-        let to_push = acc.clone();
+        let to_push = acc;
         table.push(to_push);
         acc.add_assign(&double);
     }

@@ -33,16 +33,16 @@ pub(crate) fn simplified_swu_fp<
     // we do NOT use constant time operations here
 
     // 1.  tv1 = Z * u^2
-    let mut tv1 = u.clone();
+    let mut tv1 = *u;
     tv1.square();
     tv1.mul_assign(&params.z);
 
     // 2.  tv2 = tv1^2
-    let mut tv2 = tv1.clone();
+    let mut tv2 = tv1;
     tv2.square();
 
     // 3.   x1 = tv1 + tv2
-    let mut x1 = tv1.clone();
+    let mut x1 = tv1;
     x1.add_assign(&tv2);
 
     // 4.   x1 = inv0(x1)
@@ -56,14 +56,14 @@ pub(crate) fn simplified_swu_fp<
 
     // 7.   x1 = CMOV(x1, c2, e1)    # If (tv1 + tv2) == 0, set x1 = -1 / Z
     if e1 {
-        x1 = params.minus_z_inv.clone();
+        x1 = params.minus_z_inv;
     }
 
     // 8.   x1 = x1 * c1      # x1 = (-B / A) * (1 + (1 / (Z^2 * u^4 + Z * u^2)))
     x1.mul_assign(&params.minus_b_by_a);
 
     // 9.  gx1 = x1^2
-    let mut gx1 = x1.clone();
+    let mut gx1 = x1;
     gx1.square();
 
     // 10. gx1 = gx1 + A
@@ -76,14 +76,14 @@ pub(crate) fn simplified_swu_fp<
     gx1.add_assign(&curve.b);
 
     // 13.  x2 = tv1 * x1            # x2 = Z * u^2 * x1
-    let mut x2 = tv1.clone();
+    let mut x2 = tv1;
     x2.mul_assign(&x1);
 
     // 14. tv2 = tv1 * tv2
     tv2.mul_assign(&tv1);
 
     // 15. gx2 = gx1 * tv2           # gx2 = (Z * u^2)^3 * gx1
-    let mut gx2 = gx1.clone();
+    let mut gx2 = gx1;
     gx2.mul_assign(&tv2);
 
     // 16.  e2 = is_square(gx1)
@@ -152,16 +152,16 @@ pub(crate) fn simplified_swu_fp2<
     // we do NOT use constant time operations here
 
     // 1.  tv1 = Z * u^2
-    let mut tv1 = u.clone();
+    let mut tv1 = *u;
     tv1.square();
     tv1.mul_assign(&params.z);
 
     // 2.  tv2 = tv1^2
-    let mut tv2 = tv1.clone();
+    let mut tv2 = tv1;
     tv2.square();
 
     // 3.   x1 = tv1 + tv2
-    let mut x1 = tv1.clone();
+    let mut x1 = tv1;
     x1.add_assign(&tv2);
 
     // 4.   x1 = inv0(x1)
@@ -175,14 +175,14 @@ pub(crate) fn simplified_swu_fp2<
 
     // 7.   x1 = CMOV(x1, c2, e1)    # If (tv1 + tv2) == 0, set x1 = -1 / Z
     if e1 {
-        x1 = params.minus_z_inv.clone();
+        x1 = params.minus_z_inv;
     }
 
     // 8.   x1 = x1 * c1      # x1 = (-B / A) * (1 + (1 / (Z^2 * u^4 + Z * u^2)))
     x1.mul_assign(&params.minus_b_by_a);
 
     // 9.  gx1 = x1^2
-    let mut gx1 = x1.clone();
+    let mut gx1 = x1;
     gx1.square();
 
     // 10. gx1 = gx1 + A
@@ -195,14 +195,14 @@ pub(crate) fn simplified_swu_fp2<
     gx1.add_assign(&curve.b);
 
     // 13.  x2 = tv1 * x1            # x2 = Z * u^2 * x1
-    let mut x2 = tv1.clone();
+    let mut x2 = tv1;
     x2.mul_assign(&x1);
 
     // 14. tv2 = tv1 * tv2
     tv2.mul_assign(&tv1);
 
     // 15. gx2 = gx1 * tv2           # gx2 = (Z * u^2)^3 * gx1
-    let mut gx2 = gx1.clone();
+    let mut gx2 = gx1;
     gx2.mul_assign(&tv2);
 
     // 16.  e2 = is_square(gx1)

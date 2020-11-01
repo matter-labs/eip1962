@@ -179,13 +179,13 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let fp2_non_residue_inv = fp2_non_residue.inverse().ok_or(ApiError::UnexpectedZero("Fp2 non-residue must be invertible".to_owned()))?;
         let b_fp2 = match twist_type {
             TwistType::D => {
-                let mut b_fp2 = fp2_non_residue_inv.clone();
+                let mut b_fp2 = fp2_non_residue_inv;
                 b_fp2.mul_by_fp(&b_fp);
 
                 b_fp2
             },
             TwistType::M => {
-                let mut b_fp2 = fp2_non_residue.clone();
+                let mut b_fp2 = fp2_non_residue;
                 b_fp2.mul_by_fp(&b_fp);
 
                 b_fp2
@@ -394,13 +394,13 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
 
         let b_fp2 = match twist_type {
             TwistType::D => {
-                let mut b_fp2 = fp2_non_residue_inv.clone();
+                let mut b_fp2 = fp2_non_residue_inv;
                 b_fp2.mul_by_fp(&b_fp);
 
                 b_fp2
             },
             TwistType::M => {
-                let mut b_fp2 = fp2_non_residue.clone();
+                let mut b_fp2 = fp2_non_residue;
                 b_fp2.mul_by_fp(&b_fp);
 
                 b_fp2
@@ -602,18 +602,18 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let one = Fp::one(&base_field);
 
         let mut twist = Fp3::zero(&extension_3);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
+        let mut a_fp3 = twist_squared;
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
+        let mut b_fp3 = twist_cubed;
         b_fp3.mul_by_fp(&b_fp);
 
         let fp3_params = CurveOverFp3Parameters::new(&extension_3);
@@ -805,18 +805,18 @@ impl<FE: ElementRepr>PairingApiImplementation<FE> {
         let one = Fp::one(&base_field);
 
         let mut twist = Fp2::zero(&extension_2);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp2 = twist_squared.clone();
+        let mut a_fp2 = twist_squared;
         a_fp2.mul_by_fp(&a_fp);
 
-        let mut b_fp2 = twist_cubed.clone();
+        let mut b_fp2 = twist_cubed;
         b_fp2.mul_by_fp(&b_fp);
 
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);

@@ -5,6 +5,7 @@ pub trait FieldElement:
     Sized 
     + Eq 
     + Clone 
+    + Copy
     + Send 
     + Sync 
     + fmt::Debug 

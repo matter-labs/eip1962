@@ -164,10 +164,10 @@ impl<
 
     fn precompute_g1(&self, g1_point: &CurvePoint<'a, CB>) -> PrecomputedG1<'a, FE, F> {
         // not asserting normalization, it will be asserted in the loop
-        let mut x_twist = self.twist.clone();
+        let mut x_twist = self.twist;
         x_twist.mul_by_fp(&g1_point.x);
 
-        let mut y_twist = self.twist.clone();
+        let mut y_twist = self.twist;
         y_twist.mul_by_fp(&g1_point.y);
 
         PrecomputedG1 {
@@ -179,77 +179,77 @@ impl<
     }
 
     fn doubling_step(&self, r: &mut ExtendedCoordinates<'a, FE, F>) -> AteDoubleCoefficients<'a, FE, F> {
-        let mut a = r.t.clone();
+        let mut a = r.t;
         a.square();
-        let mut b = r.x.clone();
+        let mut b = r.x;
         b.square();
-        let mut c = r.y.clone();
+        let mut c = r.y;
         c.square();
-        let mut d = c.clone();
+        let mut d = c;
         d.square();
 
-        let mut e = r.x.clone();
+        let mut e = r.x;
         e.add_assign(&c);
         e.square();
         e.sub_assign(&b);
         e.sub_assign(&d);
 
-        let mut f = self.curve_twist.a.clone();
+        let mut f = self.curve_twist.a;
         f.mul_assign(&a);
         f.add_assign(&b);
         f.add_assign(&b);
         f.add_assign(&b);
 
-        let mut g = f.clone();
+        let mut g = f;
         g.square();
 
-        let mut d_eight = d.clone();
+        let mut d_eight = d;
         d_eight.double();
         d_eight.double();
         d_eight.double();
 
-        let mut t0 = e.clone();
+        let mut t0 = e;
         t0.double();
         t0.double();
 
-        let mut x = g.clone();
+        let mut x = g;
         x.sub_assign(&t0);
 
-        let mut y = e.clone();
+        let mut y = e;
         y.double();
         y.sub_assign(&x);
         y.mul_assign(&f);
         y.sub_assign(&d_eight);
 
-        let mut t0 = r.z.clone();
+        let mut t0 = r.z;
         t0.square();
 
-        let mut z = r.y.clone();
+        let mut z = r.y;
         z.add_assign(&r.z);
         z.square();
         z.sub_assign(&c);
         z.sub_assign(&t0);
 
-        let mut t = z.clone();
+        let mut t = z;
         t.square();
 
-        let mut c_h = z.clone();
+        let mut c_h = z;
         c_h.add_assign(&r.t);
         c_h.square();
         c_h.sub_assign(&t);
         c_h.sub_assign(&a);
 
-        let mut c_4c = c.clone();
+        let mut c_4c = c;
         c_4c.double();
         c_4c.double();
 
-        let mut c_j = f.clone();
+        let mut c_j = f;
         c_j.add_assign(&r.t);
         c_j.square();
         c_j.sub_assign(&g);
         c_j.sub_assign(&a);
 
-        let mut c_l = f.clone();
+        let mut c_l = f;
         c_l.add_assign(&r.x);
         c_l.square();
         c_l.sub_assign(&g);
@@ -270,60 +270,60 @@ impl<
         y: &Fp3<'a, FE, F>,
         r: &mut ExtendedCoordinates<'a, FE, F>) 
     -> AteAdditionCoefficients<'a, FE, F> {
-        let mut a = y.clone();
+        let mut a = *y;
         a.square();
-        let mut b = r.t.clone();
+        let mut b = r.t;
         b.mul_assign(&x);
 
-        let mut d = r.z.clone();
+        let mut d = r.z;
         d.add_assign(&y);
         d.square();
         d.sub_assign(&a);
         d.sub_assign(&r.t);
         d.mul_assign(&r.t);
 
-        let mut h = b.clone();
+        let mut h = b;
         h.sub_assign(&r.x);
 
-        let mut i = h.clone();
+        let mut i = h;
         i.square();
 
-        let mut e = i.clone();
+        let mut e = i;
         e.double();
         e.double();
 
-        let mut j = h.clone();
+        let mut j = h;
         j.mul_assign(&e);
 
-        let mut v = r.x.clone();
+        let mut v = r.x;
         v.mul_assign(&e);
 
-        let mut l1 = d.clone();
+        let mut l1 = d;
         l1.sub_assign(&r.y);
         l1.sub_assign(&r.y);
 
-        let mut x = l1.clone();
+        let mut x = l1;
         x.square();
         x.sub_assign(&j);
         x.sub_assign(&v);
         x.sub_assign(&v);
 
-        let mut t0 = r.y.clone();
+        let mut t0 = r.y;
         t0.double();
         t0.mul_assign(&j);
 
-        let mut y = v.clone();
+        let mut y = v;
         y.sub_assign(&x);
         y.mul_assign(&l1);
         y.sub_assign(&t0);
 
-        let mut z = r.z.clone();
+        let mut z = r.z;
         z.add_assign(&h);
         z.square();
         z.sub_assign(&r.t);
         z.sub_assign(&i);
 
-        let mut t = z.clone();
+        let mut t = z;
         t.square();
 
         let coeff = AteAdditionCoefficients { c_l1: l1, c_rz: z.clone() };
@@ -340,10 +340,10 @@ impl<
     fn precompute_g2(&self, g2_point: &CurvePoint<'a, CTW>, twist_inv: &Fp3<'a, FE, F>) -> Result<PrecomputedG2<'a, FE, F>, ()> {
         // not asserting normalization, it will be asserted in the loop
         // precompute addition and doubling coefficients
-        let mut x_over_twist = g2_point.x.clone();
+        let mut x_over_twist = g2_point.x;
         x_over_twist.mul_assign(&twist_inv);
 
-        let mut y_over_twist = g2_point.y.clone();
+        let mut y_over_twist = g2_point.y;
         y_over_twist.mul_assign(&twist_inv);
 
         let mut g2_p = PrecomputedG2 {
@@ -374,9 +374,9 @@ impl<
 
         if self.x_is_negative {
             let rz_inv = r.z.inverse().ok_or(())?;
-            let mut rz2_inv = rz_inv.clone();
+            let mut rz2_inv = rz_inv;
             rz2_inv.square();
-            let mut rz3_inv = rz_inv.clone();
+            let mut rz3_inv = rz_inv;
             rz3_inv.mul_assign(&rz2_inv);
 
             let mut minus_r_affine_x = rz2_inv;
@@ -410,7 +410,7 @@ impl<
         let p = self.precompute_g1(&point);
         let q = self.precompute_g2(&twist_point, &twist_inv)?;
         let mut l1_coeff = Fp3::zero(&self.fp3_extension);
-        l1_coeff.c0 = p.x.clone();
+        l1_coeff.c0 = p.x;
         l1_coeff.sub_assign(&q.x_over_twist);
 
         let mut f = Fp6::one(self.fp6_extension);
@@ -426,13 +426,13 @@ impl<
 
             let mut g_rr_at_p = Fp6::zero(&self.fp6_extension);
 
-            let mut t0 = dc.c_j.clone();
+            let mut t0 = dc.c_j;
             t0.mul_assign(&p.x_by_twist);
             t0.negate();
             t0.add_assign(&dc.c_l);
             t0.sub_assign(&dc.c_4c);
 
-            let mut t1 = dc.c_h.clone();
+            let mut t1 = dc.c_h;
             t1.mul_assign(&p.y_by_twist);
 
             g_rr_at_p.c0 = t0;
@@ -447,13 +447,13 @@ impl<
 
                 let mut g_rq_at_p = Fp6::zero(&self.fp6_extension);
 
-                let mut t0 = ac.c_rz.clone();
+                let mut t0 = ac.c_rz;
                 t0.mul_assign(&p.y_by_twist);
 
-                let mut t = l1_coeff.clone();
+                let mut t = l1_coeff;
                 t.mul_assign(&ac.c_l1);
 
-                let mut t1 = q.y_over_twist.clone();
+                let mut t1 = q.y_over_twist;
                 t1.mul_assign(&ac.c_rz);
                 t1.add_assign(&t);
                 t1.negate();
@@ -470,13 +470,13 @@ impl<
 
             let mut g_rnegr_at_p = Fp6::zero(&self.fp6_extension);
 
-            let mut t0 = ac.c_rz.clone();
+            let mut t0 = ac.c_rz;
             t0.mul_assign(&p.y_by_twist);
 
-            let mut t = l1_coeff.clone();
+            let mut t = l1_coeff;
             t.mul_assign(&ac.c_l1);
 
-            let mut t1 = q.y_over_twist.clone();
+            let mut t1 = q.y_over_twist;
             t1.mul_assign(&ac.c_rz);
             t1.add_assign(&t);
             t1.negate();
@@ -507,13 +507,13 @@ impl<
         // (q^3-1)*(q+1)
 
         // elt_q3 = elt^(q^3)
-        let mut elt_q3 = elt.clone();
+        let mut elt_q3 = *elt;
         elt_q3.frobenius_map(3);
         // elt_q3_over_elt = elt^(q^3-1)
         let mut elt_q3_over_elt = elt_q3;
         elt_q3_over_elt.mul_assign(&elt_inv);
         // alpha = elt^((q^3-1) * q)
-        let mut alpha = elt_q3_over_elt.clone();
+        let mut alpha = elt_q3_over_elt;
         alpha.frobenius_map(1);
         // beta = elt^((q^3-1)*(q+1)
         alpha.mul_assign(&elt_q3_over_elt);
@@ -522,7 +522,7 @@ impl<
     }
 
     fn final_exponentiation_part_two(&self, elt: &Fp6<'a, FE, F>, elt_inv: &Fp6<'a, FE, F>) -> Fp6<'a, FE, F> {
-        let mut elt_q = elt.clone();
+        let mut elt_q = *elt;
         elt_q.frobenius_map(1);
 
         let mut w1_part = elt_q.cyclotomic_exp(&self.exp_w1);
@@ -631,18 +631,18 @@ mod tests {
         let a_fp = Fp::from_repr(&base_field, U320Repr::from(11)).unwrap();
 
         let mut twist = Fp3::zero(&extension_3);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
+        let mut a_fp3 = twist_squared;
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
+        let mut b_fp3 = twist_cubed;
         b_fp3.mul_by_fp(&b_fp);
 
         // let scalar_field = new_field::<U320Repr>("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081", 10).unwrap();
@@ -752,18 +752,18 @@ mod tests {
         let a_fp = Fp::from_repr(&base_field, U832Repr::from(5)).unwrap();
 
         let mut twist = Fp3::zero(&extension_3);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
+        let mut a_fp3 = twist_squared;
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
+        let mut b_fp3 = twist_cubed;
         b_fp3.mul_by_fp(&b_fp);
 
         // let scalar_field = new_field::<U832Repr>("22369874298875696930346742206501054934775599465297184582183496627646774052458024540232479018147881220178054575403841904557897715222633333372134756426301062487682326574958588001132586331462553235407484089304633076250782629492557320825577", 10).unwrap();
@@ -895,18 +895,18 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
 
         let mut twist = Fp3::zero(&extension_3);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
+        let mut a_fp3 = twist_squared;
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
+        let mut b_fp3 = twist_cubed;
         b_fp3.mul_by_fp(&b_fp);
 
         let group_order = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
@@ -985,15 +985,15 @@ mod tests {
 
         let engine = super::MNT6Instance::from_params(engine);
 
-        let mut p0 = p.clone();
+        let mut p0 = p;
         p0.double();
         p0.negate();
         p0.normalize();
 
-        let q0 = q.clone();
+        let q0 = q;
 
-        let p1 = p.clone();
-        let mut q1 = q.clone();
+        let p1 = p;
+        let mut q1 = q;
         q1.double();
         q1.normalize();
 
@@ -1047,18 +1047,18 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
 
         let mut twist = Fp3::zero(&extension_3);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
+        let mut a_fp3 = twist_squared;
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
+        let mut b_fp3 = twist_cubed;
         b_fp3.mul_by_fp(&b_fp);
 
         let group_order = BigUint::from_str_radix("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137", 10).unwrap();
@@ -1148,15 +1148,15 @@ mod tests {
 
         let engine = super::MNT6Instance::from_params(engine);
 
-        let mut p0 = p.clone();
+        let mut p0 = p;
         p0.double();
         p0.negate();
         p0.normalize();
 
-        let q0 = q.clone();
+        let q0 = q;
 
-        let p1 = p.clone();
-        let mut q1 = q.clone();
+        let p1 = p;
+        let mut q1 = q;
         q1.double();
         q1.normalize();
 
@@ -1210,18 +1210,18 @@ mod tests {
         let a_fp = Fp::zero(&base_field);
 
         let mut twist = Fp3::zero(&extension_3);
-        twist.c1 = one.clone();
+        twist.c1 = one;
 
-        let mut twist_squared = twist.clone();
+        let mut twist_squared = twist;
         twist_squared.square();
 
-        let mut twist_cubed = twist_squared.clone();
+        let mut twist_cubed = twist_squared;
         twist_cubed.mul_assign(&twist);
 
-        let mut a_fp3 = twist_squared.clone();
+        let mut a_fp3 = twist_squared;
         a_fp3.mul_by_fp(&a_fp);
 
-        let mut b_fp3 = twist_cubed.clone();
+        let mut b_fp3 = twist_cubed;
         b_fp3.mul_by_fp(&b_fp);
 
         let group_order = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
@@ -1311,15 +1311,15 @@ mod tests {
 
         let engine = super::MNT6Instance::from_params(engine);
 
-        let mut p0 = p.clone();
+        let mut p0 = p;
         p0.double();
         p0.negate();
         p0.normalize();
 
-        let q0 = q.clone();
+        let q0 = q;
 
-        let p1 = p.clone();
-        let mut q1 = q.clone();
+        let p1 = p;
+        let mut q1 = q;
         q1.double();
         q1.normalize();
 

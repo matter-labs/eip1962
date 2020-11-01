@@ -34,8 +34,8 @@ impl FieldExtension for Bls12_381Extension6 {
     #[inline(always)]
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
         // manually unroll multiplication by (1, 1)
-        let v0 = el.c0.clone();
-        let mut v1 = el.c1.clone();
+        let v0 = el.c0;
+        let mut v1 = el.c1;
 
         el.c1.add_assign(&el.c0);
 
@@ -53,6 +53,16 @@ impl FieldExtension for Bls12_381Extension6 {
    
     }
 }
+
+pub type Scalar = crate::integers::MaxGroupSizeUint;
+
+pub type FpElement = Fp<'static, U384Repr, PrimeField<U384Repr>>;
+pub type Fp2Element = Fp2<'static, U384Repr, PrimeField<U384Repr>>;
+pub type Fp6Element = Fp6<'static, U384Repr, PrimeField<U384Repr>>;
+pub type Fp12Element = Fp12<'static, U384Repr, PrimeField<U384Repr>>;
+
+pub type G1 = CurvePoint<'static, CurveOverFpParameters<'static, U384Repr, PrimeField<U384Repr>>>;
+pub type G2 = CurvePoint<'static, CurveOverFp2Parameters<'static, U384Repr, PrimeField<U384Repr>>>;
 
 const REPR_ZERO: U384Repr = U384Repr([0,0,0,0,0,0]);
 
@@ -114,7 +124,6 @@ const BLS12_381_EXTENSION_2_FROB_COEFF_1: decl_fp!(U384Repr) = repr_into_fp!(
     BLS12_381_FIELD
 );
 
-
 pub const BLS12_381_EXTENSION_2_FIELD: Extension2<'static, U384Repr, PrimeField<U384Repr>> = 
     Extension2::<'static, U384Repr, PrimeField<U384Repr>> {
         // field: &BLS12_381_FIELD,
@@ -124,7 +133,6 @@ pub const BLS12_381_EXTENSION_2_FIELD: Extension2<'static, U384Repr, PrimeField<
         // non_residue_mul_policy: NonResidueMulPolicy::Full,
         frobenius_coeffs_are_calculated: true
     };
-
 
 const BLS12_381_FP2_NON_RESIDUE_C0_REPR: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
 const BLS12_381_FP2_NON_RESIDUE_C1_REPR: U384Repr = U384Repr([0x760900000002fffd,0xebf4000bc40c0002,0x5f48985753c758ba,0x77ce585370525745,0x5c071a97a256ec6d,0x15f65ec3fa80e493]);
@@ -168,6 +176,15 @@ pub const BLS12_381_B_FOR_G1: Fp<'static, U384Repr, PrimeField<U384Repr>> =
 const BLS12_381_B_FOR_G2_C0_REPR: U384Repr = U384Repr([0xaa270000000cfff3,0x53cc0032fc34000a,0x478fe97a6b0a807f,0xb1d37ebee6ba24d7,0x8ec9733bbf78ab2f,0x09d645513d83de7e]);
 const BLS12_381_B_FOR_G2_C1_REPR: U384Repr = U384Repr([0xaa270000000cfff3,0x53cc0032fc34000a,0x478fe97a6b0a807f,0xb1d37ebee6ba24d7,0x8ec9733bbf78ab2f,0x09d645513d83de7e]);
 
+// const BLS12_381_G1_BETA_REPR: U384Repr = U384Repr([0x30f1361b798a64e8,0xf3b8ddab7ece5a2a,0x16a8ca3ac61577f7,0xc26a2ff874fd029b,0x3636b76660701c6e,0x051ba4ab241b6160]);
+const BLS12_381_G1_BETA_REPR: U384Repr = U384Repr([0xcd03c9e48671f071,0x5dab22461fcda5d2,0x587042afd3851b95,0x8eb60ebe01bacb9e,0x3f97d6e83d050d2,0x18f0206554638741]);
+
+const BLS12_381_G1_BETA: decl_fp!(U384Repr) = repr_into_fp!(
+    BLS12_381_G1_BETA_REPR, 
+    U384Repr,
+    BLS12_381_FIELD
+);
+
 const BLS12_381_B_FOR_G2_C0: Fp<'static, U384Repr, PrimeField<U384Repr>> = 
     Fp::<'static, U384Repr, PrimeField<U384Repr>> {
         field: &BLS12_381_FIELD,
@@ -209,6 +226,14 @@ pub const BLS12_381_FP2_ONE: decl_fp2!(U384Repr) = repr_into_fp2!(
     BLS12_381_FP_ZERO,
     U384Repr,
     BLS12_381_EXTENSION_2_FIELD
+);
+
+const BLS12_381_FP6_010: decl_fp6!(U384Repr) = repr_into_fp6!(
+    BLS12_381_FP2_ZERO,
+    BLS12_381_FP2_ONE,
+    BLS12_381_FP2_ZERO,
+    U384Repr,
+    BLS12_381_EXTENSION_6_FIELD
 );
 
 const BLS12_381_FP6_FROB_C1_0: decl_fp2!(U384Repr) = repr_into_fp2!(
@@ -347,6 +372,64 @@ pub const BLS12_381_EXTENSION_6_FIELD: Extension3Over2<'static, U384Repr, PrimeF
         frobenius_coeffs_are_calculated: true
     };
 
+const BLS12_381_FP12_TWIST_X: decl_fp12!(U384Repr) = repr_into_fp12!(
+    BLS12_381_FP6_010,
+    BLS12_381_FP6_ZERO,
+    U384Repr,
+    BLS12_381_EXTENSION_12_FIELD
+);
+
+const BLS12_381_FP12_TWIST_Y: decl_fp12!(U384Repr) = repr_into_fp12!(
+    BLS12_381_FP6_ZERO,
+    BLS12_381_FP6_010,
+    U384Repr,
+    BLS12_381_EXTENSION_12_FIELD
+);
+
+const BLS12_381_FP12_TWIST_X_INV_FP2_C0_REPR: decl_fp2!(U384Repr) = repr_into_fp2!(
+    repr_into_fp!(
+        U384Repr([0x1804000000015554,0x855000053ab00001,0x633cb57c253c276f,0x6e22d1ec31ebb502,0xd3916126f2d14ca2,0x17fbb8571a006596]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ), 
+    repr_into_fp!(
+        U384Repr([0xa1fafffffffe5557,0x995bfff976a3fffe,0x03f41d24d174ceb4,0xf6547998c1995dbd,0x778a468f507a6034,0x020559931f7f8103]), 
+        U384Repr,
+        BLS12_381_FIELD
+    ),
+    U384Repr,
+    BLS12_381_EXTENSION_2_FIELD
+);
+
+const BLS12_381_FP12_TWIST_X_INV_C0: decl_fp6!(U384Repr) = repr_into_fp6!(
+    BLS12_381_FP2_ZERO,
+    BLS12_381_FP2_ZERO,
+    BLS12_381_FP12_TWIST_X_INV_FP2_C0_REPR,
+    U384Repr,
+    BLS12_381_EXTENSION_6_FIELD
+);
+
+const BLS12_381_FP12_TWIST_Y_INV_C1: decl_fp6!(U384Repr) = repr_into_fp6!(
+    BLS12_381_FP2_ZERO,
+    BLS12_381_FP12_TWIST_X_INV_FP2_C0_REPR,
+    BLS12_381_FP2_ZERO,
+    U384Repr,
+    BLS12_381_EXTENSION_6_FIELD
+);
+
+const BLS12_381_FP12_TWIST_X_INV: decl_fp12!(U384Repr) = repr_into_fp12!(
+    BLS12_381_FP12_TWIST_X_INV_C0,
+    BLS12_381_FP6_ZERO,
+    U384Repr,
+    BLS12_381_EXTENSION_12_FIELD
+);
+
+const BLS12_381_FP12_TWIST_Y_INV: decl_fp12!(U384Repr) = repr_into_fp12!(
+    BLS12_381_FP6_ZERO,
+    BLS12_381_FP12_TWIST_Y_INV_C1,
+    U384Repr,
+    BLS12_381_EXTENSION_12_FIELD
+);
 
 const BLS12_381_FP12_FROB_C1_0: decl_fp2!(U384Repr) = repr_into_fp2!(
     repr_into_fp!(
@@ -660,6 +743,79 @@ pub const BLS12_381_G2_MAPPING_H_EFF: [u64; 10] = [
     0x0bc69f08f2ee75b3
 ];
 
+pub const BLS_12_381_Z_SQUARED_MINUS_ONE_BY_THREE: [u64; 2] = [0x0000000055555555, 0x396c8c005555e156];
+
+// #[cfg(feature = "fast_bls12_381_subgroup")]
+pub mod subgroup_check {
+    use super::*;
+
+    pub fn is_in_proper_subgroup_g1(g1_point: &G1) -> bool {
+        if g1_point.is_zero() {
+            return true;
+        }
+        let single_endo = apply_endomorphism(*g1_point);
+        let double_endo = apply_endomorphism(single_endo);
+
+        let mut t = single_endo;
+        t.double();
+        t.sub_assign(&g1_point);
+        t.sub_assign(&double_endo);
+        let mut t = t.mul(&BLS_12_381_Z_SQUARED_MINUS_ONE_BY_THREE);
+        t.sub_assign(&double_endo);
+
+        t.is_zero()
+    }
+
+    pub fn is_in_proper_subgroup_g2(g2_point: &G2) -> bool {
+        if g2_point.is_zero() {
+            return true;
+        }
+        let mut psi2_applied_and_negated = psi(*g2_point, 2);
+        psi2_applied_and_negated.negate();
+
+        let t = psi(*g2_point, 3);
+        let mut t = t.mul(&BLS12_381_X);
+        t.negate();
+        t.add_assign(&psi2_applied_and_negated);
+        t.add_assign(&g2_point);
+
+        t.is_zero()
+    }
+
+    pub fn psi(g2_point: G2, pow: usize) -> G2 {
+        assert!(g2_point.is_normalized());
+        let mut x = BLS12_381_FP12_TWIST_X_INV;
+        x.mul_by_0(&g2_point.x);
+        x.frobenius_map(pow);
+        x.mul_assign(&BLS12_381_FP12_TWIST_X);
+
+        let x = x.c0.c0;
+
+        let mut y = BLS12_381_FP12_TWIST_Y_INV;
+        y.mul_by_0(&g2_point.y);
+        y.frobenius_map(pow);
+        y.mul_assign(&BLS12_381_FP12_TWIST_Y);
+
+        let y = y.c0.c0;
+
+        let mut result = g2_point;
+        result.x = x;
+        result.y = y;
+
+        result
+    }
+
+    pub fn apply_endomorphism(g1_point: G1) -> G1 {
+        assert!(g1_point.is_normalized());
+        let mut result = g1_point;
+        result.x.mul_assign(&BLS12_381_G1_BETA);
+
+        debug_assert!(result.is_on_curve());
+        
+        result
+    }
+}
+
 
 #[cfg(feature = "mappings")]
 pub mod mapping {
@@ -782,7 +938,6 @@ mod test {
 
         res
     }
-
 
     #[test]
     fn test_g1_mul_by_zero() {

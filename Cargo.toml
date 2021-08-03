@@ -39,10 +39,10 @@ csv = "1"
 pbr = "*"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-bn = { git = "https://github.com/paritytech/bn", default-features = false }
+substrate-bn = { git = "https://github.com/paritytech/bn", default-features = false }
 rayon = "1.*"
 indicatif = {version = "*", features = ["with_rayon"]}
-parity-crypto = {version = "0.4", features = ["publickey"]}
+parity-crypto = {version = "0.8.0", features = ["publickey"]}
 ethereum-types = "0.8"
 keccak-hash = "0.4"
 

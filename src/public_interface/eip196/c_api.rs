@@ -55,7 +55,7 @@ pub extern "C" fn eip196_perform_operation(
     use std::io::Write;
 
     let op_u8: u8 = unsafe { std::mem::transmute(op) };
-    let err_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(err, EIP196_PREALLOCATE_FOR_ERROR_BYTES) };
+    let err_out_i8: &mut [libc::c_char] = unsafe { std::slice::from_raw_parts_mut(err, EIP196_PREALLOCATE_FOR_ERROR_BYTES) };
     let mut err_out: &mut [u8] = unsafe { std::mem::transmute(err_out_i8) };
 
     let operation = Eip196OperationType::from_u8(op_u8);
@@ -73,10 +73,10 @@ pub extern "C" fn eip196_perform_operation(
 
     let operation = operation.expect("is some");
     
-    let input_i8: & [i8] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
+    let input_i8: & [libc::c_char] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
     let input: &[u8] = unsafe { std::mem::transmute(input_i8) };
 
-    let raw_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(o, EIP196_PREALLOCATE_FOR_RESULT_BYTES) };
+    let raw_out_i8: &mut [libc::c_char] = unsafe { std::slice::from_raw_parts_mut(o, EIP196_PREALLOCATE_FOR_RESULT_BYTES) };
     let mut raw_out: &mut [u8] = unsafe { std::mem::transmute(raw_out_i8) };
 
     let result = match operation {

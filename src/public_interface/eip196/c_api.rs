@@ -1,4 +1,4 @@
-// For C style API caller has to preallocate some buffers for results 
+// For C style API caller has to preallocate some buffers for results
 pub const EIP196_PREALLOCATE_FOR_ERROR_BYTES: usize = 256;
 pub const EIP196_PREALLOCATE_FOR_RESULT_BYTES: usize = 32 * 2; // maximum for G2 point
 
@@ -17,18 +17,10 @@ pub enum Eip196OperationType {
 impl Eip196OperationType {
     pub fn from_u8(value: u8) -> Option<Self> {
         match value {
-            EIP196_ADD_OPERATION_RAW_VALUE => {
-                Some(Eip196OperationType::ADD)
-            },
-            EIP196_MUL_OPERATION_RAW_VALUE => {
-                Some(Eip196OperationType::MUL)
-            },
-            EIP196_PAIR_OPERATION_RAW_VALUE => {
-                Some(Eip196OperationType::PAIR)
-            },
-            _ => {
-                None
-            }
+            EIP196_ADD_OPERATION_RAW_VALUE => Some(Eip196OperationType::ADD),
+            EIP196_MUL_OPERATION_RAW_VALUE => Some(Eip196OperationType::MUL),
+            EIP196_PAIR_OPERATION_RAW_VALUE => Some(Eip196OperationType::PAIR),
+            _ => None,
         }
     }
 
@@ -50,12 +42,13 @@ pub extern "C" fn eip196_perform_operation(
     o: *mut ::std::os::raw::c_char,
     o_len: *mut u32,
     err: *mut ::std::os::raw::c_char,
-    char_len: *mut u32) -> u32 
-{            
+    char_len: *mut u32,
+) -> u32 {
     use std::io::Write;
 
     let op_u8: u8 = unsafe { std::mem::transmute(op) };
-    let err_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(err, EIP196_PREALLOCATE_FOR_ERROR_BYTES) };
+    let err_out_i8: &mut [i8] =
+        unsafe { std::slice::from_raw_parts_mut(err, EIP196_PREALLOCATE_FOR_ERROR_BYTES) };
     let mut err_out: &mut [u8] = unsafe { std::mem::transmute(err_out_i8) };
 
     let operation = Eip196OperationType::from_u8(op_u8);
@@ -72,11 +65,12 @@ pub extern "C" fn eip196_perform_operation(
     }
 
     let operation = operation.expect("is some");
-    
-    let input_i8: & [i8] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
+
+    let input_i8: &[i8] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
     let input: &[u8] = unsafe { std::mem::transmute(input_i8) };
 
-    let raw_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(o, EIP196_PREALLOCATE_FOR_RESULT_BYTES) };
+    let raw_out_i8: &mut [i8] =
+        unsafe { std::slice::from_raw_parts_mut(o, EIP196_PREALLOCATE_FOR_RESULT_BYTES) };
     let mut raw_out: &mut [u8] = unsafe { std::mem::transmute(raw_out_i8) };
 
     let result = match operation {
@@ -101,7 +95,7 @@ pub extern "C" fn eip196_perform_operation(
             }
 
             return 1u32;
-        },
+        }
         Err(error) => {
             let err_description = error.to_string();
             let written = err_out.write(err_description.as_bytes());
@@ -114,4 +108,4 @@ pub extern "C" fn eip196_perform_operation(
             return 1u32;
         }
     }
-} 
+}

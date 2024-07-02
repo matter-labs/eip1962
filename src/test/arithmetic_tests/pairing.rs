@@ -1,20 +1,20 @@
-use crate::weierstrass::*;
-use crate::weierstrass::curve::*;
 use crate::integers::MaxGroupSizeUint;
-use crate::traits::*;
 use crate::pairings::PairingEngine;
+use crate::traits::*;
+use crate::weierstrass::curve::*;
+use crate::weierstrass::*;
 use rand::Rng;
 
 // define the test processor
 pub(crate) struct PairingProcessor<
-    'b, 
-    'a: 'b, 
+    'b,
+    'a: 'b,
     FE: FieldElement + ZeroAndOne + 'a,
     FEE: FieldElement + ZeroAndOne + 'a,
     GT: FieldElement + ZeroAndOne + 'a,
     CP: CurveParameters<BaseFieldElement = FE> + 'a,
     CPT: CurveParameters<BaseFieldElement = FEE> + 'a,
-    E: PairingEngine<G1 = CurvePoint<'a, CP>, G2 = CurvePoint<'a, CPT>, PairingResult = GT> + 'a
+    E: PairingEngine<G1 = CurvePoint<'a, CP>, G2 = CurvePoint<'a, CPT>, PairingResult = GT> + 'a,
 > {
     curve_g1: &'b WeierstrassCurve<'a, CP>,
     curve_g2: &'b WeierstrassCurve<'a, CPT>,
@@ -22,19 +22,20 @@ pub(crate) struct PairingProcessor<
     generator_g2: &'b CurvePoint<'a, CPT>,
     group_order: &'b [u64],
     gt_one: &'b GT,
-    engine: &'b E
+    engine: &'b E,
 }
 
 impl<
-    'b, 
-    'a: 'b, 
-    FE: FieldElement + ZeroAndOne + 'a,
-    FEE: FieldElement + ZeroAndOne + 'a,
-    GT: FieldElement + ZeroAndOne + 'a,
-    CP: CurveParameters<BaseFieldElement = FE> + 'a,
-    CPT: CurveParameters<BaseFieldElement = FEE> + 'a,
-    E: PairingEngine<G1 = CurvePoint<'a, CP>, G2 = CurvePoint<'a, CPT>, PairingResult = GT> + 'a
-> PairingProcessor<'b, 'a, FE, FEE, GT, CP, CPT, E> {
+        'b,
+        'a: 'b,
+        FE: FieldElement + ZeroAndOne + 'a,
+        FEE: FieldElement + ZeroAndOne + 'a,
+        GT: FieldElement + ZeroAndOne + 'a,
+        CP: CurveParameters<BaseFieldElement = FE> + 'a,
+        CPT: CurveParameters<BaseFieldElement = FEE> + 'a,
+        E: PairingEngine<G1 = CurvePoint<'a, CP>, G2 = CurvePoint<'a, CPT>, PairingResult = GT> + 'a,
+    > PairingProcessor<'b, 'a, FE, FEE, GT, CP, CPT, E>
+{
     fn bilinearity<R: Rng>(&self, rng: &mut R, num_attempts: usize, scalar_words: usize) {
         for _ in 0..num_attempts {
             let mut limbs = vec![];
@@ -83,12 +84,11 @@ impl<
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::engines::bls12_381::*;
     use crate::engines::bls12_377::*;
+    use crate::engines::bls12_381::*;
 
     use crate::extension_towers::fp12_as_2_over3_over_2::Fp12;
 
@@ -102,7 +102,7 @@ mod test {
             generator_g2: &BLS12_381_G2_GENERATOR,
             group_order: &BLS12_381_SUBGROUP_ORDER,
             gt_one: &gt_one,
-            engine: &BLS12_381_PAIRING_ENGINE
+            engine: &BLS12_381_PAIRING_ENGINE,
         };
 
         tester.test(&mut make_rng(), 1000, 4);
@@ -118,14 +118,14 @@ mod test {
             generator_g2: &BLS12_377_G2_GENERATOR,
             group_order: &BLS12_377_SUBGROUP_ORDER,
             gt_one: &gt_one,
-            engine: &BLS12_377_PAIRING_ENGINE
+            engine: &BLS12_377_PAIRING_ENGINE,
         };
 
         tester.test(&mut make_rng(), 1000, 4);
     }
 
     fn make_rng() -> rand_xorshift::XorShiftRng {
-        use rand::{SeedableRng};
+        use rand::SeedableRng;
         use rand_xorshift::XorShiftRng;
 
         let rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);

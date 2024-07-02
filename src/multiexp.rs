@@ -1,11 +1,12 @@
-use crate::weierstrass::Group;
+use crate::integers::MaxGroupSizeUint;
 use crate::weierstrass::curve::CurvePoint;
 use crate::weierstrass::CurveParameters;
-use crate::integers::MaxGroupSizeUint;
+use crate::weierstrass::Group;
 
-pub(crate) fn peppinger<'a, C: CurveParameters>
-    (bases: &[CurvePoint<'a, C>], mut scalars: Vec<MaxGroupSizeUint>) -> CurvePoint<'a, C>
-{
+pub(crate) fn peppinger<'a, C: CurveParameters>(
+    bases: &[CurvePoint<'a, C>],
+    mut scalars: Vec<MaxGroupSizeUint>,
+) -> CurvePoint<'a, C> {
     use crate::representation::*;
     debug_assert!(bases.len() == scalars.len());
 

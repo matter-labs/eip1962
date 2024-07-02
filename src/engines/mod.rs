@@ -1,24 +1,24 @@
 #[macro_use]
 mod convenience;
 
-pub mod generic;
-pub mod bls12_381;
 pub mod bls12_377;
+pub mod bls12_381;
+pub mod generic;
 
 #[cfg(feature = "eip_196")]
 pub mod bn254;
 
 #[cfg(test)]
 mod test {
-    use crate::representation::*;
-    use crate::field::*;
-    use crate::traits::*;
-    use crate::fp::*;
     use crate::extension_towers::fp2::*;
+    use crate::field::*;
+    use crate::fp::*;
+    use crate::integers::MaxFieldUint;
+    use crate::pairings::TwistType;
+    use crate::representation::*;
+    use crate::traits::*;
     use num_bigint::BigUint;
     use num_traits::Num;
-    use crate::pairings::TwistType;
-    use crate::integers::MaxFieldUint;
 
     fn print_single(r: &[u64]) {
         let mut limb_string = vec![];
@@ -54,7 +54,7 @@ mod test {
     }
 
     fn print_bls12_engine_constants<FE: ElementRepr>(
-        modulus: BigUint, 
+        modulus: BigUint,
         twist_type: TwistType,
         b: BigUint,
         fp_non_residue: BigUint,
@@ -70,37 +70,46 @@ mod test {
         let modulus_uint = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
         let field = field_from_modulus::<FE>(&modulus_uint).unwrap();
         let b_fp = Fp::from_be_bytes(&field, &b.to_bytes_be(), true).unwrap();
-        let fp_non_residue = Fp::from_be_bytes(&field, &fp_non_residue.to_bytes_be(), true).unwrap();
+        let fp_non_residue =
+            Fp::from_be_bytes(&field, &fp_non_residue.to_bytes_be(), true).unwrap();
         let extension_2 = Extension2::new(fp_non_residue.clone());
         let mut fp2_non_residue = Fp2::zero(&extension_2);
-        let fp2_non_residue_c0 = Fp::from_be_bytes(&field, &fp2_non_residue_c0.to_bytes_be(), true).unwrap();
-        let fp2_non_residue_c1 = Fp::from_be_bytes(&field, &fp2_non_residue_c1.to_bytes_be(), true).unwrap();
+        let fp2_non_residue_c0 =
+            Fp::from_be_bytes(&field, &fp2_non_residue_c0.to_bytes_be(), true).unwrap();
+        let fp2_non_residue_c1 =
+            Fp::from_be_bytes(&field, &fp2_non_residue_c1.to_bytes_be(), true).unwrap();
         fp2_non_residue.c0 = fp2_non_residue_c0;
         fp2_non_residue.c1 = fp2_non_residue_c1;
-    
+
         let fp2_non_residue_inv = fp2_non_residue.inverse().unwrap();
         let b_fp2 = match twist_type {
             TwistType::D => {
                 let mut b_fp2 = fp2_non_residue_inv.clone();
                 b_fp2.mul_by_fp(&b_fp);
-    
+
                 b_fp2
-            },
+            }
             TwistType::M => {
                 let mut b_fp2 = fp2_non_residue.clone();
                 b_fp2.mul_by_fp(&b_fp);
-    
+
                 b_fp2
-            },
+            }
         };
-    
-        let g1_generator_x = Fp::from_be_bytes(&field, &generator_g1_x.to_bytes_be(), true).unwrap();
-        let g1_generator_y = Fp::from_be_bytes(&field, &generator_g1_y.to_bytes_be(), true).unwrap();
-    
-        let g1_generator_x_c0 = Fp::from_be_bytes(&field, &generator_g2_x_0.to_bytes_be(), true).unwrap();
-        let g1_generator_x_c1 = Fp::from_be_bytes(&field, &generator_g2_x_1.to_bytes_be(), true).unwrap();
-        let g1_generator_y_c0 = Fp::from_be_bytes(&field, &generator_g2_y_0.to_bytes_be(), true).unwrap();
-        let g1_generator_y_c1 = Fp::from_be_bytes(&field, &generator_g2_y_1.to_bytes_be(), true).unwrap();
+
+        let g1_generator_x =
+            Fp::from_be_bytes(&field, &generator_g1_x.to_bytes_be(), true).unwrap();
+        let g1_generator_y =
+            Fp::from_be_bytes(&field, &generator_g1_y.to_bytes_be(), true).unwrap();
+
+        let g1_generator_x_c0 =
+            Fp::from_be_bytes(&field, &generator_g2_x_0.to_bytes_be(), true).unwrap();
+        let g1_generator_x_c1 =
+            Fp::from_be_bytes(&field, &generator_g2_x_1.to_bytes_be(), true).unwrap();
+        let g1_generator_y_c0 =
+            Fp::from_be_bytes(&field, &generator_g2_y_0.to_bytes_be(), true).unwrap();
+        let g1_generator_y_c1 =
+            Fp::from_be_bytes(&field, &generator_g2_y_1.to_bytes_be(), true).unwrap();
 
         println!("B:");
         print_single(&b_fp.repr.as_ref());
@@ -223,7 +232,9 @@ mod test {
     fn calculate_bls12_381_constants() {
         let mut ext_2 = super::bls12_381::BLS12_381_EXTENSION_2_FIELD.clone();
         let modulus = super::bls12_381::BLS12_381_MODULUS_UINT;
-        ext_2.calculate_frobenius_coeffs(&modulus).expect("must calcualte frobenius for Fp2");
+        ext_2
+            .calculate_frobenius_coeffs(&modulus)
+            .expect("must calcualte frobenius for Fp2");
 
         println!("Frobenius coeffs for Fp2 c1");
         for (idx, c) in ext_2.frobenius_coeffs_c1.iter().enumerate() {
@@ -232,7 +243,9 @@ mod test {
         }
 
         let mut ext_6 = super::bls12_381::BLS12_381_EXTENSION_6_FIELD.clone();
-        ext_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp6");
+        ext_6
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must calcualte frobenius for Fp6");
 
         println!("Frobenius coeffs for Fp6 c1");
         for (idx, c) in ext_6.frobenius_coeffs_c1.iter().enumerate() {
@@ -250,10 +263,12 @@ mod test {
             print_single(c.c0.repr.as_ref());
             println!("C1:");
             print_single(c.c1.repr.as_ref());
-        }   
-        
+        }
+
         let mut ext_12 = super::bls12_381::BLS12_381_EXTENSION_12_FIELD.clone();
-        ext_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp12");
+        ext_12
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must calcualte frobenius for Fp12");
 
         println!("Frobenius coeffs for Fp12 c1");
         for (idx, c) in ext_12.frobenius_coeffs_c1.iter().enumerate() {
@@ -269,7 +284,9 @@ mod test {
     fn calculate_bls12_377_constants() {
         let mut ext_2 = super::bls12_377::BLS12_377_EXTENSION_2_FIELD.clone();
         let modulus = super::bls12_377::BLS12_377_MODULUS_UINT;
-        ext_2.calculate_frobenius_coeffs(&modulus).expect("must calcualte frobenius for Fp2");
+        ext_2
+            .calculate_frobenius_coeffs(&modulus)
+            .expect("must calcualte frobenius for Fp2");
 
         println!("Frobenius coeffs for Fp2 c1");
         for (idx, c) in ext_2.frobenius_coeffs_c1.iter().enumerate() {
@@ -278,7 +295,9 @@ mod test {
         }
 
         let mut ext_6 = super::bls12_377::BLS12_377_EXTENSION_6_FIELD.clone();
-        ext_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp6");
+        ext_6
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must calcualte frobenius for Fp6");
 
         println!("Frobenius coeffs for Fp6 c1");
         for (idx, c) in ext_6.frobenius_coeffs_c1.iter().enumerate() {
@@ -296,10 +315,12 @@ mod test {
             print_single(c.c0.repr.as_ref());
             println!("C1:");
             print_single(c.c1.repr.as_ref());
-        }   
-        
+        }
+
         let mut ext_12 = super::bls12_377::BLS12_377_EXTENSION_12_FIELD.clone();
-        ext_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must calcualte frobenius for Fp12");
+        ext_12
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must calcualte frobenius for Fp12");
 
         println!("Frobenius coeffs for Fp12 c1");
         for (idx, c) in ext_12.frobenius_coeffs_c1.iter().enumerate() {
@@ -339,7 +360,7 @@ mod test {
     #[test]
     fn calculate_bls12_381_fp2_to_g2_mapping_constants() {
         let fp_field = &super::bls12_381::BLS12_381_FIELD;
-        let fp2_field = &super::bls12_381::BLS12_381_EXTENSION_2_FIELD; 
+        let fp2_field = &super::bls12_381::BLS12_381_EXTENSION_2_FIELD;
 
         let z_c0_biguint = BigUint::from_str_radix("2", 10).unwrap();
         let z_c1_biguint = BigUint::from_str_radix("1", 10).unwrap();
@@ -410,7 +431,7 @@ mod test {
     #[test]
     fn test_bls12_engine_map_fp2_to_g2() {
         use crate::weierstrass::Group;
-        
+
         let mut x = super::bls12_381::BLS12_381_FP2_ONE.clone();
         x.double();
         x.double();
@@ -431,7 +452,12 @@ mod test {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("07fdf49ea58e96015d61f6b5c9d1c8f277146a533ae7fbca2a8ef4c41055cd961fbc6e26979b5554e4b4f22330c0e16d", 16).unwrap();
-        let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
+        let x = Fp::from_be_bytes(
+            &crate::engines::bls12_381::BLS12_381_FIELD,
+            &biguint.to_bytes_be(),
+            true,
+        )
+        .unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
@@ -451,7 +477,12 @@ mod test {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("1275ab3adbf824a169ed4b1fd669b49cf406d822f7fe90d6b2f8c601b5348436f89761bb1ad89a6fb1137cd91810e5d2", 16).unwrap();
-        let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
+        let x = Fp::from_be_bytes(
+            &crate::engines::bls12_381::BLS12_381_FIELD,
+            &biguint.to_bytes_be(),
+            true,
+        )
+        .unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
@@ -459,7 +490,6 @@ mod test {
         // println!("Mapped to x = {}, y = {}", x, y);
         assert_eq!(format!("{}", x), "0x179d3fd0b4fb1da43aad06cea1fb3f828806ddb1b1fa9424b1e3944dfdbab6e763c42636404017da03099af0dcca0fd6");
         assert_eq!(format!("{}", y), "0x0d037cb1c6d495c0f5f22b061d23f1be3d7fe64d3c6820cfcd99b6b36fa69f7b4c1f4addba2ae7aa46fb25901ab483e4");
-
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -472,7 +502,12 @@ mod test {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("0e93d11d30de6d84b8578827856f5c05feef36083eef0b7b263e35ecb9b56e86299614a042e57d467fa20948e8564909", 16).unwrap();
-        let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
+        let x = Fp::from_be_bytes(
+            &crate::engines::bls12_381::BLS12_381_FIELD,
+            &biguint.to_bytes_be(),
+            true,
+        )
+        .unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
@@ -480,7 +515,6 @@ mod test {
         // println!("Mapped to x = {}, y = {}", x, y);
         assert_eq!(format!("{}", x), "0x15aa66c77eded1209db694e8b1ba49daf8b686733afaa7b68c683d0b01788dfb0617a2e2d04c0856db4981921d3004af");
         assert_eq!(format!("{}", y), "0x0952bb2f61739dd1d201dd0a79d74cda3285403d47655ee886afe860593a8a4e51c5b77a22d2133e3a4280eaaaa8b788");
-
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 
@@ -493,7 +527,12 @@ mod test {
         use crate::weierstrass::Group;
 
         let biguint = BigUint::from_str_radix("015a41481155d17074d20be6d8ec4d46632a51521cd9c916e265bd9b47343b3689979b50708c8546cbc2916b86cb1a3a", 16).unwrap();
-        let x = Fp::from_be_bytes(&crate::engines::bls12_381::BLS12_381_FIELD, &biguint.to_bytes_be(), true).unwrap();
+        let x = Fp::from_be_bytes(
+            &crate::engines::bls12_381::BLS12_381_FIELD,
+            &biguint.to_bytes_be(),
+            true,
+        )
+        .unwrap();
 
         let mapped = crate::engines::bls12_381::mapping::fp_to_g1(&x).unwrap();
 
@@ -501,7 +540,6 @@ mod test {
         // println!("Mapped to x = {}, y = {}", x, y);
         assert_eq!(format!("{}", x), "0x06328ce5106e837935e8da84bd9af473422e62492930aa5f460369baad9545defa468d9399854c23a75495d2a80487ee");
         assert_eq!(format!("{}", y), "0x094bfdfe3e552447433b5a00967498a3f1314b86ce7a7164c8a8f4131f99333b30a574607e301d5f774172c627fd0bca");
-
 
         let should_be_zero = mapped.mul(&super::bls12_381::BLS12_381_SUBGROUP_ORDER[..]);
 

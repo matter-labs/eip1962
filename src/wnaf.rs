@@ -1,5 +1,5 @@
-use crate::traits::FieldElement;
 use crate::representation::IntoWnaf;
+use crate::traits::FieldElement;
 
 #[allow(dead_code)]
 pub(crate) fn calculate_wnaf_table<F: FieldElement>(base: &F, window: usize) -> Vec<F> {
@@ -26,7 +26,7 @@ pub(crate) fn calculate_wnaf_table<F: FieldElement>(base: &F, window: usize) -> 
 pub(crate) struct WnafBase<F: FieldElement> {
     pub bases: Vec<F>,
     pub window_size: usize,
-    zero: F
+    zero: F,
 }
 
 #[allow(dead_code)]
@@ -40,7 +40,7 @@ impl<F: FieldElement> WnafBase<F> {
         Self {
             bases: bases,
             window_size: recommended_size_accounding_for_scalars,
-            zero: zero
+            zero: zero,
         }
     }
 
@@ -76,30 +76,29 @@ impl<F: FieldElement> WnafBase<F> {
     //     }
     //     result
     // }
-} 
+}
 
 impl<'a> IntoWnaf for &'a [u64] {
-// impl IntoWnaf for Vec<u64> {
+    // impl IntoWnaf for Vec<u64> {
     fn wnaf(&self, window: u32) -> Vec<i64> {
-
         fn is_zero(repr: &[u64]) -> bool {
             for el in repr.iter() {
                 if *el != 0 {
                     return false;
                 }
             }
-    
+
             true
         }
-    
+
         fn is_odd(repr: &[u64]) -> bool {
             if repr.len() == 0 {
                 return false;
             }
-    
+
             repr[0] & 1u64 == 1u64
         }
-    
+
         fn div2(repr: &mut [u64]) {
             let mut t = 0;
             for i in repr.iter_mut().rev() {
@@ -109,31 +108,31 @@ impl<'a> IntoWnaf for &'a [u64] {
                 t = t2;
             }
         }
-    
+
         fn sub_noborrow(repr: &mut [u64], value: u64) {
             let mut borrow = 0;
-    
+
             repr[0] = crate::arithmetics::sbb(repr[0], value, &mut borrow);
-    
+
             for a in repr.iter_mut().skip(1) {
                 *a = crate::arithmetics::sbb(*a, 0u64, &mut borrow);
             }
         }
-    
+
         fn add_nocarry(repr: &mut [u64], value: u64) {
             let mut carry = 0;
-    
+
             repr[0] = crate::arithmetics::adc(repr[0], value, &mut carry);
-    
+
             for a in repr.iter_mut().skip(1) {
                 *a = crate::arithmetics::adc(*a, 0u64, &mut carry);
             }
         }
-    
+
         if self.len() == 0 {
             return vec![];
         }
-    
+
         let mut res = Vec::with_capacity(self.len() * 64);
         let mut e = self.to_vec();
 
@@ -160,12 +159,12 @@ impl<'a> IntoWnaf for &'a [u64] {
         }
 
         res
-    
+
         // let window: u64 = window as u64;
         // let midpoint: u64 = 1u64 << window;
         // let midpoint_i64: i64 = midpoint as i64;
         // let mask: u64 = (1u64 << (window + 1u64)) - 1;
-    
+
         // while !is_zero(&e) {
         //     let z: i64;
         //     if is_odd(&e) {
@@ -181,7 +180,7 @@ impl<'a> IntoWnaf for &'a [u64] {
         //     res.push(z);
         //     div2(&mut e);
         // }
-    
+
         // res
     }
 }
@@ -224,6 +223,4 @@ mod tests {
     //     let wnaf_result = results.pop().unwrap();
     //     assert!(wnaf_result == naive_result);
     // }
-
-
 }

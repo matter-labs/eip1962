@@ -11,14 +11,11 @@ pub struct IsogenyParameters<C: CurveParameters> {
     pub k4: Vec<C::BaseFieldElement>,
 }
 
-pub(crate) fn apply_isogeny_map<
-    'a, 
-    C: CurveParameters + 'a
-> (
+pub(crate) fn apply_isogeny_map<'a, C: CurveParameters + 'a>(
     x: &C::BaseFieldElement,
     y: &C::BaseFieldElement,
     params: &IsogenyParameters<C>,
-    curve_params: &C
+    curve_params: &C,
 ) -> (C::BaseFieldElement, C::BaseFieldElement) {
     debug_assert_eq!(params.map_degree + 1, params.k1.len());
     debug_assert_eq!(params.map_degree + 1, params.k2.len());
@@ -43,8 +40,12 @@ pub(crate) fn apply_isogeny_map<
         y_den.add_assign(&params.k4[i]);
     }
 
-    let x_den = x_den.inverse().unwrap_or(C::BaseFieldElement::zero(curve_params.params()));
-    let y_den = y_den.inverse().unwrap_or(C::BaseFieldElement::zero(curve_params.params()));
+    let x_den = x_den
+        .inverse()
+        .unwrap_or(C::BaseFieldElement::zero(curve_params.params()));
+    let y_den = y_den
+        .inverse()
+        .unwrap_or(C::BaseFieldElement::zero(curve_params.params()));
 
     x_num.mul_assign(&x_den);
     y_num.mul_assign(&y_den);
@@ -53,4 +54,3 @@ pub(crate) fn apply_isogeny_map<
 
     (x_num, y_num)
 }
-

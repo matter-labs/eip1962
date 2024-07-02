@@ -1,4 +1,4 @@
-// For C style API caller has to preallocate some buffers for results 
+// For C style API caller has to preallocate some buffers for results
 pub const EIP2539_PREALLOCATE_FOR_ERROR_BYTES: usize = 256;
 pub const EIP2539_PREALLOCATE_FOR_RESULT_BYTES: usize = 64 * 2 * 2; // maximum for G2 point
 
@@ -23,36 +23,20 @@ pub enum Eip2537OperationType {
 impl Eip2537OperationType {
     pub fn from_u8(value: u8) -> Option<Self> {
         match value {
-            BLS12_G1ADD_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_G1ADD)
-            },
-            BLS12_G1MUL_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_G1MUL)
-            },
-            BLS12_G1MULTIEXP_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_G1MULTIEXP)
-            },
-            BLS12_G2ADD_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_G2ADD)
-            },
-            BLS12_G2MUL_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_G2MUL)
-            },
-            BLS12_G2MULTIEXP_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_G2MULTIEXP)
-            },
-            BLS12_PAIR_OPERATION_RAW_VALUE => {
-                Some(Eip2537OperationType::BLS12_PAIR)
-            },
+            BLS12_G1ADD_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_G1ADD),
+            BLS12_G1MUL_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_G1MUL),
+            BLS12_G1MULTIEXP_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_G1MULTIEXP),
+            BLS12_G2ADD_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_G2ADD),
+            BLS12_G2MUL_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_G2MUL),
+            BLS12_G2MULTIEXP_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_G2MULTIEXP),
+            BLS12_PAIR_OPERATION_RAW_VALUE => Some(Eip2537OperationType::BLS12_PAIR),
             // BLS12_MAP_FP_TO_G1_OPERATION_RAW_VALUE => {
             //     Some(Eip2537OperationType::BLS12_FP_TO_G1)
             // },
             // BLS12_MAP_FP2_TO_G2_OPERATION_RAW_VALUE => {
             //     Some(Eip2537OperationType::BLS12_FP2_TO_G2)
             // },
-            _ => {
-                None
-            }
+            _ => None,
         }
     }
 
@@ -82,12 +66,13 @@ pub extern "C" fn eip2539_perform_operation(
     o: *mut ::std::os::raw::c_char,
     o_len: *mut u32,
     err: *mut ::std::os::raw::c_char,
-    char_len: *mut u32) -> u32 
-{            
+    char_len: *mut u32,
+) -> u32 {
     use std::io::Write;
 
     let op_u8: u8 = unsafe { std::mem::transmute(op) };
-    let err_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(err, EIP2539_PREALLOCATE_FOR_ERROR_BYTES) };
+    let err_out_i8: &mut [i8] =
+        unsafe { std::slice::from_raw_parts_mut(err, EIP2539_PREALLOCATE_FOR_ERROR_BYTES) };
     let mut err_out: &mut [u8] = unsafe { std::mem::transmute(err_out_i8) };
 
     let operation = Eip2537OperationType::from_u8(op_u8);
@@ -104,23 +89,37 @@ pub extern "C" fn eip2539_perform_operation(
     }
 
     let operation = operation.expect("is some");
-    
-    let input_i8: & [i8] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
+
+    let input_i8: &[i8] = unsafe { std::slice::from_raw_parts(i, i_len as usize) };
     let input: &[u8] = unsafe { std::mem::transmute(input_i8) };
 
-    let raw_out_i8: &mut [i8] = unsafe { std::slice::from_raw_parts_mut(o, EIP2539_PREALLOCATE_FOR_RESULT_BYTES) };
+    let raw_out_i8: &mut [i8] =
+        unsafe { std::slice::from_raw_parts_mut(o, EIP2539_PREALLOCATE_FOR_RESULT_BYTES) };
     let mut raw_out: &mut [u8] = unsafe { std::mem::transmute(raw_out_i8) };
 
     let result = match operation {
-        Eip2537OperationType::BLS12_G1ADD => super::EIP2539Executor::g1_add(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_G1MUL => super::EIP2539Executor::g1_mul(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_G1MULTIEXP => super::EIP2539Executor::g1_multiexp(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_G2ADD => super::EIP2539Executor::g2_add(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_G2MUL => super::EIP2539Executor::g2_mul(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_G2MULTIEXP => super::EIP2539Executor::g2_multiexp(&input).map(|r| r[..].to_vec()),
-        Eip2537OperationType::BLS12_PAIR => super::EIP2539Executor::pair(&input).map(|r| r[..].to_vec()),
-        // Eip2537OperationType::BLS12_FP_TO_G1 => super::EIP2539Executor::map_fp_to_g1(&input).map(|r| r[..].to_vec()),
-        // Eip2537OperationType::BLS12_FP2_TO_G2 => super::EIP2539Executor::map_fp2_to_g2(&input).map(|r| r[..].to_vec()),
+        Eip2537OperationType::BLS12_G1ADD => {
+            super::EIP2539Executor::g1_add(&input).map(|r| r[..].to_vec())
+        }
+        Eip2537OperationType::BLS12_G1MUL => {
+            super::EIP2539Executor::g1_mul(&input).map(|r| r[..].to_vec())
+        }
+        Eip2537OperationType::BLS12_G1MULTIEXP => {
+            super::EIP2539Executor::g1_multiexp(&input).map(|r| r[..].to_vec())
+        }
+        Eip2537OperationType::BLS12_G2ADD => {
+            super::EIP2539Executor::g2_add(&input).map(|r| r[..].to_vec())
+        }
+        Eip2537OperationType::BLS12_G2MUL => {
+            super::EIP2539Executor::g2_mul(&input).map(|r| r[..].to_vec())
+        }
+        Eip2537OperationType::BLS12_G2MULTIEXP => {
+            super::EIP2539Executor::g2_multiexp(&input).map(|r| r[..].to_vec())
+        }
+        Eip2537OperationType::BLS12_PAIR => {
+            super::EIP2539Executor::pair(&input).map(|r| r[..].to_vec())
+        } // Eip2537OperationType::BLS12_FP_TO_G1 => super::EIP2539Executor::map_fp_to_g1(&input).map(|r| r[..].to_vec()),
+          // Eip2537OperationType::BLS12_FP2_TO_G2 => super::EIP2539Executor::map_fp2_to_g2(&input).map(|r| r[..].to_vec()),
     };
 
     match result {
@@ -139,7 +138,7 @@ pub extern "C" fn eip2539_perform_operation(
             }
 
             return 1u32;
-        },
+        }
         Err(error) => {
             let err_description = error.to_string();
             let written = err_out.write(err_description.as_bytes());
@@ -152,4 +151,4 @@ pub extern "C" fn eip2539_perform_operation(
             return 1u32;
         }
     }
-} 
+}

@@ -1,21 +1,21 @@
 extern crate test as rust_test;
 
-use num_bigint::BigUint;
-use num_traits::FromPrimitive;
-use num_integer::Integer;
-use num_traits::Zero;
-use crate::field::{U384Repr, U832Repr, new_field};
-use crate::fp::Fp;
-use crate::traits::{FieldElement};
-use crate::traits::ZeroAndOne;
-use crate::extension_towers::fp2::{Fp2, Extension2};
-use crate::extension_towers::fp3::{Fp3, Extension3};
+use crate::extension_towers::fp12_as_2_over3_over_2::{Extension2Over3Over2, Fp12};
+use crate::extension_towers::fp2::{Extension2, Fp2};
+use crate::extension_towers::fp3::{Extension3, Fp3};
 use crate::extension_towers::fp6_as_2_over_3;
 use crate::extension_towers::fp6_as_3_over_2;
-use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
-use num_traits::Num;
-use crate::pairings::*;
+use crate::field::{new_field, U384Repr, U832Repr};
+use crate::fp::Fp;
 use crate::integers::MaxFieldUint;
+use crate::pairings::*;
+use crate::traits::FieldElement;
+use crate::traits::ZeroAndOne;
+use num_bigint::BigUint;
+use num_integer::Integer;
+use num_traits::FromPrimitive;
+use num_traits::Num;
+use num_traits::Zero;
 
 use rust_test::Bencher;
 
@@ -29,7 +29,9 @@ fn bench_cp6_frobenius_optimized(b: &mut Bencher) {
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_3 = Extension3::new(fp_non_residue.clone());
-    extension_3.calculate_frobenius_coeffs_optimized(&modulus).unwrap();
+    extension_3
+        .calculate_frobenius_coeffs_optimized(&modulus)
+        .unwrap();
 
     let one = Fp::one(&base_field);
 
@@ -38,7 +40,9 @@ fn bench_cp6_frobenius_optimized(b: &mut Bencher) {
 
     b.iter(|| {
         let mut extension_6 = fp6_as_2_over_3::Extension2Over3::new(fp3_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs_optimized(&modulus).unwrap()
+        extension_6
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .unwrap()
     });
 }
 
@@ -49,7 +53,7 @@ fn bench_cp6_frobenius_optimized(b: &mut Bencher) {
 //     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
 //     let mut fp_non_residue = Fp::one(&base_field);
 //     fp_non_residue.negate(); // non-residue is -1
- 
+
 //     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
 //     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -74,12 +78,12 @@ fn bench_cp6_frobenius_optimized(b: &mut Bencher) {
 
 #[bench]
 fn bench_bls12_381_frob_fp12_using_optimized_arith(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -92,11 +96,15 @@ fn bench_bls12_381_frob_fp12_using_optimized_arith(b: &mut Bencher) {
     fp2_non_residue.c1 = one.clone();
 
     let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue);
-    extension_6.calculate_frobenius_coeffs_optimized(&modulus).unwrap();
+    extension_6
+        .calculate_frobenius_coeffs_optimized(&modulus)
+        .unwrap();
 
     b.iter(|| {
         let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs_optimized(&modulus).unwrap()
+        extension_12
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .unwrap()
     });
 }
 
@@ -107,7 +115,7 @@ fn bench_bls12_381_frob_fp12_using_optimized_arith(b: &mut Bencher) {
 //     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
 //     let mut fp_non_residue = Fp::one(&base_field);
 //     fp_non_residue.negate(); // non-residue is -1
- 
+
 //     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
 //     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -129,12 +137,12 @@ fn bench_bls12_381_frob_fp12_using_optimized_arith(b: &mut Bencher) {
 
 #[bench]
 fn bench_bls12_381_frob_fp6_using_optimized_arith(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -148,20 +156,22 @@ fn bench_bls12_381_frob_fp6_using_optimized_arith(b: &mut Bencher) {
 
     b.iter(|| {
         let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs_optimized(&modulus).unwrap();
+        extension_6
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .unwrap();
     });
 }
 
 #[bench]
 fn bench_bls12_381_frob_fp6_using_base_precomp(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -177,20 +187,22 @@ fn bench_bls12_381_frob_fp6_using_base_precomp(b: &mut Bencher) {
 
     b.iter(|| {
         let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs_with_precomp(&precomp_base).unwrap();
+        extension_6
+            .calculate_frobenius_coeffs_with_precomp(&precomp_base)
+            .unwrap();
     });
 }
 
 #[bench]
 fn bench_bls12_381_frob_fp12_using_base_precomp(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -205,24 +217,28 @@ fn bench_bls12_381_frob_fp12_using_base_precomp(b: &mut Bencher) {
     let precomp_base = Fp6Fp12FrobeniusBaseElements::construct(&modulus, &fp2_non_residue).unwrap();
 
     let mut extension_6 = fp6_as_3_over_2::Extension3Over2::new(fp2_non_residue.clone());
-    extension_6.calculate_frobenius_coeffs_with_precomp(&precomp_base).unwrap();
+    extension_6
+        .calculate_frobenius_coeffs_with_precomp(&precomp_base)
+        .unwrap();
 
     b.iter(|| {
         let mut extension_12 = Extension2Over3Over2::new(fp6_as_3_over_2::Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs_with_precomp(&precomp_base).unwrap();
+        extension_12
+            .calculate_frobenius_coeffs_with_precomp(&precomp_base)
+            .unwrap();
     });
 }
 
 #[bench]
 fn bench_bls12_381_frob_base_precomp_time(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -235,6 +251,7 @@ fn bench_bls12_381_frob_base_precomp_time(b: &mut Bencher) {
     fp2_non_residue.c1 = one.clone();
 
     b.iter(|| {
-        let precomp_base = Fp6Fp12FrobeniusBaseElements::construct(&modulus, &fp2_non_residue).unwrap();
+        let precomp_base =
+            Fp6Fp12FrobeniusBaseElements::construct(&modulus, &fp2_non_residue).unwrap();
     });
 }

@@ -3,17 +3,17 @@ use crate::test::gas_meter::bn;
 use crate::test::gas_meter::mnt4;
 use crate::test::gas_meter::mnt6;
 
-use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::API;
 
 use crate::test::parsers::*;
 
 use crate::public_interface::constants::*;
 
-use rand::{Rng, thread_rng};
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
+use rand::{thread_rng, Rng};
 
 mod arithmetic_ops;
 mod gen_params;
@@ -71,7 +71,7 @@ mod parallel_measurements;
 //                         got_results = true;
 //                         bls12_writer.write_report(r);
 //                     }
-//                 }                
+//                 }
 //             },
 //             BN => {
 //                 let u_bits = u_bits_rng.sample(&mut rng);
@@ -106,13 +106,13 @@ mod parallel_measurements;
 //                 let curve = gen_params::random_mnt4_params(num_limbs, num_group_limbs, &mut rng);
 //                 for num_pairs in pairs.iter() {
 //                     let reports = mnt4::process_for_curve_and_bit_sizes(
-//                         curve.clone(), 
-//                         ate_bits, 
+//                         curve.clone(),
+//                         ate_bits,
 //                         ate_hamming,
 //                         w0_bits,
 //                         w0_hamming,
 //                         w1_bits,
-//                         w1_hamming,                        
+//                         w1_hamming,
 //                         *num_pairs);
 //                     for (r, _) in reports.into_iter() {
 //                         got_results = true;
@@ -138,13 +138,13 @@ mod parallel_measurements;
 //                 let curve = gen_params::random_mnt6_params(num_limbs, num_group_limbs, &mut rng);
 //                 for num_pairs in pairs.iter() {
 //                     let reports = mnt6::process_for_curve_and_bit_sizes(
-//                         curve.clone(), 
-//                         ate_bits, 
+//                         curve.clone(),
+//                         ate_bits,
 //                         ate_hamming,
 //                         w0_bits,
 //                         w0_hamming,
 //                         w1_bits,
-//                         w1_hamming,                        
+//                         w1_hamming,
 //                         *num_pairs);
 //                     for (r, _) in reports.into_iter() {
 //                         got_results = true;
@@ -162,7 +162,6 @@ mod parallel_measurements;
 //             pb.inc();
 //         }
 //     }
-
 
 //     pb.finish_print("done");
 // }
@@ -213,7 +212,7 @@ mod parallel_measurements;
 //                         got_results = true;
 //                         bls12_writer.write_report(r);
 //                     }
-//                 }                
+//                 }
 //             },
 //             BN => {
 //                 let u_bits = u_bits_rng.sample(&mut rng);
@@ -241,10 +240,8 @@ mod parallel_measurements;
 //         }
 //     }
 
-
 //     pb.finish_print("done");
 // }
-
 
 // #[test]
 // #[ignore]
@@ -299,13 +296,13 @@ mod parallel_measurements;
 //                 let curve = gen_params::random_mnt4_params(num_limbs, num_group_limbs, &mut rng);
 //                 for num_pairs in pairs.iter() {
 //                     let reports = mnt4::process_for_curve_and_bit_sizes(
-//                         curve.clone(), 
-//                         ate_bits, 
+//                         curve.clone(),
+//                         ate_bits,
 //                         ate_hamming,
 //                         w0_bits,
 //                         w0_hamming,
 //                         w1_bits,
-//                         w1_hamming,                        
+//                         w1_hamming,
 //                         *num_pairs);
 //                     for (r, _) in reports.into_iter() {
 //                         got_results = true;
@@ -331,13 +328,13 @@ mod parallel_measurements;
 //                 let curve = gen_params::random_mnt6_params(num_limbs, num_group_limbs, &mut rng);
 //                 for num_pairs in pairs.iter() {
 //                     let reports = mnt6::process_for_curve_and_bit_sizes(
-//                         curve.clone(), 
-//                         ate_bits, 
+//                         curve.clone(),
+//                         ate_bits,
 //                         ate_hamming,
 //                         w0_bits,
 //                         w0_hamming,
 //                         w1_bits,
-//                         w1_hamming,                        
+//                         w1_hamming,
 //                         *num_pairs);
 //                     for (r, _) in reports.into_iter() {
 //                         got_results = true;
@@ -355,7 +352,6 @@ mod parallel_measurements;
 //             pb.inc();
 //         }
 //     }
-
 
 //     pb.finish_print("done");
 // }

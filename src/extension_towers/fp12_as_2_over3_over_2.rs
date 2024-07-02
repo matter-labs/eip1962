@@ -1,60 +1,53 @@
-use crate::field::{SizedPrimeField};
-use crate::representation::ElementRepr;
-use crate::traits::{FieldElement, BitIterator, FieldExtension, ZeroAndOne};
-use super::fp6_as_3_over_2::{Fp6, Extension3Over2};
 use super::fp2::Fp2;
+use super::fp6_as_3_over_2::{Extension3Over2, Fp6};
 use super::Fp6Fp12FrobeniusBaseElements;
+use crate::field::SizedPrimeField;
+use crate::representation::ElementRepr;
+use crate::traits::{BitIterator, FieldElement, FieldExtension, ZeroAndOne};
 
 // this implementation assumes extension using polynomial w^2 - v = 0
-pub struct Fp12<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >{
+pub struct Fp12<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> {
     pub c0: Fp6<'a, E, F>,
     pub c1: Fp6<'a, E, F>,
-    pub extension_field: &'a Extension2Over3Over2<'a, E, F>
+    pub extension_field: &'a Extension2Over3Over2<'a, E, F>,
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Display for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> std::fmt::Display for Fp12<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f, "Fq12({} + {} * w)", self.c0, self.c1)
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >std::fmt::Debug for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> std::fmt::Debug for Fp12<'a, E, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f, "Fq12({} + {} * w)", self.c0, self.c1)
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Clone for Fp12<'a, E, F> {
     #[inline(always)]
     fn clone(&self) -> Self {
-        Self{
+        Self {
             c0: self.c0,
             c1: self.c1,
-            extension_field: self.extension_field
+            extension_field: self.extension_field,
         }
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Copy for Fp12<'a, E, F> {}
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Copy for Fp12<'a, E, F> {}
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PartialEq for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> PartialEq for Fp12<'a, E, F> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
-        self.c0 == other.c0 && 
-        self.c1 == other.c1
+        self.c0 == other.c0 && self.c1 == other.c1
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp12<'a, E, F> {
-}
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Eq for Fp12<'a, E, F> {}
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
-    pub fn mul_by_034(
-        &mut self,
-        c0: & Fp2<'a, E, F>,
-        c3: & Fp2<'a, E, F>,
-        c4: & Fp2<'a, E, F>,
-    ) {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Fp12<'a, E, F> {
+    pub fn mul_by_034(&mut self, c0: &Fp2<'a, E, F>, c3: &Fp2<'a, E, F>, c4: &Fp2<'a, E, F>) {
         let mut a = self.c0;
         a.c0.mul_assign(c0);
         a.c1.mul_assign(c0);
@@ -74,19 +67,13 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
         self.c1.sub_assign(&a);
         self.c1.sub_assign(&b);
 
-
         let mut t1 = b;
         t1.mul_by_nonresidue(self.extension_field);
         self.c0 = a;
         self.c0.add_assign(&t1);
     }
 
-    pub fn mul_by_014(
-        &mut self,
-        c0: & Fp2<'a, E, F>,
-        c1: & Fp2<'a, E, F>,
-        c4: & Fp2<'a, E, F>,
-    ) {
+    pub fn mul_by_014(&mut self, c0: &Fp2<'a, E, F>, c1: &Fp2<'a, E, F>, c4: &Fp2<'a, E, F>) {
         let mut aa = self.c0;
         aa.mul_by_01(c0, c1);
         let mut bb = self.c1;
@@ -245,36 +232,35 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp12<'a, E, F> {
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> ZeroAndOne for Fp12<'a, E, F> {
     type Params = &'a Extension2Over3Over2<'a, E, F>;
 
     fn zero(extension_field: &'a Extension2Over3Over2<'a, E, F>) -> Self {
         let zero = Fp6::zero(extension_field.field);
-        
+
         Self {
             c0: zero,
             c1: zero,
-            extension_field: extension_field
+            extension_field: extension_field,
         }
     }
 
     fn one(extension_field: &'a Extension2Over3Over2<'a, E, F>) -> Self {
         let zero = Fp6::zero(extension_field.field);
         let one = Fp6::one(extension_field.field);
-        
+
         Self {
             c0: one,
             c1: zero,
-            extension_field: extension_field
+            extension_field: extension_field,
         }
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> FieldElement for Fp12<'a, E, F> {
     /// Returns true iff this element is zero.
     fn is_zero(&self) -> bool {
-        self.c0.is_zero() && 
-        self.c1.is_zero()
+        self.c0.is_zero() && self.c1.is_zero()
     }
 
     fn add_assign(&mut self, other: &Self) {
@@ -306,10 +292,10 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         c0s.sub_assign(&c1s);
 
         c0s.inverse().map(|t| {
-            let mut tmp = Fp12 { 
-                c0: t, 
+            let mut tmp = Fp12 {
+                c0: t,
                 c1: t,
-                extension_field: self.extension_field
+                extension_field: self.extension_field,
             };
             tmp.c0.mul_assign(&self.c0);
             tmp.c1.mul_assign(&self.c1);
@@ -319,8 +305,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         })
     }
 
-    fn mul_assign(&mut self, other: &Self)
-    {
+    fn mul_assign(&mut self, other: &Self) {
         let mut aa = self.c0;
         aa.mul_assign(&other.c0);
         let mut bb = self.c1;
@@ -336,8 +321,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
         self.c0.add_assign(&aa);
     }
 
-    fn square(&mut self)
-    {
+    fn square(&mut self) {
         let mut ab = self.c0;
         ab.mul_assign(&self.c1);
         let mut c0c1 = self.c0;
@@ -386,9 +370,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
     fn frobenius_map(&mut self, power: usize) {
         assert!(self.extension_field.frobenius_coeffs_are_calculated);
         match power {
-            1 | 2 | 3 | 6 => {
-
-            },
+            1 | 2 | 3 | 6 => {}
             _ => {
                 unreachable!("can not reach power {}", power);
             }
@@ -408,38 +390,48 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp12<'a
     }
 }
 
-pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
+pub struct Extension2Over3Over2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> {
     pub(crate) non_residue: Fp6<'a, E, F>,
     pub(crate) field: &'a Extension3Over2<'a, E, F>,
     pub(crate) frobenius_coeffs_c1: [Fp2<'a, E, F>; 12],
-    pub(crate) frobenius_coeffs_are_calculated: bool
+    pub(crate) frobenius_coeffs_are_calculated: bool,
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Extension2Over3Over2<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Clone for Extension2Over3Over2<'a, E, F> {
     fn clone(&self) -> Self {
         Self {
             non_residue: self.non_residue,
             field: self.field,
             frobenius_coeffs_c1: self.frobenius_coeffs_c1,
-            frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated
+            frobenius_coeffs_are_calculated: self.frobenius_coeffs_are_calculated,
         }
     }
 }
 
 use crate::integers::*;
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a, E, F> {
-    pub (crate) fn new(non_residue: Fp6<'a, E, F>) -> Self {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Extension2Over3Over2<'a, E, F> {
+    pub(crate) fn new(non_residue: Fp6<'a, E, F>) -> Self {
         let extension_2 = &non_residue.extension_field.field;
 
         Self {
             non_residue: non_residue,
-            field: & non_residue.extension_field,
-            frobenius_coeffs_c1: [Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2),
-                                Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2),
-                                Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2),
-                                Fp2::zero(extension_2), Fp2::zero(extension_2), Fp2::zero(extension_2)],
-            frobenius_coeffs_are_calculated: false
+            field: &non_residue.extension_field,
+            frobenius_coeffs_c1: [
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+                Fp2::zero(extension_2),
+            ],
+            frobenius_coeffs_are_calculated: false,
         }
     }
 
@@ -447,7 +439,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
     pub(crate) fn calculate_frobenius_coeffs_optimized(
         &mut self,
         modulus: &MaxFieldUint,
-    ) -> Result<(), ()> {    
+    ) -> Result<(), ()> {
         // NON_RES**(((q^0) - 1) / 6)
         let f_0 = Fp2::one(self.field.field);
 
@@ -520,8 +512,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
 
     pub(crate) fn calculate_frobenius_coeffs_with_precomp(
         &mut self,
-        precomp: &Fp6Fp12FrobeniusBaseElements<'a, E, F>
-    ) -> Result<(), ()> {    
+        precomp: &Fp6Fp12FrobeniusBaseElements<'a, E, F>,
+    ) -> Result<(), ()> {
         let f_0 = Fp2::one(self.field.field);
         let f_1 = precomp.non_residue_in_q_minus_one_by_six;
         let f_2 = precomp.non_residue_in_q_squared_minus_one_by_six;
@@ -566,9 +558,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Extension2Over3Over2<'a,
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Extension2Over3Over2<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> FieldExtension
+    for Extension2Over3Over2<'a, E, F>
+{
     const EXTENSION_DEGREE: usize = 2;
-    
+
     type Element = Fp6<'a, E, F>;
 
     fn multiply_by_non_residue(&self, el: &mut Self::Element) {
@@ -582,5 +576,4 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldExtension for Exten
         el.c1 = el.c0;
         el.c0 = new_c0;
     }
-
 }

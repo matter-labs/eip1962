@@ -1,17 +1,17 @@
+use crate::extension_towers::fp2::*;
+use crate::field::*;
+use crate::fp::*;
+use crate::integers::MaxFieldUint;
 use crate::pairings::TwistType;
 use crate::representation::*;
-use crate::field::*;
-use num_bigint::BigUint;
-use crate::integers::MaxFieldUint;
-use crate::fp::*;
-use crate::extension_towers::fp2::*;
 use crate::traits::*;
+use num_bigint::BigUint;
 use num_traits::Num;
 
 mod mnt6;
 
 fn generate_bls12_spec_params<FE: ElementRepr>(
-    modulus: BigUint, 
+    modulus: BigUint,
     twist_type: TwistType,
     b: BigUint,
     main_subgroup_order: BigUint,
@@ -33,8 +33,10 @@ fn generate_bls12_spec_params<FE: ElementRepr>(
     let fp_non_residue = Fp::from_be_bytes(&field, &fp_non_residue.to_bytes_be(), true).unwrap();
     let extension_2 = Extension2::new(fp_non_residue.clone());
     let mut fp2_non_residue = Fp2::zero(&extension_2);
-    let fp2_non_residue_c0 = Fp::from_be_bytes(&field, &fp2_non_residue_c0.to_bytes_be(), true).unwrap();
-    let fp2_non_residue_c1 = Fp::from_be_bytes(&field, &fp2_non_residue_c1.to_bytes_be(), true).unwrap();
+    let fp2_non_residue_c0 =
+        Fp::from_be_bytes(&field, &fp2_non_residue_c0.to_bytes_be(), true).unwrap();
+    let fp2_non_residue_c1 =
+        Fp::from_be_bytes(&field, &fp2_non_residue_c1.to_bytes_be(), true).unwrap();
     fp2_non_residue.c0 = fp2_non_residue_c0;
     fp2_non_residue.c1 = fp2_non_residue_c1;
 
@@ -45,26 +47,33 @@ fn generate_bls12_spec_params<FE: ElementRepr>(
             b_fp2.mul_by_fp(&b_fp);
 
             b_fp2
-        },
+        }
         TwistType::M => {
             let mut b_fp2 = fp2_non_residue.clone();
             b_fp2.mul_by_fp(&b_fp);
 
             b_fp2
-        },
+        }
     };
 
     let g1_generator_x = Fp::from_be_bytes(&field, &generator_g1_x.to_bytes_be(), true).unwrap();
     let g1_generator_y = Fp::from_be_bytes(&field, &generator_g1_y.to_bytes_be(), true).unwrap();
 
-    let g1_generator_x_c0 = Fp::from_be_bytes(&field, &generator_g2_x_0.to_bytes_be(), true).unwrap();
-    let g1_generator_x_c1 = Fp::from_be_bytes(&field, &generator_g2_x_1.to_bytes_be(), true).unwrap();
-    let g1_generator_y_c0 = Fp::from_be_bytes(&field, &generator_g2_y_0.to_bytes_be(), true).unwrap();
-    let g1_generator_y_c1 = Fp::from_be_bytes(&field, &generator_g2_y_1.to_bytes_be(), true).unwrap();
+    let g1_generator_x_c0 =
+        Fp::from_be_bytes(&field, &generator_g2_x_0.to_bytes_be(), true).unwrap();
+    let g1_generator_x_c1 =
+        Fp::from_be_bytes(&field, &generator_g2_x_1.to_bytes_be(), true).unwrap();
+    let g1_generator_y_c0 =
+        Fp::from_be_bytes(&field, &generator_g2_y_0.to_bytes_be(), true).unwrap();
+    let g1_generator_y_c1 =
+        Fp::from_be_bytes(&field, &generator_g2_y_1.to_bytes_be(), true).unwrap();
     println!("BLS12 Parameters");
     println!("Base field modulus = {}", field.modulus());
     println!("B coefficient = {}", b_fp);
-    println!("Main subgroup order = 0x{}", main_subgroup_order.to_str_radix(16));
+    println!(
+        "Main subgroup order = 0x{}",
+        main_subgroup_order.to_str_radix(16)
+    );
 
     println!("Extension tower:");
     println!("Fp2 construction:");
@@ -77,10 +86,10 @@ fn generate_bls12_spec_params<FE: ElementRepr>(
     match twist_type {
         TwistType::D => {
             println!("Twist type: D");
-        },
+        }
         TwistType::M => {
             println!("Twist type: M");
-        },
+        }
     };
     println!("B coefficient for twist c0 = {}", b_fp2.c0);
     println!("B coefficient for twist c1 = {}", b_fp2.c1);
@@ -101,11 +110,14 @@ fn generate_bls12_spec_params<FE: ElementRepr>(
     println!("x is negative = {}", x_is_negative);
 }
 
-
 #[test]
 fn print_bls12_381_parameters() {
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
-    let group_order = BigUint::from_str_radix("52435875175126190479447740508185965837690552500527637822603658699938581184513", 10).unwrap();
+    let group_order = BigUint::from_str_radix(
+        "52435875175126190479447740508185965837690552500527637822603658699938581184513",
+        10,
+    )
+    .unwrap();
 
     // non-residue is -1
     let mut fp_non_residue = modulus.clone();
@@ -146,14 +158,18 @@ fn print_bls12_381_parameters() {
         q_y_0,
         q_y_1,
         x,
-        x_is_negative
+        x_is_negative,
     );
 }
 
 #[test]
 fn print_bls12_377_parameters() {
     let modulus = BigUint::from_str_radix("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177", 10).unwrap();
-    let group_order = BigUint::from_str_radix("8444461749428370424248824938781546531375899335154063827935233455917409239041", 10).unwrap();
+    let group_order = BigUint::from_str_radix(
+        "8444461749428370424248824938781546531375899335154063827935233455917409239041",
+        10,
+    )
+    .unwrap();
 
     // non-residue is -5
     let mut fp_non_residue = modulus.clone();
@@ -194,6 +210,6 @@ fn print_bls12_377_parameters() {
         q_y_0,
         q_y_1,
         x,
-        x_is_negative
+        x_is_negative,
     );
 }

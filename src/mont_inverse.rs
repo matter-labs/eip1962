@@ -1,9 +1,9 @@
-use crate::representation::{ElementRepr};
-use crate::traits::FieldElement;
-use crate::field::{SizedPrimeField};
+use crate::field::SizedPrimeField;
 use crate::fp::Fp;
+use crate::representation::ElementRepr;
+use crate::traits::FieldElement;
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Fp<'a, E, F> {
     pub(crate) fn mont_inverse(&self) -> Option<Self> {
         if self.is_zero() {
             None
@@ -19,8 +19,8 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             let mut k = 0u64;
 
             let mut found = false;
-            for _ in 0..E::NUM_LIMBS*128 {
-            // while !v.is_zero() {
+            for _ in 0..E::NUM_LIMBS * 128 {
+                // while !v.is_zero() {
                 if v.is_zero() {
                     found = true;
                     break;
@@ -120,7 +120,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             let mut k = 0u64;
 
             let mut found = false;
-            for _ in 0..E::NUM_LIMBS*128 {
+            for _ in 0..E::NUM_LIMBS * 128 {
                 if v.is_zero() {
                     found = true;
                     break;
@@ -173,14 +173,14 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             if modulus_bits_ceil <= k && k <= mont_power {
                 let mut r_by_r2 = Self {
                     field: self.field,
-                    repr: r
+                    repr: r,
                 };
-    
+
                 let r2 = Self {
                     field: self.field,
-                    repr: *self.field.mont_r2()
+                    repr: *self.field.mont_r2(),
                 };
-    
+
                 r_by_r2.mul_assign(&r2);
 
                 r = r_by_r2.repr;
@@ -188,11 +188,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
                 k += mont_power;
             }
 
-            if k > 2*mont_power {
+            if k > 2 * mont_power {
                 return None;
             }
 
-            if 2*mont_power - k > mont_power {
+            if 2 * mont_power - k > mont_power {
                 // we are not in range
                 return None;
             }
@@ -203,17 +203,17 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
             // since 2^(2m - k) < 2^m then we are ok with a multiplication without preliminary reduction
             // of the representation as montgomery multiplication will handle it for us
             let mut two_in_two_m_minus_k_repr = F::Repr::from(1);
-            two_in_two_m_minus_k_repr.shl((2*mont_power - k) as u32);
+            two_in_two_m_minus_k_repr.shl((2 * mont_power - k) as u32);
 
             {
                 let mut r_by_two_in_two_m_minus_k = Self {
                     field: self.field,
-                    repr: r
+                    repr: r,
                 };
-    
+
                 let two_in_two_m_minus_k = Self {
                     field: self.field,
-                    repr: two_in_two_m_minus_k_repr
+                    repr: two_in_two_m_minus_k_repr,
                 };
 
                 r_by_two_in_two_m_minus_k.mul_assign(&two_in_two_m_minus_k);
@@ -236,16 +236,20 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >Fp<'a, E, F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::FieldElement;
     use crate::field::U256Repr;
     use crate::fp::Fp;
+    use crate::traits::FieldElement;
     use num_bigint::BigUint;
     use num_traits::Num;
 
     #[test]
     fn test_mont_inverse() {
         use crate::field::new_field;
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
         // this is 7 in BE form
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
@@ -258,7 +262,11 @@ mod tests {
     #[test]
     fn test_new_mont_inverse() {
         use crate::field::new_field;
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
         // this is 7 in BE form
         let mut be_repr = vec![0u8; 32];
         be_repr[31] = 7u8;
@@ -270,10 +278,14 @@ mod tests {
 
     #[test]
     fn test_random_mont_inverse() {
+        use crate::field::new_field;
         use rand::thread_rng;
         use rand::RngCore;
-        use crate::field::new_field;
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
         let mut rng = thread_rng();
         let mut be_repr = vec![0u8; 32];
         for _ in 0..1000 {
@@ -299,7 +311,9 @@ mod tests {
         let inverse = element.eea_inverse().expect("inverse must exist");
         println!("EEA inverse = {}", inverse);
         // let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
-        let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
+        let mont_inverse = element
+            .new_mont_inverse()
+            .expect("montgomery inverse must exist");
         println!("Montgomery form inverse = {}", mont_inverse);
 
         let one = Fp::one(&field);
@@ -315,12 +329,7 @@ mod tests {
         assert_eq!(inverse, mont_inverse);
     }
 
-    fn test_for_field_end_element(
-        field: &str,
-        radix: u32,
-        element: &str,
-        element_radix: u32
-    ) {
+    fn test_for_field_end_element(field: &str, radix: u32, element: &str, element_radix: u32) {
         use crate::field::new_field;
         use crate::traits::ZeroAndOne;
 
@@ -331,7 +340,9 @@ mod tests {
         if let Some(inverse) = element.eea_inverse() {
             // println!("EEA inverse = {}", inverse);
             // let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
-            let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
+            let mont_inverse = element
+                .new_mont_inverse()
+                .expect("montgomery inverse must exist");
             println!("Montgomery form inverse = {}", mont_inverse);
 
             let one = Fp::one(&field);
@@ -347,7 +358,10 @@ mod tests {
             assert_eq!(inverse, mont_inverse);
         } else {
             println!("Inverse does not exist");
-            assert!(element.new_mont_inverse().is_none(),"there should be no montgomery inverse too");
+            assert!(
+                element.new_mont_inverse().is_none(),
+                "there should be no montgomery inverse too"
+            );
             // assert!(element.mont_inverse().is_none(),"there should be no montgomery inverse too");
         }
     }
@@ -364,7 +378,9 @@ mod tests {
         let inverse = element.eea_inverse().expect("inverse must exist");
         println!("EEA inverse = {}", inverse);
         // let mont_inverse = element.mont_inverse().expect("montgomery inverse must exist");
-        let mont_inverse = element.new_mont_inverse().expect("montgomery inverse must exist");
+        let mont_inverse = element
+            .new_mont_inverse()
+            .expect("montgomery inverse must exist");
         println!("Montgomery form inverse = {}", mont_inverse);
 
         let one = Fp::one(&field);

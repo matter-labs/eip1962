@@ -1,30 +1,30 @@
+use super::*;
+use crate::extension_towers::fp2::Fp2;
+use crate::field::*;
 use crate::fp::*;
 use crate::representation::*;
-use crate::field::*;
 use crate::traits::*;
-use crate::extension_towers::fp2::Fp2;
-use super::*;
 
-use crate::weierstrass::*;
-use crate::weierstrass::curve::*;
 use crate::square_root::*;
+use crate::weierstrass::curve::*;
+use crate::weierstrass::*;
 
 #[derive(Clone)]
 pub struct SwuParameters<C: CurveParameters> {
     pub z: C::BaseFieldElement,
     pub minus_b_by_a: C::BaseFieldElement,
-    pub minus_z_inv: C::BaseFieldElement
+    pub minus_z_inv: C::BaseFieldElement,
 }
 
 pub(crate) fn simplified_swu_fp<
     'a,
-    E: ElementRepr, 
-    F: SizedPrimeField<Repr = E>, 
-    C: CurveParameters<BaseFieldElement = Fp<'a, E, F>>
-> (
+    E: ElementRepr,
+    F: SizedPrimeField<Repr = E>,
+    C: CurveParameters<BaseFieldElement = Fp<'a, E, F>>,
+>(
     u: &C::BaseFieldElement,
     params: &SwuParameters<C>,
-    curve: &WeierstrassCurve<'a, C>
+    curve: &WeierstrassCurve<'a, C>,
 ) -> (C::BaseFieldElement, C::BaseFieldElement) {
     let one = Fp::one(u.field);
 
@@ -89,18 +89,10 @@ pub(crate) fn simplified_swu_fp<
     let e2 = e2 == LegendreSymbol::Zero || e2 == LegendreSymbol::QuadraticResidue;
 
     // 17.   x = CMOV(x2, x1, e2)    # If is_square(gx1), x = x1, else x = x2
-    let x = if e2 {
-        x1
-    } else {
-        x2
-    };
+    let x = if e2 { x1 } else { x2 };
 
     // 18.  y2 = CMOV(gx2, gx1, e2)  # If is_square(gx1), y2 = gx1, else y2 = gx2
-    let y2 = if e2 {
-        gx1
-    } else {
-        gx2
-    };
+    let y2 = if e2 { gx1 } else { gx2 };
     // 19.   y = sqrt(y2)
     let mut y = sqrt(&y2).expect("y2 is a square");
 
@@ -112,21 +104,16 @@ pub(crate) fn simplified_swu_fp<
 
     // our SignZero is equal to SignPlus
     match (u_sign, y_sign) {
-        (Sign::Zero, Sign::Zero) |
-        (Sign::Zero, Sign::SignPlus) | 
-        (Sign::SignPlus, Sign::Zero) => {},
+        (Sign::Zero, Sign::Zero) | (Sign::Zero, Sign::SignPlus) | (Sign::SignPlus, Sign::Zero) => {}
 
-        (Sign::SignPlus, Sign::SignPlus) |
-        (Sign::SignMinus, Sign::SignMinus) => {},
-        
-        (Sign::SignPlus, Sign::SignMinus) |
-        (Sign::SignMinus, Sign::SignPlus) => {
+        (Sign::SignPlus, Sign::SignPlus) | (Sign::SignMinus, Sign::SignMinus) => {}
+
+        (Sign::SignPlus, Sign::SignMinus) | (Sign::SignMinus, Sign::SignPlus) => {
             y.negate();
-        },
-        (Sign::Zero, Sign::SignMinus) | 
-        (Sign::SignMinus, Sign::Zero) => {
+        }
+        (Sign::Zero, Sign::SignMinus) | (Sign::SignMinus, Sign::Zero) => {
             y.negate();
-        },
+        }
     }
 
     // 22. return (x, y)
@@ -134,15 +121,15 @@ pub(crate) fn simplified_swu_fp<
 }
 
 pub(crate) fn simplified_swu_fp2<
-    'a, 
-    E: ElementRepr, 
-    F: SizedPrimeField<Repr = E>, 
-    C: CurveParameters<BaseFieldElement = Fp2<'a, E, F>>
-> (
+    'a,
+    E: ElementRepr,
+    F: SizedPrimeField<Repr = E>,
+    C: CurveParameters<BaseFieldElement = Fp2<'a, E, F>>,
+>(
     u: &Fp2<'a, E, F>,
     params: &SwuParameters<C>,
-    curve: &WeierstrassCurve<'a, C>
-) -> (Fp2<'a, E, F>, Fp2<'a, E, F>)  {
+    curve: &WeierstrassCurve<'a, C>,
+) -> (Fp2<'a, E, F>, Fp2<'a, E, F>) {
     let one = Fp2::one(u.extension_field);
 
     // we do NOT use constant time operations here
@@ -206,18 +193,10 @@ pub(crate) fn simplified_swu_fp2<
     let e2 = e2_legendre == LegendreSymbol::Zero || e2_legendre == LegendreSymbol::QuadraticResidue;
 
     // 17.   x = CMOV(x2, x1, e2)    # If is_square(gx1), x = x1, else x = x2
-    let x = if e2 {
-        x1
-    } else {
-        x2
-    };
+    let x = if e2 { x1 } else { x2 };
 
     // 18.  y2 = CMOV(gx2, gx1, e2)  # If is_square(gx1), y2 = gx1, else y2 = gx2
-    let y2 = if e2 {
-        gx1
-    } else {
-        gx2
-    };
+    let y2 = if e2 { gx1 } else { gx2 };
     // 19.   y = sqrt(y2)
     let mut y = sqrt_ext2(&y2).expect("y2 is a square");
 
@@ -229,23 +208,14 @@ pub(crate) fn simplified_swu_fp2<
 
     // our SignZero is equal to SignPlus
     match (u_sign, y_sign) {
-        (Sign::Zero, Sign::Zero) |
-        (Sign::Zero, Sign::SignPlus) | 
-        (Sign::SignPlus, Sign::Zero) => {
-
-        },
-        (Sign::SignPlus, Sign::SignPlus) |
-        (Sign::SignMinus, Sign::SignMinus) => {
-
-        },
-        (Sign::SignPlus, Sign::SignMinus) |
-        (Sign::SignMinus, Sign::SignPlus) => {
+        (Sign::Zero, Sign::Zero) | (Sign::Zero, Sign::SignPlus) | (Sign::SignPlus, Sign::Zero) => {}
+        (Sign::SignPlus, Sign::SignPlus) | (Sign::SignMinus, Sign::SignMinus) => {}
+        (Sign::SignPlus, Sign::SignMinus) | (Sign::SignMinus, Sign::SignPlus) => {
             y.negate();
-        },
-        (Sign::Zero, Sign::SignMinus) | 
-        (Sign::SignMinus, Sign::Zero) => {
+        }
+        (Sign::Zero, Sign::SignMinus) | (Sign::SignMinus, Sign::Zero) => {
             y.negate();
-        },
+        }
     }
 
     // 22. return (x, y)

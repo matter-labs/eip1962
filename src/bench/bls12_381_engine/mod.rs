@@ -1,16 +1,16 @@
 extern crate test as rust_test;
 use self::rust_test::Bencher;
 
-use num_bigint::BigUint;
-use num_traits::FromPrimitive;
-use num_integer::Integer;
-use crate::traits::{FieldElement};
-use crate::traits::ZeroAndOne;
-use num_traits::Num;
-use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
-use crate::pairings::{PairingEngine, TwistType};
 use crate::engines::bls12_381::*;
+use crate::pairings::{PairingEngine, TwistType};
+use crate::traits::FieldElement;
+use crate::traits::ZeroAndOne;
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
+use crate::weierstrass::{CurveOverFp2Parameters, CurveOverFpParameters, Group};
+use num_bigint::BigUint;
+use num_integer::Integer;
+use num_traits::FromPrimitive;
+use num_traits::Num;
 
 #[bench]
 fn bench_bls12_381_engine_sugroup_g1_window_4(b: &mut Bencher) {
@@ -102,15 +102,13 @@ fn bench_bls12_381_engine_sugroup_g2_window_7(b: &mut Bencher) {
     });
 }
 
-
 #[bench]
 fn bench_bls12_381_engine_pair_2(b: &mut Bencher) {
     let g1_point = BLS12_381_G1_GENERATOR.clone();
     let g2_point = BLS12_381_G2_GENERATOR.clone();
     let g1s = vec![g1_point; 2];
     let g2s = vec![g2_point; 2];
-    let pairs = 
-    b.iter(|| {
+    let pairs = b.iter(|| {
         assert!(BLS12_381_PAIRING_ENGINE.pair(&g1s, &g2s).is_some());
     });
 }
@@ -121,8 +119,7 @@ fn bench_bls12_381_engine_pair_4(b: &mut Bencher) {
     let g2_point = BLS12_381_G2_GENERATOR.clone();
     let g1s = vec![g1_point; 4];
     let g2s = vec![g2_point; 4];
-    let pairs = 
-    b.iter(|| {
+    let pairs = b.iter(|| {
         assert!(BLS12_381_PAIRING_ENGINE.pair(&g1s, &g2s).is_some());
     });
 }
@@ -133,8 +130,7 @@ fn bench_bls12_381_engine_pair_6(b: &mut Bencher) {
     let g2_point = BLS12_381_G2_GENERATOR.clone();
     let g1s = vec![g1_point; 6];
     let g2s = vec![g2_point; 6];
-    let pairs = 
-    b.iter(|| {
+    let pairs = b.iter(|| {
         assert!(BLS12_381_PAIRING_ENGINE.pair(&g1s, &g2s).is_some());
     });
 }

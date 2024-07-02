@@ -1,16 +1,20 @@
-use crate::public_interface::constants::*;
-use crate::public_interface::{PublicG1Api, G1Api, PublicG2Api, G2Api};
 use crate::errors::ApiError;
+use crate::public_interface::constants::*;
+use crate::public_interface::{G1Api, G2Api, PublicG1Api, PublicG2Api};
 
 use num_bigint::BigUint;
 
-use crate::test::parsers::*;
 use super::call_pairing_engine;
+use crate::test::parsers::*;
 
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters, pairs: usize, check_subgroup: bool) -> Result<Vec<u8>, ApiError> {
+pub(crate) fn assemble_single_curve_params(
+    curve: JsonMnt6PairingCurveParameters,
+    pairs: usize,
+    check_subgroup: bool,
+) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
     assert!(pairs % 2 == 0);
 
@@ -56,7 +60,11 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
     let x_length = vec![x_encoded.len() as u8];
 
     let (exp_w0_decoded, exp_w0_is_positive) = curve.exp_w0;
-    let exp_w0_sign = if exp_w0_is_positive { vec![0u8] } else { vec![1u8] };
+    let exp_w0_sign = if exp_w0_is_positive {
+        vec![0u8]
+    } else {
+        vec![1u8]
+    };
     let exp_w0_encoded = exp_w0_decoded.to_bytes_be();
     assert!(exp_w0_encoded.len() > 0);
     let exp_w0_length = vec![exp_w0_encoded.len() as u8];
@@ -116,7 +124,11 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
     {
-        fn make_random_scalar<R: Rng>(rng: &mut R, group_size_length: usize, group_size: &BigUint) -> BigUint {
+        fn make_random_scalar<R: Rng>(
+            rng: &mut R,
+            group_size_length: usize,
+            group_size: &BigUint,
+        ) -> BigUint {
             let random_scalar_bytes: Vec<u8> = (0..group_size_length).map(|_| rng.gen()).collect();
             let random_scalar = BigUint::from_bytes_be(&random_scalar_bytes[..]);
             let random_scalar = random_scalar % group_size;
@@ -124,7 +136,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
             random_scalar
         }
 
-        for _ in 0..(pairs/2) {
+        for _ in 0..(pairs / 2) {
             // - Multiplication API signature
             // - Lengths of modulus (in bytes)
             // - Field modulus
@@ -135,15 +147,17 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
             // - X
             // - Y
             // - Scalar
-            
+
             let r1 = make_random_scalar(rng, group_size_length, &group_size);
             let r2 = make_random_scalar(rng, group_size_length, &group_size);
             let r3 = (r1.clone() * &r2) % &group_size;
             let r3 = group_size.clone() - r3;
 
             // pair (g1^r1, g2^r2)*(g1^(-r1*r2), g2)
-            let (g1_common_bytes, _, _) = g1_ops::mnt6::assemble_single_curve_params(curve_clone.clone());
-            let (g2_common_bytes, _, _) = g2_ops::mnt6::assemble_single_curve_params(curve_clone.clone());
+            let (g1_common_bytes, _, _) =
+                g1_ops::mnt6::assemble_single_curve_params(curve_clone.clone());
+            let (g2_common_bytes, _, _) =
+                g2_ops::mnt6::assemble_single_curve_params(curve_clone.clone());
 
             let g1_encoded_0 = {
                 let mut mul_calldata = vec![];
@@ -268,7 +282,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
 //         input_data.extend(calldata);
 //         let expected_result = vec![1u8];
 //         writer.write_record(&[
-//             prepend_0x(&encode(&input_data[..])), 
+//             prepend_0x(&encode(&input_data[..])),
 //             prepend_0x(&encode(&expected_result[..]))],
 //         ).expect("must write a record");
 //     }
@@ -281,7 +295,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
 //     use std::fs::File;
 //     let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
 //     assert!(curves.len() != 0);
-    
+
 //     // let mut writer = Writer::from_path("src/test/test_vectors/bls12/pairing.csv").expect("must open a test file");
 //     // writer.write_record(&["input", "result"]).expect("must write header");
 //     for (curve, _) in curves.into_iter() {
@@ -304,14 +318,13 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters
 // //     });
 // // }
 
-
 fn strip_0x(string: &str) -> String {
     let string = string.trim();
     let mut string = string.to_ascii_lowercase().as_bytes().to_vec();
     if string.len() > 2 && string[0..1] == b"0"[..] && string[1..2] == b"x"[..] {
         string = string[2..].to_vec();
     }
-    
+
     std::string::String::from_utf8(string).unwrap()
 }
 
@@ -329,7 +342,7 @@ fn strip_0x_and_get_sign(string: &str) -> (String, bool) {
     if string.len() > 2 && string[0..1] == b"0"[..] && string[1..2] == b"x"[..] {
         string = string[2..].to_vec();
     }
-    
+
     (std::string::String::from_utf8(string).unwrap(), positive)
 }
 

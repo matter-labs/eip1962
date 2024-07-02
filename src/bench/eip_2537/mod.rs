@@ -25,7 +25,6 @@ fn bench_eip_2537_g2_add(b: &mut Bencher) {
     });
 }
 
-
 #[bench]
 fn bench_eip_2537_g1_double(b: &mut Bencher) {
     use crate::test::pairings::bls12::assemble_bls12_381;

@@ -10,7 +10,7 @@ struct U320(U320Repr);
 
 #[derive(ElementRepresentation)]
 #[NumberOfLimbs = "6"]
-struct U384(U384Repr); 
+struct U384(U384Repr);
 
 #[derive(ElementRepresentation)]
 #[NumberOfLimbs = "7"]
@@ -52,12 +52,11 @@ struct U960(U960Repr);
 #[NumberOfLimbs = "16"]
 struct U1024(U1024Repr);
 
-/// PrimeField is a structure that it instantiated at the runtime 
+use crate::integers::*;
+/// PrimeField is a structure that it instantiated at the runtime
 /// and holds all the necessary information for further arithmetic
 /// operations (mainly precompiled Montgommery constants)
-
-use crate::representation::{ElementRepr};
-use crate::integers::*;
+use crate::representation::ElementRepr;
 
 pub(crate) fn slice_to_fixed_length_u64_vec<S: AsRef<[u64]>>(v: S, limbs: usize) -> Vec<u64> {
     let as_ref = v.as_ref();
@@ -111,8 +110,7 @@ fn num_words(number: &MaxFieldSquaredUint) -> usize {
 }
 
 /// This trait represents an element of a field.
-pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug + 'static + Copy + Clone
-{
+pub trait SizedPrimeField: Sized + Send + Sync + std::fmt::Debug + 'static + Copy + Clone {
     type Repr: ElementRepr;
 
     fn mont_power(&self) -> u64;
@@ -131,7 +129,7 @@ pub struct PrimeField<E: ElementRepr> {
     pub modulus: E,
     pub mont_r: E,
     pub mont_r2: E,
-    pub mont_inv: u64
+    pub mont_inv: u64,
 }
 
 impl<E: ElementRepr> Clone for PrimeField<E> {
@@ -142,7 +140,7 @@ impl<E: ElementRepr> Clone for PrimeField<E> {
             modulus: self.modulus,
             mont_r: self.mont_r,
             mont_r2: self.mont_r2,
-            mont_inv: self.mont_inv
+            mont_inv: self.mont_inv,
         }
     }
 }
@@ -153,22 +151,34 @@ impl<E: ElementRepr> SizedPrimeField for PrimeField<E> {
     type Repr = E;
 
     #[inline(always)]
-    fn mont_power(&self) -> u64 { self.mont_power }
+    fn mont_power(&self) -> u64 {
+        self.mont_power
+    }
 
     #[inline(always)]
-    fn modulus_bits(&self) -> u64 { self.modulus_bits }
+    fn modulus_bits(&self) -> u64 {
+        self.modulus_bits
+    }
 
     #[inline(always)]
-    fn modulus(&self) -> &Self::Repr { &self.modulus }
+    fn modulus(&self) -> &Self::Repr {
+        &self.modulus
+    }
 
     #[inline(always)]
-    fn mont_r(&self) -> &Self::Repr { &self.mont_r }
+    fn mont_r(&self) -> &Self::Repr {
+        &self.mont_r
+    }
 
     #[inline(always)]
-    fn mont_r2(&self) -> &Self::Repr { &self.mont_r2 }
+    fn mont_r2(&self) -> &Self::Repr {
+        &self.mont_r2
+    }
 
     #[inline(always)]
-    fn mont_inv(&self) -> u64 { self.mont_inv }
+    fn mont_inv(&self) -> u64 {
+        self.mont_inv
+    }
 
     #[inline(always)]
     fn is_valid_repr(&self, repr: &Self::Repr) -> bool {
@@ -236,22 +246,25 @@ pub fn field_from_modulus<R: ElementRepr>(modulus: &MaxFieldUint) -> Result<Prim
     let r_ref = r.as_ref();
     let r2_ref = r2.as_ref();
 
-    for (i, ((m_el, r_el), r2_el)) in modulus_repr.as_mut().iter_mut()
-                                    .zip(r_repr.as_mut().iter_mut())
-                                    .zip(r2_repr.as_mut().iter_mut())
-                                    .enumerate() {
+    for (i, ((m_el, r_el), r2_el)) in modulus_repr
+        .as_mut()
+        .iter_mut()
+        .zip(r_repr.as_mut().iter_mut())
+        .zip(r2_repr.as_mut().iter_mut())
+        .enumerate()
+    {
         *m_el = modulus_ref[i];
         *r_el = r_ref[i];
         *r2_el = r2_ref[i];
     }
 
     let concrete = PrimeField {
-        mont_power: (num_limbs*64) as u64,
+        mont_power: (num_limbs * 64) as u64,
         modulus_bits: bitlength as u64,
         modulus: modulus_repr,
         mont_r: r_repr,
         mont_r2: r2_repr,
-        mont_inv: inv,  
+        mont_inv: inv,
     };
 
     Ok(concrete)
@@ -287,7 +300,7 @@ mod test {
         let t = MaxFieldSquaredUint::one() << ((num_limbs * 64) as u32);
 
         const REPEATS: usize = 10000;
-        
+
         let start = std::time::Instant::now();
 
         let mut i = 0;
@@ -296,7 +309,10 @@ mod test {
             i += 1;
         }
 
-        println!("Time for one division is {} ns", start.elapsed().as_nanos() / (REPEATS as u128));
+        println!(
+            "Time for one division is {} ns",
+            start.elapsed().as_nanos() / (REPEATS as u128)
+        );
 
         assert!(i == REPEATS);
     }
@@ -312,7 +328,7 @@ mod test {
         let modulus = MaxFieldUint::from_big_endian(&modulus_biguint.to_bytes_be());
 
         const REPEATS: usize = 10000;
-        
+
         let start = std::time::Instant::now();
 
         let mut i = 0;
@@ -321,7 +337,10 @@ mod test {
             i += 1;
         }
 
-        println!("Time to construct 381 field is {} ns", start.elapsed().as_nanos() / (REPEATS as u128));
+        println!(
+            "Time to construct 381 field is {} ns",
+            start.elapsed().as_nanos() / (REPEATS as u128)
+        );
 
         assert!(i == REPEATS);
     }

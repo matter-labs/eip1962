@@ -1,17 +1,17 @@
-use crate::public_interface::{OperationType, perform_operation, ApiError};
+use crate::public_interface::{perform_operation, ApiError, OperationType};
 
-use crate::weierstrass::{Group, CurveOverFpParameters};
-use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-use crate::representation::ElementRepr;
 use crate::field::*;
+use crate::representation::ElementRepr;
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
+use crate::weierstrass::{CurveOverFpParameters, Group};
 
+use crate::public_interface::decode_fp::*;
 use crate::public_interface::decode_g1::*;
 use crate::public_interface::decode_utils::*;
-use crate::public_interface::decode_fp::*;
 
-use crate::{expand_for_modulus_limbs};
+use crate::expand_for_modulus_limbs;
 
-fn call_public_api_on_test_vector(data: &[u8]) -> Result<Vec<u8>, ApiError>{
+fn call_public_api_on_test_vector(data: &[u8]) -> Result<Vec<u8>, ApiError> {
     if data.len() == 0 {
         return Err(ApiError::InputError("input is zero length".to_owned()));
     }
@@ -54,17 +54,18 @@ fn test_api_different_mul_g1() {
     }
 }
 
-pub(crate) fn test_different_g1_multiplications(bytes: &[u8]) -> Result<(), ApiError>  {
+pub(crate) fn test_different_g1_multiplications(bytes: &[u8]) -> Result<(), ApiError> {
     let (_, modulus, _) = parse_modulus_and_length(&bytes)?;
     let modulus_limbs = num_limbs_for_modulus(&modulus)?;
 
-    let result: Result<(), ApiError> = expand_for_modulus_limbs!(modulus_limbs, Tester, bytes, parse_and_compare_muls); 
+    let result: Result<(), ApiError> =
+        expand_for_modulus_limbs!(modulus_limbs, Tester, bytes, parse_and_compare_muls);
 
     result
 }
 
 struct Tester<FE: ElementRepr> {
-    _marker: std::marker::PhantomData<FE>
+    _marker: std::marker::PhantomData<FE>,
 }
 
 impl<FE: ElementRepr> Tester<FE> {
@@ -75,20 +76,25 @@ impl<FE: ElementRepr> Tester<FE> {
 
         let fp_params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp_params).map_err(|_| {
-            ApiError::InputError("Curve shape is not supported".to_owned())
-        })?;
+        let curve = WeierstrassCurve::new(&order.as_ref(), a, b, &fp_params)
+            .map_err(|_| ApiError::InputError("Curve shape is not supported".to_owned()))?;
 
         let (p_0, rest) = decode_g1_point_from_xy(rest, modulus_len, &curve)?;
         let (scalar, rest) = decode_scalar_representation(rest, order_len)?;
 
         if rest.len() != 0 {
-            return Err(ApiError::InputError("Input contains garbage at the end".to_owned()));
+            return Err(ApiError::InputError(
+                "Input contains garbage at the end".to_owned(),
+            ));
         }
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
 
@@ -96,11 +102,12 @@ impl<FE: ElementRepr> Tester<FE> {
         let (x_wnaf_mul, y_wnaf_mul) = p_0.wnaf_mul_impl(scalar.as_ref()).into_xy();
 
         if x_double_and_add != x_wnaf_mul || y_double_and_add != y_wnaf_mul {
-            return Err(ApiError::InputError(
-                format!("DoubleAndAdd x = {}, y = {}, Wnaf x = {}, y = {}", x_double_and_add, y_double_and_add, x_wnaf_mul, y_wnaf_mul)
-            ));
+            return Err(ApiError::InputError(format!(
+                "DoubleAndAdd x = {}, y = {}, Wnaf x = {}, y = {}",
+                x_double_and_add, y_double_and_add, x_wnaf_mul, y_wnaf_mul
+            )));
         }
 
-        return Ok(())
+        return Ok(());
     }
 }

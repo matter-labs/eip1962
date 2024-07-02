@@ -1,29 +1,31 @@
+use crate::extension_towers::fp12_as_2_over3_over_2::{Extension2Over3Over2, Fp12};
+use crate::extension_towers::fp2::{Extension2, Fp2};
+use crate::extension_towers::fp6_as_3_over_2::Extension3Over2;
 use crate::field::SizedPrimeField;
 use crate::fp::Fp;
+use crate::pairings::PairingEngine;
+use crate::pairings::TwistType;
+use crate::pairings::{
+    calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf,
+};
 use crate::representation::ElementRepr;
 use crate::traits::{FieldElement, MsbBitIterator, ZeroAndOne};
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
+use crate::weierstrass::CurveParameters;
 use crate::weierstrass::Group;
-use crate::weierstrass::{CurveParameters};
-use crate::weierstrass::curve::{WeierstrassCurve, CurvePoint};
-use crate::extension_towers::fp2::{Fp2, Extension2};
-use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
-use crate::extension_towers::fp6_as_3_over_2::{Extension3Over2};
-use crate::pairings::{PairingEngine};
-use crate::pairings::TwistType;
-use crate::pairings::{calculate_bits, calculate_hamming_weight, calculate_naf_hamming_weight, into_ternary_wnaf};
 
 pub(crate) struct PreparedTwistPoint<'a, FE: ElementRepr, F: SizedPrimeField<Repr = FE>> {
-    pub(crate) ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>
+    pub(crate) ell_coeffs: Vec<(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>)>,
 }
 
 #[derive(Clone)]
 pub struct BnInstanceParams<
-    'a, 
-        FE: ElementRepr, 
-        F: SizedPrimeField<Repr = FE>, 
-        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
-        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
-    > {
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>,
+    CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+    CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>,
+> {
     pub u: &'a [u64],
     pub six_u_plus_2: &'a [u64],
     pub u_is_negative: bool,
@@ -35,17 +37,17 @@ pub struct BnInstanceParams<
     pub fp6_extension: &'a Extension3Over2<'a, FE, F>,
     pub fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
     pub non_residue_in_p_minus_one_over_2: Fp2<'a, FE, F>,
-    pub force_no_naf: bool
+    pub force_no_naf: bool,
 }
 
 #[derive(Clone)]
 pub struct BnInstance<
-    'a, 
-        FE: ElementRepr, 
-        F: SizedPrimeField<Repr = FE>, 
-        CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
-        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
-    > {
+    'a,
+    FE: ElementRepr,
+    F: SizedPrimeField<Repr = FE>,
+    CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
+    CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>,
+> {
     pub u: &'a [u64],
     pub six_u_plus_2: &'a [u64],
     pub u_is_negative: bool,
@@ -58,18 +60,18 @@ pub struct BnInstance<
     pub fp12_extension: &'a Extension2Over3Over2<'a, FE, F>,
     pub non_residue_in_p_minus_one_over_2: Fp2<'a, FE, F>,
     pub prefer_naf: bool,
-    pub six_u_plus_2_naf: Vec<i8>
+    pub six_u_plus_2_naf: Vec<i8>,
 }
 
 impl<
-    'a, 
-        FE: ElementRepr, 
-        F: SizedPrimeField<Repr = FE>, 
+        'a,
+        FE: ElementRepr,
+        F: SizedPrimeField<Repr = FE>,
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
-        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
-    > BnInstance<'a, FE, F, CB, CTW> 
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>,
+    > BnInstance<'a, FE, F, CB, CTW>
 {
-    pub fn from_params(params: BnInstanceParams::<'a, FE, F, CB, CTW>) -> Self {
+    pub fn from_params(params: BnInstanceParams<'a, FE, F, CB, CTW>) -> Self {
         let (prefer_naf, naf) = if params.force_no_naf {
             (false, vec![])
         } else {
@@ -105,23 +107,24 @@ impl<
             fp12_extension: params.fp12_extension,
             non_residue_in_p_minus_one_over_2: params.non_residue_in_p_minus_one_over_2,
             prefer_naf: prefer_naf,
-            six_u_plus_2_naf: naf
+            six_u_plus_2_naf: naf,
         }
     }
 }
 
 impl<
-    'a, 
-        FE: ElementRepr, 
-        F: SizedPrimeField<Repr = FE>, 
+        'a,
+        FE: ElementRepr,
+        F: SizedPrimeField<Repr = FE>,
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
-        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
-    > BnInstance<'a, FE, F, CB, CTW> {
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>,
+    > BnInstance<'a, FE, F, CB, CTW>
+{
     fn ell(
         &self,
         f: &mut Fp12<'a, FE, F>,
         coeffs: &(Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>),
-        p: & CurvePoint<'a, CB>,
+        p: &CurvePoint<'a, CB>,
     ) {
         debug_assert!(p.is_normalized());
         let mut c0 = coeffs.0.clone();
@@ -133,12 +136,12 @@ impl<
                 c2.mul_by_fp(&p.y);
                 c1.mul_by_fp(&p.x);
                 f.mul_by_014(&c0, &c1, &c2);
-            },
+            }
             TwistType::D => {
                 c0.mul_by_fp(&p.y);
                 c1.mul_by_fp(&p.x);
                 f.mul_by_034(&c0, &c1, &c2);
-            },
+            }
         }
     }
 
@@ -160,7 +163,7 @@ impl<
         let mut a = r.x.clone();
         a.mul_assign(&r.y);
         a.mul_by_fp(two_inv);
-        
+
         // Y^2
         let mut b = r.y.clone();
         b.square();
@@ -188,7 +191,7 @@ impl<
         let mut g = b.clone();
         g.add_assign(&f);
         g.mul_by_fp(two_inv);
-        
+
         // (Y + Z)^2
         let mut h = r.y.clone();
         h.add_assign(&r.z);
@@ -242,20 +245,18 @@ impl<
 
         // i.mul_by_nonresidue(self.fp6_extension);
         match self.twist_type {
-            TwistType::M => {
-                (i, j_by_three, h)
-            },
+            TwistType::M => (i, j_by_three, h),
             TwistType::D => {
                 // (0, 3, 4) = (-2*Y*Z, 3*X^2, 3*b*Z^2 - Y^2)
                 (h, j_by_three, i)
-            },
+            }
         }
     }
 
     fn addition_step(
         &self,
         r: &mut CurvePoint<'a, CTW>,
-        q: & CurvePoint<'a, CTW>,
+        q: &CurvePoint<'a, CTW>,
     ) -> (Fp2<'a, FE, F>, Fp2<'a, FE, F>, Fp2<'a, FE, F>) {
         debug_assert!(q.is_normalized());
         // use adapted zexe formulas too instead of ones from pairing crate
@@ -275,7 +276,7 @@ impl<
         // Theta^2
         let mut c = theta.clone();
         c.square();
-        
+
         // Lambda^2
         let mut d = lambda.clone();
         d.square();
@@ -298,7 +299,7 @@ impl<
         h.negate();
         h.add_assign(&e);
         h.add_assign(&f);
-        
+
         r.x = lambda.clone();
         r.x.mul_assign(&h);
 
@@ -318,7 +319,7 @@ impl<
         // Lambda*y
         let mut t1 = lambda.clone();
         t1.mul_assign(&q.y);
-        
+
         // Theta*x - Lambda*y
         let mut j = theta.clone();
         j.mul_assign(&q.x);
@@ -330,25 +331,30 @@ impl<
         // j.mul_by_nonresidue(self.fp6_extension);
         match self.twist_type {
             TwistType::M => (j, theta, lambda),
-            TwistType::D => 
-            {
+            TwistType::D => {
                 // (0, 3, 4) = (lambda, -theta, Theta*x - Lambda*y)
                 (lambda, theta, j)
-            },
+            }
         }
     }
 
-    fn prepare(&self, twist_point: & CurvePoint<'a, CTW>, two_inv: &Fp<'a, FE, F>) -> PreparedTwistPoint<'a, FE, F> {
+    fn prepare(
+        &self,
+        twist_point: &CurvePoint<'a, CTW>,
+        two_inv: &Fp<'a, FE, F>,
+    ) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
 
         if twist_point.is_zero() {
-            return PreparedTwistPoint {
-                ell_coeffs: vec![],
-            };
+            return PreparedTwistPoint { ell_coeffs: vec![] };
         }
 
         let mut ell_coeffs = Vec::with_capacity(self.six_u_plus_2.len() * 64 * 2 + 2);
-        let mut r = CurvePoint::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
+        let mut r = CurvePoint::point_from_xy(
+            &self.curve_twist,
+            twist_point.x.clone(),
+            twist_point.y.clone(),
+        );
 
         for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1) {
             ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
@@ -374,22 +380,24 @@ impl<
         ell_coeffs.push(self.addition_step(&mut r, &q));
 
         let mut minusq2 = twist_point.clone();
-        minusq2.x.mul_assign(&self.fp6_extension.frobenius_coeffs_c1[2]);
+        minusq2
+            .x
+            .mul_assign(&self.fp6_extension.frobenius_coeffs_c1[2]);
 
         ell_coeffs.push(self.addition_step(&mut r, &minusq2));
 
-        PreparedTwistPoint {
-            ell_coeffs,
-        }
+        PreparedTwistPoint { ell_coeffs }
     }
 
-    fn prepare_naf(&self, twist_point: & CurvePoint<'a, CTW>, two_inv: &Fp<'a, FE, F>) -> PreparedTwistPoint<'a, FE, F> {
+    fn prepare_naf(
+        &self,
+        twist_point: &CurvePoint<'a, CTW>,
+        two_inv: &Fp<'a, FE, F>,
+    ) -> PreparedTwistPoint<'a, FE, F> {
         debug_assert!(twist_point.is_normalized());
 
         if twist_point.is_zero() {
-            return PreparedTwistPoint {
-                ell_coeffs: vec![],
-            };
+            return PreparedTwistPoint { ell_coeffs: vec![] };
         }
 
         let mut ell_coeffs = Vec::with_capacity(self.six_u_plus_2.len() * 64 * 2 + 2);
@@ -397,10 +405,14 @@ impl<
         let mut twist_point_negated = twist_point.clone();
         twist_point_negated.negate();
 
-        let mut r = CurvePoint::<CTW>::point_from_xy(&self.curve_twist, twist_point.x.clone(), twist_point.y.clone());
+        let mut r = CurvePoint::<CTW>::point_from_xy(
+            &self.curve_twist,
+            twist_point.x.clone(),
+            twist_point.y.clone(),
+        );
 
         let mut it = self.six_u_plus_2_naf.iter().rev();
-        
+
         {
             let first = it.next().expect("naf has enough coefficients");
             assert_eq!(*first, 1);
@@ -408,7 +420,7 @@ impl<
 
         for &i in it {
             ell_coeffs.push(self.doubling_step(&mut r, &two_inv));
-            
+
             if i != 0 {
                 if i > 0 {
                     ell_coeffs.push(self.addition_step(&mut r, &twist_point));
@@ -434,28 +446,28 @@ impl<
         ell_coeffs.push(self.addition_step(&mut r, &q));
 
         let mut minusq2 = twist_point.clone();
-        minusq2.x.mul_assign(&self.fp6_extension.frobenius_coeffs_c1[2]);
+        minusq2
+            .x
+            .mul_assign(&self.fp6_extension.frobenius_coeffs_c1[2]);
 
         ell_coeffs.push(self.addition_step(&mut r, &minusq2));
 
-        PreparedTwistPoint {
-            ell_coeffs,
-        }
+        PreparedTwistPoint { ell_coeffs }
     }
 
     fn miller_loop<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
-    where 'a: 'b,
-        I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, CB>, 
-                &'b CurvePoint<'a, CTW>)
-        >
+    where
+        'a: 'b,
+        I: IntoIterator<Item = &'b (&'b CurvePoint<'a, CB>, &'b CurvePoint<'a, CTW>)>,
     {
         let mut g1_references = vec![];
         let mut prepared_coeffs = vec![];
 
         let mut two_inv = Fp::one(self.base_field);
         two_inv.double();
-        let two_inv = two_inv.inverse().expect("inverse of 2 is guaranteed to exist");
+        let two_inv = two_inv
+            .inverse()
+            .expect("inverse of 2 is guaranteed to exist");
 
         for (p, q) in i.into_iter() {
             if !p.is_zero() && !q.is_zero() {
@@ -466,11 +478,14 @@ impl<
             }
         }
 
-        let mut prepared_coeffs: Vec<_> = prepared_coeffs.into_iter().map(|el| el.into_iter()).collect();
+        let mut prepared_coeffs: Vec<_> = prepared_coeffs
+            .into_iter()
+            .map(|el| el.into_iter())
+            .collect();
 
         let mut f = Fp12::one(&self.fp12_extension);
 
-        for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1) {    
+        for i in MsbBitIterator::new(&self.six_u_plus_2).skip(1) {
             f.square();
 
             for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
@@ -506,18 +521,18 @@ impl<
     }
 
     fn miller_loop_naf<'b, I>(&self, i: I) -> Fp12<'a, FE, F>
-    where 'a: 'b,
-        I: IntoIterator<
-            Item = &'b (&'b CurvePoint<'a, CB>, 
-                &'b CurvePoint<'a, CTW>)
-        >
+    where
+        'a: 'b,
+        I: IntoIterator<Item = &'b (&'b CurvePoint<'a, CB>, &'b CurvePoint<'a, CTW>)>,
     {
         let mut g1_references = vec![];
         let mut prepared_coeffs = vec![];
 
         let mut two_inv = Fp::one(self.base_field);
         two_inv.double();
-        let two_inv = two_inv.inverse().expect("inverse of 2 is guaranteed to exist");
+        let two_inv = two_inv
+            .inverse()
+            .expect("inverse of 2 is guaranteed to exist");
 
         for (p, q) in i.into_iter() {
             if !p.is_zero() && !q.is_zero() {
@@ -528,12 +543,15 @@ impl<
             }
         }
 
-        let mut prepared_coeffs: Vec<_> = prepared_coeffs.into_iter().map(|el| el.into_iter()).collect();
+        let mut prepared_coeffs: Vec<_> = prepared_coeffs
+            .into_iter()
+            .map(|el| el.into_iter())
+            .collect();
 
         let mut f = Fp12::one(self.fp12_extension);
 
         let mut it = self.six_u_plus_2_naf.iter().rev();
-        
+
         {
             let first = it.next().expect("naf has enough coefficients");
             assert_eq!(*first, 1);
@@ -543,12 +561,24 @@ impl<
             f.square();
 
             for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
-                self.ell(&mut f, &coeffs.next().expect("next miller loop element for doubling step"), p);
+                self.ell(
+                    &mut f,
+                    &coeffs
+                        .next()
+                        .expect("next miller loop element for doubling step"),
+                    p,
+                );
             }
 
             if i != 0 {
                 for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
-                    self.ell(&mut f, &coeffs.next().expect("next miller loop element for addition step"), p);
+                    self.ell(
+                        &mut f,
+                        &coeffs
+                            .next()
+                            .expect("next miller loop element for addition step"),
+                        p,
+                    );
                 }
             }
         }
@@ -560,11 +590,23 @@ impl<
         }
 
         for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
-            self.ell(&mut f, &coeffs.next().expect("next miller loop element for end of miller loop step 1"), p);
+            self.ell(
+                &mut f,
+                &coeffs
+                    .next()
+                    .expect("next miller loop element for end of miller loop step 1"),
+                p,
+            );
         }
 
         for (p, coeffs) in g1_references.iter().zip(prepared_coeffs.iter_mut()) {
-            self.ell(&mut f, &coeffs.next().expect("next miller loop element for end of miller loop step 2"), p);
+            self.ell(
+                &mut f,
+                &coeffs
+                    .next()
+                    .expect("next miller loop element for end of miller loop step 2"),
+                p,
+            );
         }
 
         f
@@ -592,7 +634,7 @@ impl<
                 let mut fp = r.clone();
                 fp.frobenius_map(1);
 
-	            let mut fp2 = r.clone();
+                let mut fp2 = r.clone();
                 fp2.frobenius_map(2);
                 let mut fp3 = fp2.clone();
                 fp3.frobenius_map(1);
@@ -667,80 +709,95 @@ impl<
     }
 }
 
-
 impl<
-    'a, 
-        FE: ElementRepr, 
-        F: SizedPrimeField<Repr = FE>, 
+        'a,
+        FE: ElementRepr,
+        F: SizedPrimeField<Repr = FE>,
         CB: CurveParameters<BaseFieldElement = Fp<'a, FE, F>>,
-        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>
-    > PairingEngine for BnInstance<'a, FE, F, CB, CTW> {
+        CTW: CurveParameters<BaseFieldElement = Fp2<'a, FE, F>>,
+    > PairingEngine for BnInstance<'a, FE, F, CB, CTW>
+{
     type PairingResult = Fp12<'a, FE, F>;
     type G1 = CurvePoint<'a, CB>;
     type G2 = CurvePoint<'a, CTW>;
 
-    fn pair<'b>
-        (&self, points: &'b [CurvePoint<'a, CB>], twists: &'b [CurvePoint<'a, CTW>]) -> Option<Self::PairingResult> {
-            if points.len() != twists.len() {
+    fn pair<'b>(
+        &self,
+        points: &'b [CurvePoint<'a, CB>],
+        twists: &'b [CurvePoint<'a, CTW>],
+    ) -> Option<Self::PairingResult> {
+        if points.len() != twists.len() {
+            return None;
+        }
+
+        if !crate::features::in_gas_metering() {
+            if points.len() == 0 || twists.len() == 0 {
                 return None;
             }
+        }
 
-            if !crate::features::in_gas_metering() {
-                if points.len() == 0 || twists.len() == 0 {
-                    return None;
-                }
+        let mut pairs = Vec::with_capacity(points.len());
+        for (p, q) in points.iter().zip(twists.iter()) {
+            if !p.is_zero() && !q.is_zero() {
+                pairs.push((p, q));
             }
-            
-            let mut pairs = Vec::with_capacity(points.len());
-            for (p, q) in points.iter().zip(twists.iter()) {
-                if !p.is_zero() && !q.is_zero() {
-                    pairs.push((p, q));
-                }
-            }
+        }
 
-            if pairs.len() == 0 {
-                return Some(Fp12::one(self.fp12_extension));
-            }
+        if pairs.len() == 0 {
+            return Some(Fp12::one(self.fp12_extension));
+        }
 
-            let loop_result = if self.prefer_naf {
-                let loop_result = self.miller_loop_naf(&pairs[..]);
-                debug_assert!(self.six_u_plus_2_naf.len() > 0);
+        let loop_result = if self.prefer_naf {
+            let loop_result = self.miller_loop_naf(&pairs[..]);
+            debug_assert!(self.six_u_plus_2_naf.len() > 0);
 
-                loop_result
-            } else {
-                let loop_result = self.miller_loop(&pairs[..]);
+            loop_result
+        } else {
+            let loop_result = self.miller_loop(&pairs[..]);
 
-                loop_result
-            };
+            loop_result
+        };
 
-            self.final_exponentiation(&loop_result)
-        }   
+        self.final_exponentiation(&loop_result)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use num_bigint::BigUint;
-    use crate::field::{U256Repr, new_field};
+    use crate::extension_towers::fp12_as_2_over3_over_2::{Extension2Over3Over2, Fp12};
+    use crate::extension_towers::fp2::{Extension2, Fp2};
+    use crate::extension_towers::fp6_as_3_over_2::{Extension3Over2, Fp6};
+    use crate::field::{new_field, U256Repr};
     use crate::fp::Fp;
-    use crate::traits::{FieldElement, ZeroAndOne};
-    use crate::extension_towers::fp2::{Fp2, Extension2};
-    use crate::extension_towers::fp6_as_3_over_2::{Fp6, Extension3Over2};
-    use crate::extension_towers::fp12_as_2_over3_over_2::{Fp12, Extension2Over3Over2};
-    use num_traits::Num;
-    use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-    use crate::weierstrass::{CurveParameters, CurveOverFpParameters, CurveOverFp2Parameters};
-    use crate::pairings::{PairingEngine};
-    use crate::representation::ElementRepr;
-    use crate::test::{biguint_to_u64_vec};
-    use crate::sliding_window_exp::WindowExpBase;
     use crate::integers::MaxFieldUint;
+    use crate::pairings::PairingEngine;
+    use crate::representation::ElementRepr;
+    use crate::sliding_window_exp::WindowExpBase;
+    use crate::test::biguint_to_u64_vec;
+    use crate::traits::{FieldElement, ZeroAndOne};
+    use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
+    use crate::weierstrass::{CurveOverFp2Parameters, CurveOverFpParameters, CurveParameters};
+    use num_bigint::BigUint;
+    use num_traits::Num;
 
     #[test]
     fn test_bn254_pairing_against_ref() {
-        let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let modulus = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
+        let base_field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
         // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let group_order = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
         let group_order = biguint_to_u64_vec(group_order);
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
@@ -748,22 +805,28 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_2
+            .calculate_frobenius_coeffs(&modulus)
+            .expect("must work");
 
         let one = Fp::one(&base_field);
 
         // non-residue is u+9
         let mut fp2_non_residue = Fp2::zero(&extension_2);
         let fp_9_repr = U256Repr::from(9u64);
-        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
+        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap();
         fp2_non_residue.c0 = fp_9.clone();
         fp2_non_residue.c1 = one.clone();
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
-        
+        extension_6
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must work");
+
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
+        extension_12
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -777,15 +840,36 @@ mod tests {
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
         let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let twist =
+            WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
 
-        let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
-        let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
-        let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
-        let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+        let q_x_0 = BigUint::from_str_radix(
+            "10857046999023057135944570762232829481370756359578518086990519993285655852781",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
+        let q_x_1 = BigUint::from_str_radix(
+            "11559732032986387107991004021392285783925812861821192530917403151452391805634",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
+        let q_y_0 = BigUint::from_str_radix(
+            "8495653923123431417604973247489272438418190587263600148770280649306958101930",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
+        let q_y_1 = BigUint::from_str_radix(
+            "4082367875863433681332203403145435568316851327593401208105741076214120093531",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
 
         let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
         let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
@@ -851,21 +935,36 @@ mod tests {
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
             non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2,
-            force_no_naf: true
+            force_no_naf: true,
         };
 
         let engine = super::BnInstance::from_params(engine);
 
         let pairing_result = engine.pair(&[p], &[q]).unwrap();
-        assert!(format!("{}", pairing_result.c0.c0.c0) == "0x12c70e90e12b7874510cd1707e8856f71bf7f61d72631e268fca81000db9a1f5");
+        assert!(
+            format!("{}", pairing_result.c0.c0.c0)
+                == "0x12c70e90e12b7874510cd1707e8856f71bf7f61d72631e268fca81000db9a1f5"
+        );
     }
 
     #[test]
     fn test_bn254_pairing_bilinearity() {
-        let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let base_field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let modulus = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
+        let base_field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
         // let scalar_field = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let group_order = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
         let group_order = biguint_to_u64_vec(group_order);
         let mut fp_non_residue = Fp::one(&base_field);
         fp_non_residue.negate(); // non-residue is -1
@@ -873,22 +972,28 @@ mod tests {
         let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
         let mut extension_2 = Extension2::new(fp_non_residue);
-        extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
+        extension_2
+            .calculate_frobenius_coeffs(&modulus)
+            .expect("must work");
 
         let one = Fp::one(&base_field);
 
         // non-residue is u+9
         let mut fp2_non_residue = Fp2::zero(&extension_2);
         let fp_9_repr = U256Repr::from(9u64);
-        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap(); 
+        let fp_9 = Fp::from_repr(&base_field, fp_9_repr).unwrap();
         fp2_non_residue.c0 = fp_9.clone();
         fp2_non_residue.c1 = one.clone();
 
         let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-        extension_6.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
+        extension_6
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must work");
 
         let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&extension_6));
-        extension_12.calculate_frobenius_coeffs_optimized(&modulus).expect("must work");
+        extension_12
+            .calculate_frobenius_coeffs_optimized(&modulus)
+            .expect("must work");
 
         let b_fp = Fp::from_repr(&base_field, U256Repr::from(3)).unwrap();
         // here it's b/(u+9)
@@ -902,15 +1007,36 @@ mod tests {
         let fp2_params = CurveOverFp2Parameters::new(&extension_2);
 
         let curve = WeierstrassCurve::new(&group_order.as_ref(), a_fp, b_fp, &fp_params).unwrap();
-        let twist = WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
+        let twist =
+            WeierstrassCurve::new(&group_order.as_ref(), a_fp2, b_fp2, &fp2_params).unwrap();
 
         let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
         let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
 
-        let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
-        let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
-        let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
-        let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+        let q_x_0 = BigUint::from_str_radix(
+            "10857046999023057135944570762232829481370756359578518086990519993285655852781",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
+        let q_x_1 = BigUint::from_str_radix(
+            "11559732032986387107991004021392285783925812861821192530917403151452391805634",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
+        let q_y_0 = BigUint::from_str_radix(
+            "8495653923123431417604973247489272438418190587263600148770280649306958101930",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
+        let q_y_1 = BigUint::from_str_radix(
+            "4082367875863433681332203403145435568316851327593401208105741076214120093531",
+            10,
+        )
+        .unwrap()
+        .to_bytes_be();
 
         let p_x = Fp::from_be_bytes(&base_field, &p_x, true).unwrap();
         let p_y = Fp::from_be_bytes(&base_field, &p_y, true).unwrap();
@@ -976,7 +1102,7 @@ mod tests {
             fp6_extension: &extension_6,
             fp12_extension: &extension_12,
             non_residue_in_p_minus_one_over_2: non_residue_in_p_minus_one_over_2,
-            force_no_naf: true
+            force_no_naf: true,
         };
 
         let engine = super::BnInstance::from_params(engine);

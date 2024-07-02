@@ -1,11 +1,13 @@
+use crate::extension_towers::fp2::{Extension2, Fp2};
+use crate::field::*;
 use crate::fp::Fp;
 use crate::representation::ElementRepr;
-use crate::field::*;
-use crate::extension_towers::fp2::{Extension2, Fp2};
 use crate::traits::FieldElement;
 use crate::traits::ZeroAndOne;
 
-pub(crate) fn modulus_is_one_mod_four<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &F) -> bool {
+pub(crate) fn modulus_is_one_mod_four<E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    field: &F,
+) -> bool {
     const MASK: u64 = 3; // last two bits
 
     let last_limb = field.modulus().as_ref()[0];
@@ -13,7 +15,9 @@ pub(crate) fn modulus_is_one_mod_four<E: ElementRepr, F: SizedPrimeField<Repr = 
     last_limb & MASK == 1
 }
 
-pub(crate) fn modulus_is_three_mod_four<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &F) -> bool {
+pub(crate) fn modulus_is_three_mod_four<E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    field: &F,
+) -> bool {
     const MASK: u64 = 3; // last two bits
 
     let last_limb = field.modulus().as_ref()[0];
@@ -21,7 +25,9 @@ pub(crate) fn modulus_is_three_mod_four<E: ElementRepr, F: SizedPrimeField<Repr 
     last_limb & MASK == 3
 }
 
-pub(crate) fn modulus_is_one_mod_sixteen<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &F) -> bool {
+pub(crate) fn modulus_is_one_mod_sixteen<E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    field: &F,
+) -> bool {
     const MASK: u64 = 16; // last four bits
 
     let last_limb = field.modulus().as_ref()[0];
@@ -29,15 +35,21 @@ pub(crate) fn modulus_is_one_mod_sixteen<E: ElementRepr, F: SizedPrimeField<Repr
     last_limb & MASK == 1
 }
 
-pub(crate) fn modulus_is_one_mod_four_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &Extension2<E, F>) -> bool {
+pub(crate) fn modulus_is_one_mod_four_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    field: &Extension2<E, F>,
+) -> bool {
     modulus_is_one_mod_four(field.field)
 }
 
-pub(crate) fn modulus_is_three_mod_four_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &Extension2<E, F>) -> bool {
+pub(crate) fn modulus_is_three_mod_four_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    field: &Extension2<E, F>,
+) -> bool {
     modulus_is_three_mod_four(field.field)
 }
 
-pub(crate) fn modulus_is_one_mod_sixteen_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(field: &Extension2<E, F>) -> bool {
+pub(crate) fn modulus_is_one_mod_sixteen_ext2<E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    field: &Extension2<E, F>,
+) -> bool {
     modulus_is_one_mod_sixteen(field.field)
 }
 
@@ -48,7 +60,9 @@ pub enum LegendreSymbol {
     QuadraticNonResidue = -1,
 }
 
-pub fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> LegendreSymbol {
+pub fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp<'a, E, F>,
+) -> LegendreSymbol {
     let mut modulus_minus_one_by_two = *element.field.modulus();
     modulus_minus_one_by_two.shr(1);
 
@@ -63,20 +77,26 @@ pub fn legendre_symbol_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(elem
     }
 }
 
-pub fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> LegendreSymbol {
+pub fn legendre_symbol_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp2<'a, E, F>,
+) -> LegendreSymbol {
     let a = element.norm();
 
     legendre_symbol_fp(&a)
 }
 
-fn sqrt_for_one_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(_element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
+fn sqrt_for_one_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    _element: &Fp<'a, E, F>,
+) -> Option<Fp<'a, E, F>> {
     // TODO, or consider to slow
-    
+
     None
 }
 
-pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
-    // this is a simple case: we compute the power 
+pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp<'a, E, F>,
+) -> Option<Fp<'a, E, F>> {
+    // this is a simple case: we compute the power
     // we know that it's 3 mod 4, so just bit shift
 
     let mut modulus_minus_three_by_four = *element.field.modulus();
@@ -100,7 +120,9 @@ pub fn sqrt_for_three_mod_four<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>
     }
 }
 
-fn sqrt_for_one_mod_sixteen<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
+fn sqrt_for_one_mod_sixteen<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp<'a, E, F>,
+) -> Option<Fp<'a, E, F>> {
     // Requires to know a generator and roots of unity
     // postpone for now
     // we know that it's 1 mod 16, so we can use simple bit shifts
@@ -109,17 +131,15 @@ fn sqrt_for_one_mod_sixteen<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(el
         LegendreSymbol::Zero => {
             // it's zero, so clone
             Some(element.clone())
-        },
-        LegendreSymbol::QuadraticNonResidue => {
-            None
-        },
-        LegendreSymbol::QuadraticResidue => {
-            None
         }
+        LegendreSymbol::QuadraticNonResidue => None,
+        LegendreSymbol::QuadraticResidue => None,
     }
 }
 
-pub fn sqrt<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E, F>) -> Option<Fp<'a, E, F>> {
+pub fn sqrt<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp<'a, E, F>,
+) -> Option<Fp<'a, E, F>> {
     if modulus_is_three_mod_four(element.field) {
         sqrt_for_three_mod_four(&element)
     } else {
@@ -127,8 +147,10 @@ pub fn sqrt<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp<'a, E
     }
 }
 
-pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> Option<Fp2<'a, E, F>> {
-    // this is a simple case: we compute the power 
+pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp2<'a, E, F>,
+) -> Option<Fp2<'a, E, F>> {
+    // this is a simple case: we compute the power
     // we know that it's 3 mod 4, so just bit shifts by 1 or 2 bits are ok
 
     if element.is_zero() {
@@ -175,7 +197,9 @@ pub(crate) fn sqrt_for_three_mod_four_ext2<'a, E: ElementRepr, F: SizedPrimeFiel
     }
 }
 
-pub fn sqrt_ext2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(element: &Fp2<'a, E, F>) -> Option<Fp2<'a, E, F>> {
+pub fn sqrt_ext2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(
+    element: &Fp2<'a, E, F>,
+) -> Option<Fp2<'a, E, F>> {
     if modulus_is_three_mod_four_ext2(element.extension_field) {
         sqrt_for_three_mod_four_ext2(&element)
     } else {

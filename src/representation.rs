@@ -1,6 +1,5 @@
-use byteorder;
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 use std::io::{self, Read, Write};
 
 /// This trait represents a wrapper around a biginteger which can encode any element of a particular
@@ -105,7 +104,12 @@ pub trait ElementRepr:
     // but it's a necessary evil
     fn mont_mul_assign(&mut self, other: &Self, modulus: &Self, mont_inv: u64);
     fn mont_square(&mut self, modulus: &Self, mont_inv: u64);
-    fn mont_mul_assign_with_partial_reduction(&mut self, other: &Self, modulus: &Self, mont_inv: u64);
+    fn mont_mul_assign_with_partial_reduction(
+        &mut self,
+        other: &Self,
+        modulus: &Self,
+        mont_inv: u64,
+    );
     fn mont_square_with_partial_reduction(&mut self, modulus: &Self, mont_inv: u64);
     fn into_normal_repr(&self, modulus: &Self, mont_inv: u64) -> Self;
     fn reduce(&mut self, modulus: &Self);
@@ -160,7 +164,7 @@ pub(crate) fn num_bits(repr: &[u64]) -> u32 {
 pub(crate) fn right_shift_representation(repr: &mut [u64], shift: u64) {
     let num_libs = repr.len();
     for i in 0..(num_libs - 1) {
-        repr[i] = (repr[i] >> shift) | (repr[i+1] << (64 - shift));
+        repr[i] = (repr[i] >> shift) | (repr[i + 1] << (64 - shift));
     }
     repr[num_libs - 1] = repr[num_libs - 1] >> shift;
 }

@@ -1,11 +1,13 @@
-use crate::test::parsers::*;
 use crate::public_interface::constants::*;
+use crate::test::parsers::*;
 
 use super::*;
 
 const EXTENSION_DEGREE: usize = 2;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters) -> (Vec<u8>, usize, usize) {
+pub(crate) fn assemble_single_curve_params(
+    curve: JsonMnt4PairingCurveParameters,
+) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -31,9 +33,15 @@ pub(crate) fn assemble_single_curve_params(curve: JsonMnt4PairingCurveParameters
     };
 
     let mut a_encoded = pad_for_len_be(curve.a_twist_0.to_bytes_be(), modulus_length);
-    a_encoded.extend(pad_for_len_be(curve.a_twist_1.to_bytes_be(), modulus_length));
+    a_encoded.extend(pad_for_len_be(
+        curve.a_twist_1.to_bytes_be(),
+        modulus_length,
+    ));
     let mut b_encoded = pad_for_len_be(curve.b_twist_0.to_bytes_be(), modulus_length);
-    b_encoded.extend(pad_for_len_be(curve.b_twist_1.to_bytes_be(), modulus_length));
+    b_encoded.extend(pad_for_len_be(
+        curve.b_twist_1.to_bytes_be(),
+        modulus_length,
+    ));
 
     // now we make two random scalars and do scalar multiplications in G1 and G2 to get pairs that should
     // at the end of the day pair to identity element
@@ -138,14 +146,13 @@ pub(crate) fn assemble_single_point_scalar_pair(
 //             input_data.extend(points_data);
 
 //             writer.write_record(&[
-//                 prepend_0x(&encode(&input_data[..])), 
+//                 prepend_0x(&encode(&input_data[..])),
 //                 prepend_0x(&encode(&expected_result[..]))],
 //             ).expect("must write a record");
 //         }
 //     }
 //     writer.flush().expect("must finalize writing");
 // }
-
 
 // use rust_test::Bencher;
 
@@ -156,4 +163,3 @@ pub(crate) fn assemble_single_point_scalar_pair(
 //         call_bls12_engine(&calldata[..]).expect("must use");
 //     });
 // }
-

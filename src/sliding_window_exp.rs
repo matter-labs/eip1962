@@ -15,7 +15,6 @@ pub(crate) fn calculate_window_table<F: FieldElement>(base: &F, window: usize) -
     for _ in 1..(1 << (window - 1)) {
         acc.mul_assign(&square);
         table.push(acc.clone());
-        
     }
 
     table
@@ -25,7 +24,7 @@ pub(crate) fn calculate_window_table<F: FieldElement>(base: &F, window: usize) -
 pub(crate) struct WindowExpBase<F: FieldElement> {
     pub bases: Vec<F>,
     pub window_size: usize,
-    one: F
+    one: F,
 }
 
 #[allow(dead_code)]
@@ -39,7 +38,7 @@ impl<F: FieldElement> WindowExpBase<F> {
         Self {
             bases: bases,
             window_size: recommended_size_accounding_for_scalars,
-            one: one
+            one: one,
         }
     }
 
@@ -69,7 +68,7 @@ impl<F: FieldElement> WindowExpBase<F> {
         }
         result
     }
-} 
+}
 
 pub trait IntoWindows {
     fn windows(&self, window: u32) -> Vec<u64>;
@@ -142,19 +141,25 @@ mod tests {
 
     #[test]
     fn test_windowed_exp() {
-        use crate::field::{U256Repr, new_field};
+        use super::WindowExpBase;
+        use crate::field::{new_field, U256Repr};
         use crate::fp::Fp;
         use crate::traits::{FieldElement, ZeroAndOne};
-        use super::WindowExpBase;
 
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
         let base = Fp::from_repr(&field, U256Repr::from(2)).unwrap();
         let one = Fp::one(&field);
 
-        let scalar = vec![0x43e1f593f0000000,
-                    0x2833e84879b97091,
-                    0xb85045b68181585d,
-                    0x30644e72e131a029];
+        let scalar = vec![
+            0x43e1f593f0000000,
+            0x2833e84879b97091,
+            0xb85045b68181585d,
+            0x30644e72e131a029,
+        ];
 
         let mut square = base.clone();
         square.square();
@@ -176,6 +181,4 @@ mod tests {
         let w_result = results.pop().unwrap();
         assert!(w_result == naive_result);
     }
-
-
 }

@@ -1,21 +1,21 @@
 use crate::test::gas_meter::bls12;
 use crate::test::gas_meter::bn;
 
-use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::API;
 
 use crate::test::parsers::*;
 
 use crate::public_interface::constants::*;
 
-use rand::{Rng, thread_rng};
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
+use rand::{thread_rng, Rng};
 
 use num_bigint::BigUint;
-use num_traits::Num;
 use num_integer::Integer;
+use num_traits::Num;
 
 fn random_field_element<R: Rng>(modulus: &BigUint, rng: &mut R) -> BigUint {
     let mut tmp = modulus.to_bytes_be();
@@ -34,17 +34,21 @@ fn random_biguint<R: Rng>(bytes: usize, rng: &mut R) -> BigUint {
     res
 }
 
-pub(crate) fn random_bls12_params<R: Rng>(limbs: usize, group_size_limbs: usize, rng: &mut R) -> JsonBls12PairingCurveParameters {
+pub(crate) fn random_bls12_params<R: Rng>(
+    limbs: usize,
+    group_size_limbs: usize,
+    rng: &mut R,
+) -> JsonBls12PairingCurveParameters {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
-    let mut group_bytes = vec![0u8; group_size_limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
+    let mut group_bytes = vec![0u8; group_size_limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
     rng.try_fill_bytes(&mut group_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -83,18 +87,21 @@ pub(crate) fn random_bls12_params<R: Rng>(limbs: usize, group_size_limbs: usize,
     params
 }
 
-
-pub(crate) fn random_bn_params<R: Rng>(limbs: usize, group_size_limbs: usize, rng: &mut R) -> JsonBnPairingCurveParameters {
+pub(crate) fn random_bn_params<R: Rng>(
+    limbs: usize,
+    group_size_limbs: usize,
+    rng: &mut R,
+) -> JsonBnPairingCurveParameters {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
-    let mut group_bytes = vec![0u8; group_size_limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
+    let mut group_bytes = vec![0u8; group_size_limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
     rng.try_fill_bytes(&mut group_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -133,17 +140,21 @@ pub(crate) fn random_bn_params<R: Rng>(limbs: usize, group_size_limbs: usize, rn
     params
 }
 
-pub(crate) fn random_mnt4_params<R: Rng>(limbs: usize, group_size_limbs: usize, rng: &mut R) -> JsonMnt4PairingCurveParameters {
+pub(crate) fn random_mnt4_params<R: Rng>(
+    limbs: usize,
+    group_size_limbs: usize,
+    rng: &mut R,
+) -> JsonMnt4PairingCurveParameters {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
-    let mut group_bytes = vec![0u8; group_size_limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
+    let mut group_bytes = vec![0u8; group_size_limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
     rng.try_fill_bytes(&mut group_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -181,18 +192,21 @@ pub(crate) fn random_mnt4_params<R: Rng>(limbs: usize, group_size_limbs: usize, 
     params
 }
 
-
-pub(crate) fn random_mnt6_params<R: Rng>(limbs: usize, group_size_limbs: usize, rng: &mut R) -> JsonMnt6PairingCurveParameters {
+pub(crate) fn random_mnt6_params<R: Rng>(
+    limbs: usize,
+    group_size_limbs: usize,
+    rng: &mut R,
+) -> JsonMnt6PairingCurveParameters {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
-    let mut group_bytes = vec![0u8; group_size_limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
+    let mut group_bytes = vec![0u8; group_size_limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
     rng.try_fill_bytes(&mut group_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -235,19 +249,23 @@ pub(crate) fn random_mnt6_params<R: Rng>(limbs: usize, group_size_limbs: usize, 
 }
 
 pub(crate) fn random_mul_params_a_non_zero_ext3<R: Rng>(
-    limbs: usize, 
-    group_size_limbs: usize, 
-    num_mul_points: usize, 
-    rng: &mut R
-) -> (JsonMnt6PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2Ext3PointScalarMultiplicationPair) {
+    limbs: usize,
+    group_size_limbs: usize,
+    num_mul_points: usize,
+    rng: &mut R,
+) -> (
+    JsonMnt6PairingCurveParameters,
+    JsonG1PointScalarMultiplicationPair,
+    JsonG2Ext3PointScalarMultiplicationPair,
+) {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -347,21 +365,24 @@ pub(crate) fn random_mul_params_a_non_zero_ext3<R: Rng>(
     (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
 }
 
-
 pub(crate) fn random_mul_params_a_is_zero_ext3<R: Rng>(
-    limbs: usize, 
-    group_size_limbs: usize, 
-    num_mul_points: usize, 
-    rng: &mut R
-) -> (JsonMnt6PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2Ext3PointScalarMultiplicationPair) {
+    limbs: usize,
+    group_size_limbs: usize,
+    num_mul_points: usize,
+    rng: &mut R,
+) -> (
+    JsonMnt6PairingCurveParameters,
+    JsonG1PointScalarMultiplicationPair,
+    JsonG2Ext3PointScalarMultiplicationPair,
+) {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -460,21 +481,24 @@ pub(crate) fn random_mul_params_a_is_zero_ext3<R: Rng>(
     (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
 }
 
-
 pub(crate) fn random_mul_params_a_non_zero_ext2<R: Rng>(
-    limbs: usize, 
-    group_size_limbs: usize, 
-    num_mul_points: usize, 
-    rng: &mut R
-) -> (JsonMnt4PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2PointScalarMultiplicationPair) {
+    limbs: usize,
+    group_size_limbs: usize,
+    num_mul_points: usize,
+    rng: &mut R,
+) -> (
+    JsonMnt4PairingCurveParameters,
+    JsonG1PointScalarMultiplicationPair,
+    JsonG2PointScalarMultiplicationPair,
+) {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {
@@ -561,21 +585,24 @@ pub(crate) fn random_mul_params_a_non_zero_ext2<R: Rng>(
     (params, g1_worst_case_mul_pair, g2_worst_case_mul_pair)
 }
 
-
 pub(crate) fn random_mul_params_a_is_zero_ext2<R: Rng>(
-    limbs: usize, 
-    group_size_limbs: usize, 
-    num_mul_points: usize, 
-    rng: &mut R
-) -> (JsonMnt4PairingCurveParameters, JsonG1PointScalarMultiplicationPair, JsonG2PointScalarMultiplicationPair) {
+    limbs: usize,
+    group_size_limbs: usize,
+    num_mul_points: usize,
+    rng: &mut R,
+) -> (
+    JsonMnt4PairingCurveParameters,
+    JsonG1PointScalarMultiplicationPair,
+    JsonG2PointScalarMultiplicationPair,
+) {
     let one = BigUint::from(1u64);
 
-    let mut modulus_bytes = vec![0u8; limbs*8];
+    let mut modulus_bytes = vec![0u8; limbs * 8];
 
     rng.try_fill_bytes(&mut modulus_bytes).unwrap();
 
     let mut modulus = BigUint::from_bytes_be(&modulus_bytes);
-    if modulus.bits() == limbs*64 {
+    if modulus.bits() == limbs * 64 {
         modulus >>= 1;
     }
     if modulus.is_even() {

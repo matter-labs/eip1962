@@ -1,16 +1,20 @@
-use crate::public_interface::constants::*;
-use crate::public_interface::{PublicG1Api, G1Api, PublicG2Api, G2Api};
 use crate::errors::ApiError;
+use crate::public_interface::constants::*;
+use crate::public_interface::{G1Api, G2Api, PublicG1Api, PublicG2Api};
 
 use num_bigint::BigUint;
 
-use crate::test::parsers::*;
 use super::call_pairing_engine;
+use crate::test::parsers::*;
 
 use crate::test::g1_ops;
 use crate::test::g2_ops;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, pairs: usize, check_subgroup: bool) -> Result<Vec<u8>, ApiError> {
+pub(crate) fn assemble_single_curve_params(
+    curve: JsonBnPairingCurveParameters,
+    pairs: usize,
+    check_subgroup: bool,
+) -> Result<Vec<u8>, ApiError> {
     let curve_clone = curve.clone();
     assert!(pairs % 2 == 0);
 
@@ -67,7 +71,11 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
         pad_for_len_be(nonres.to_bytes_be(), modulus_length)
     };
 
-    let twist_type = if curve.is_d_type { vec![TWIST_TYPE_D] } else { vec![TWIST_TYPE_M] };
+    let twist_type = if curve.is_d_type {
+        vec![TWIST_TYPE_D]
+    } else {
+        vec![TWIST_TYPE_M]
+    };
 
     let (x_decoded, x_is_positive) = curve.x;
     let x_sign = if x_is_positive { vec![0u8] } else { vec![1u8] };
@@ -120,7 +128,11 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
     let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
     {
-        fn make_random_scalar<R: Rng>(rng: &mut R, group_size_length: usize, group_size: &BigUint) -> BigUint {
+        fn make_random_scalar<R: Rng>(
+            rng: &mut R,
+            group_size_length: usize,
+            group_size: &BigUint,
+        ) -> BigUint {
             let random_scalar_bytes: Vec<u8> = (0..group_size_length).map(|_| rng.gen()).collect();
             let random_scalar = BigUint::from_bytes_be(&random_scalar_bytes[..]);
             let random_scalar = random_scalar % group_size;
@@ -128,7 +140,7 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
             random_scalar
         }
 
-        for _ in 0..(pairs/2) {
+        for _ in 0..(pairs / 2) {
             // - Multiplication API signature
             // - Lengths of modulus (in bytes)
             // - Field modulus
@@ -139,15 +151,17 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
             // - X
             // - Y
             // - Scalar
-            
+
             let r1 = make_random_scalar(rng, group_size_length, &group_size);
             let r2 = make_random_scalar(rng, group_size_length, &group_size);
             let r3 = (r1.clone() * &r2) % &group_size;
             let r3 = group_size.clone() - r3;
 
             // pair (g1^r1, g2^r2)*(g1^(-r1*r2), g2)
-            let (g1_common_bytes, _, _) = g1_ops::bn::assemble_single_curve_params(curve_clone.clone());
-            let (g2_common_bytes, _, _) = g2_ops::bn::assemble_single_curve_params(curve_clone.clone());
+            let (g1_common_bytes, _, _) =
+                g1_ops::bn::assemble_single_curve_params(curve_clone.clone());
+            let (g2_common_bytes, _, _) =
+                g2_ops::bn::assemble_single_curve_params(curve_clone.clone());
 
             let g1_encoded_0 = {
                 let mut mul_calldata = vec![];
@@ -240,14 +254,19 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters, 
 #[test]
 fn test_bn_pairings_from_vectors() {
     // let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/negative_u/");
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
     for (curve, file_name) in curves.into_iter() {
         let u_is_positive = curve.x.1;
         let calldata = assemble_single_curve_params(curve, 2, true).unwrap();
         let result = call_pairing_engine(&calldata[..]);
         if !result.is_ok() {
-            println!("Failed on {} with result {}", file_name, result.err().unwrap());
+            println!(
+                "Failed on {} with result {}",
+                file_name,
+                result.err().unwrap()
+            );
             continue;
         }
         // assert!(result.is_ok(), "Failed on {}", file_name);
@@ -261,28 +280,34 @@ fn test_bn_pairings_from_vectors() {
     }
 }
 
-extern crate hex;
 extern crate csv;
+extern crate hex;
 
-use hex::{encode};
-use csv::{Writer};
+use csv::Writer;
+use hex::encode;
 
 #[test]
 #[ignore]
 fn dump_pairing_vectors() {
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    let mut writer = Writer::from_path("src/test/test_vectors/bn/pairing.csv").expect("must open a test file");
-    writer.write_record(&["input", "result"]).expect("must write header");
+    let mut writer =
+        Writer::from_path("src/test/test_vectors/bn/pairing.csv").expect("must open a test file");
+    writer
+        .write_record(&["input", "result"])
+        .expect("must write header");
     for (curve, _) in curves.into_iter() {
         let mut input_data = vec![OPERATION_PAIRING];
         let calldata = assemble_single_curve_params(curve.clone(), 2, true).unwrap();
         input_data.extend(calldata);
         let expected_result = vec![1u8];
-        writer.write_record(&[
-            prepend_0x(&encode(&input_data[..])), 
-            prepend_0x(&encode(&expected_result[..]))],
-        ).expect("must write a record");
+        writer
+            .write_record(&[
+                prepend_0x(&encode(&input_data[..])),
+                prepend_0x(&encode(&expected_result[..])),
+            ])
+            .expect("must write a record");
     }
     writer.flush().expect("must finalize writing");
 }
@@ -290,11 +315,12 @@ fn dump_pairing_vectors() {
 #[test]
 #[ignore]
 fn dump_fuzzing_vectors() {
-    use std::io::Write;
     use std::fs::File;
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    use std::io::Write;
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    
+
     // let mut writer = Writer::from_path("src/test/test_vectors/bls12/pairing.csv").expect("must open a test file");
     // writer.write_record(&["input", "result"]).expect("must write header");
     for (curve, _) in curves.into_iter() {
@@ -302,7 +328,11 @@ fn dump_fuzzing_vectors() {
         let calldata = assemble_single_curve_params(curve.clone(), 2, true).unwrap();
         input_data.extend(calldata);
         let filename = hex::encode(&input_data);
-        let mut f = File::create(&format!("src/test/test_vectors/bn/fuzzing_corpus/{}", &filename[0..40])).unwrap();
+        let mut f = File::create(&format!(
+            "src/test/test_vectors/bn/fuzzing_corpus/{}",
+            &filename[0..40]
+        ))
+        .unwrap();
         f.write_all(&mut input_data[..]).expect("must write");
     }
 }
@@ -332,14 +362,22 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     // - list of encoded pairs
     use num_traits::Num;
     let modulus_length = 32;
-    let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    let modulus = BigUint::from_str_radix(
+        "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+        10,
+    )
+    .unwrap();
     let curve_type = vec![BN];
     let modulus_len_encoded = vec![modulus_length as u8];
     let modulus_encoded = pad_for_len_be(modulus.clone().to_bytes_be(), modulus_length);
     let a_encoded = pad_for_len_be(BigUint::from(0u64).to_bytes_be(), modulus_length);
     let b_encoded = pad_for_len_be(BigUint::from(3u64).to_bytes_be(), modulus_length);
     let group_order_len = 32;
-    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+        10,
+    )
+    .unwrap();
     let group_order_encoding = pad_for_len_be(group_order.to_bytes_be(), group_order_len);
     let minus_one = modulus.clone() - BigUint::from(1u64);
     let fp2_nonres_encoded = pad_for_len_be(minus_one.to_bytes_be(), modulus_length);
@@ -347,7 +385,7 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     let fp6_nonres_encoded_c1 = pad_for_len_be(BigUint::from(1u64).to_bytes_be(), modulus_length);
     let twist_type = vec![TWIST_TYPE_D];
     let x_length = vec![8u8];
-    let x_encoded = pad_for_len_be(BigUint::from(4965661367192848881 as u64).to_bytes_be(), 8); 
+    let x_encoded = pad_for_len_be(BigUint::from(4965661367192848881 as u64).to_bytes_be(), 8);
     let x_sign = vec![SIGN_PLUS];
     let num_pairs = vec![num_point_pairs as u8];
     // first pair
@@ -358,10 +396,30 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     g1_0_encoding.extend(pad_for_len_be(p_x.clone(), modulus_length).into_iter());
     g1_0_encoding.extend(pad_for_len_be(p_y, modulus_length).into_iter());
 
-    let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
-    let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
-    let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
-    let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+    let q_x_0 = BigUint::from_str_radix(
+        "10857046999023057135944570762232829481370756359578518086990519993285655852781",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
+    let q_x_1 = BigUint::from_str_radix(
+        "11559732032986387107991004021392285783925812861821192530917403151452391805634",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
+    let q_y_0 = BigUint::from_str_radix(
+        "8495653923123431417604973247489272438418190587263600148770280649306958101930",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
+    let q_y_1 = BigUint::from_str_radix(
+        "4082367875863433681332203403145435568316851327593401208105741076214120093531",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
 
     let mut g2_0_encoding = vec![];
     g2_0_encoding.push(1u8);
@@ -370,7 +428,7 @@ pub(crate) fn assemble_bn254(num_point_pairs: usize) -> Vec<u8> {
     g2_0_encoding.extend(pad_for_len_be(q_y_0.clone(), modulus_length).into_iter());
     g2_0_encoding.extend(pad_for_len_be(q_y_1.clone(), modulus_length).into_iter());
 
-    // second pair 
+    // second pair
     let y = modulus.clone() - BigUint::from_str_radix("2", 10).unwrap();
 
     let mut g1_1_encoding: Vec<u8> = vec![];
@@ -426,7 +484,7 @@ fn strip_0x(string: &str) -> String {
     if string.len() > 2 && string[0..1] == b"0"[..] && string[1..2] == b"x"[..] {
         string = string[2..].to_vec();
     }
-    
+
     std::string::String::from_utf8(string).unwrap()
 }
 
@@ -444,7 +502,7 @@ fn strip_0x_and_get_sign(string: &str) -> (String, bool) {
     if string.len() > 2 && string[0..1] == b"0"[..] && string[1..2] == b"x"[..] {
         string = string[2..].to_vec();
     }
-    
+
     (std::string::String::from_utf8(string).unwrap(), positive)
 }
 

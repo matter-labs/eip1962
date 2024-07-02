@@ -1,31 +1,31 @@
 extern crate test as rust_test;
 
-use num_bigint::BigUint;
-use num_traits::FromPrimitive;
-use num_integer::Integer;
-use num_traits::Zero;
-use crate::field::{U384Repr, U832Repr, new_field};
+use crate::extension_towers::fp2::{Extension2, Fp2};
+use crate::field::{new_field, U384Repr, U832Repr};
 use crate::fp::Fp;
-use crate::traits::{FieldElement};
-use crate::traits::ZeroAndOne;
-use crate::extension_towers::fp2::{Fp2, Extension2};
-use num_traits::Num;
-use crate::pairings::*;
 use crate::integers::MaxFieldUint;
+use crate::pairings::*;
 use crate::square_root::*;
+use crate::traits::FieldElement;
+use crate::traits::ZeroAndOne;
+use num_bigint::BigUint;
+use num_integer::Integer;
+use num_traits::FromPrimitive;
+use num_traits::Num;
+use num_traits::Zero;
 
 use rust_test::Bencher;
 
 #[bench]
 fn bench_bls12_381_sqrt_in_fp(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -42,14 +42,14 @@ fn bench_bls12_381_sqrt_in_fp(b: &mut Bencher) {
 
 #[bench]
 fn bench_bls12_381_sqrt_in_fp_with_modulus_check(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -66,14 +66,14 @@ fn bench_bls12_381_sqrt_in_fp_with_modulus_check(b: &mut Bencher) {
 
 #[bench]
 fn bench_bls12_381_sqrt_in_fp2(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);
@@ -94,17 +94,16 @@ fn bench_bls12_381_sqrt_in_fp2(b: &mut Bencher) {
     });
 }
 
-
 #[bench]
 fn bench_bls12_381_sqrt_in_fp_exp_baseline(b: &mut Bencher) {
-    use crate::sliding_window_exp::{WindowExpBase, IntoWindows};
     use crate::extension_towers::Fp6Fp12FrobeniusBaseElements;
+    use crate::sliding_window_exp::{IntoWindows, WindowExpBase};
 
     let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let base_field = new_field::<U384Repr>("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
     let mut fp_non_residue = Fp::one(&base_field);
     fp_non_residue.negate(); // non-residue is -1
- 
+
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     let mut extension_2 = Extension2::new(fp_non_residue);

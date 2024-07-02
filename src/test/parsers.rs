@@ -5,8 +5,8 @@ use num_traits::Zero;
 extern crate serde;
 extern crate serde_json;
 
-use serde::{Deserialize, Deserializer};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonBls12PairingCurveParameters {
@@ -76,7 +76,6 @@ pub(crate) struct JsonBls12PairingCurveParameters {
     pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
 }
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonBnPairingCurveParameters {
     #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
@@ -145,7 +144,6 @@ pub(crate) struct JsonBnPairingCurveParameters {
     pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
 }
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonMnt4PairingCurveParameters {
     #[serde(deserialize_with = "biguint_with_sign_from_hex_string")]
@@ -209,7 +207,6 @@ pub(crate) struct JsonMnt4PairingCurveParameters {
     #[serde(rename = "g2_scalar_mult_test_vectors")]
     pub g2_mul_vectors: Vec<JsonG2PointScalarMultiplicationPair>,
 }
-
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonMnt6PairingCurveParameters {
@@ -349,7 +346,6 @@ pub(crate) struct JsonG2PointScalarMultiplicationPair {
     pub result_y_1: BigUint,
 }
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct JsonG2Ext3PointScalarMultiplicationPair {
     #[serde(deserialize_with = "biguint_from_hex_string")]
@@ -459,7 +455,7 @@ fn strip_0x(string: &str) -> String {
     if string.len() > 1 && string[string.len() - 1] == b"l"[0] {
         string = string[..(string.len() - 1)].to_vec();
     }
-    
+
     std::string::String::from_utf8(string).unwrap()
 }
 
@@ -477,7 +473,7 @@ fn strip_0x_and_get_sign(string: &str) -> (String, bool) {
     if string.len() > 2 && string[0..1] == b"0"[..] && string[1..2] == b"x"[..] {
         string = string[2..].to_vec();
     }
-    
+
     (std::string::String::from_utf8(string).unwrap(), positive)
 }
 
@@ -509,10 +505,10 @@ fn strip_0x_and_pad(string: &str) -> String {
 }
 
 pub(crate) fn read_dir_and_grab_curves<T: DeserializeOwned>(dir_path: &str) -> Vec<(T, String)> {
-    use std::io::Read;
-    use std::fs::{self};
-    use std::path::Path;
     use std::fs::File;
+    use std::fs::{self};
+    use std::io::Read;
+    use std::path::Path;
 
     let dir = Path::new(dir_path);
     assert!(dir.is_dir());
@@ -521,25 +517,26 @@ pub(crate) fn read_dir_and_grab_curves<T: DeserializeOwned>(dir_path: &str) -> V
         let entry = entry.expect("directory should contain files");
         let path = entry.path();
         if path.is_dir() {
-            continue
+            continue;
         } else {
             let extension = path.extension();
             if extension.is_none() {
-                continue
+                continue;
             }
             let extension = extension.unwrap();
             if extension != "curve" {
-                continue
+                continue;
             }
         }
         let mut buffer = Vec::new();
         let file_name = path.file_name().unwrap().to_str().unwrap().to_owned();
         let mut f = File::open(path).expect("must open file");
-        f.read_to_end(&mut buffer).expect("must read bytes from file");
+        f.read_to_end(&mut buffer)
+            .expect("must read bytes from file");
         let c: T = serde_json::from_slice(&buffer[..]).expect("must deserialize");
         results.push((c, file_name));
     }
-    
+
     results
 }
 
@@ -562,7 +559,6 @@ pub(crate) fn prepend_0x(input: &str) -> String {
 }
 
 pub(crate) fn apply_sign(value: (BigUint, bool), modulus: &BigUint) -> BigUint {
-    
     let (val, is_positive) = value;
     if val.is_zero() {
         return val;

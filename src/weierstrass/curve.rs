@@ -1,14 +1,14 @@
-use crate::traits::{FieldElement, BitIterator};
-use super::{CurveType, Group};
 use super::CurveParameters;
+use super::{CurveType, Group};
 use crate::traits::ZeroAndOne;
+use crate::traits::{BitIterator, FieldElement};
 
 pub struct WeierstrassCurve<'a, C: CurveParameters> {
     pub(crate) a: C::BaseFieldElement,
     pub(crate) b: C::BaseFieldElement,
     pub(crate) curve_type: CurveType,
     pub(crate) subgroup_order_repr: &'a [u64],
-    pub(crate) params: &'a C
+    pub(crate) params: &'a C,
 }
 
 impl<'a, C: CurveParameters> Clone for WeierstrassCurve<'a, C> {
@@ -18,7 +18,7 @@ impl<'a, C: CurveParameters> Clone for WeierstrassCurve<'a, C> {
             b: self.b.clone(),
             curve_type: self.curve_type,
             subgroup_order_repr: self.subgroup_order_repr,
-            params: self.params
+            params: self.params,
         }
     }
 }
@@ -26,9 +26,9 @@ impl<'a, C: CurveParameters> Clone for WeierstrassCurve<'a, C> {
 impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
     pub(crate) fn new(
         subgroup_order: &'a [u64],
-        a: C::BaseFieldElement, 
+        a: C::BaseFieldElement,
         b: C::BaseFieldElement,
-        params: &'a C
+        params: &'a C,
     ) -> Result<Self, ()> {
         let mut curve_type = CurveType::Generic;
         if a.is_zero() {
@@ -46,7 +46,7 @@ impl<'a, C: CurveParameters> WeierstrassCurve<'a, C> {
             b: b,
             curve_type: curve_type,
             subgroup_order_repr: subgroup_order,
-            params: params
+            params: params,
         })
     }
 }
@@ -65,7 +65,7 @@ impl<'a, C: CurveParameters> Clone for CurvePoint<'a, C> {
             curve: &self.curve,
             x: self.x.clone(),
             y: self.y.clone(),
-            z: self.z.clone()
+            z: self.z.clone(),
         }
     }
 }
@@ -74,9 +74,10 @@ pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
     let mut prod = Vec::with_capacity(v.len());
     let one = C::BaseFieldElement::one(v[0].curve.params.params());
     let mut tmp = one.clone();
-    for g in v.iter_mut()
-                // Ignore normalized elements
-                .filter(|g| !g.is_normalized())
+    for g in v
+        .iter_mut()
+        // Ignore normalized elements
+        .filter(|g| !g.is_normalized())
     {
         tmp.mul_assign(&g.z);
         prod.push(tmp.clone());
@@ -89,13 +90,14 @@ pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
     tmp = tmp.inverse().unwrap(); // Guaranteed to be nonzero.
 
     // Second pass: iterate backwards to compute inverses
-    for (g, s) in v.iter_mut()
-                    // Backwards
-                    .rev()
-                    // Ignore normalized elements
-                    .filter(|g| !g.is_normalized())
-                    // Backwards, skip last element, fill in one for last term.
-                    .zip(prod.into_iter().rev().skip(1).chain(Some(one.clone())))
+    for (g, s) in v
+        .iter_mut()
+        // Backwards
+        .rev()
+        // Ignore normalized elements
+        .filter(|g| !g.is_normalized())
+        // Backwards, skip last element, fill in one for last term.
+        .zip(prod.into_iter().rev().skip(1).chain(Some(one.clone())))
     {
         // tmp := tmp * g.z; g.z := tmp * s = 1/z
         let mut newtmp = tmp.clone();
@@ -106,9 +108,7 @@ pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
     }
 
     // Perform affine transformations
-    for g in v.iter_mut()
-                .filter(|g| !g.is_normalized())
-    {
+    for g in v.iter_mut().filter(|g| !g.is_normalized()) {
         let mut z = g.z.clone(); // 1/z
         z.square(); // 1/z^2
         g.x.mul_assign(&z); // x/z^2
@@ -118,7 +118,7 @@ pub fn batch_normalize<'a, C: CurveParameters>(v: &mut [CurvePoint<'a, C>]) {
     }
 }
 
-impl<'a, C: CurveParameters> CurvePoint<'a, C> {    
+impl<'a, C: CurveParameters> CurvePoint<'a, C> {
     pub fn zero(curve: &'a WeierstrassCurve<C>) -> Self {
         Self {
             curve: curve,
@@ -132,7 +132,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         if self.is_zero() {
             return true;
         }
-        
+
         debug_assert!(self.is_normalized());
 
         let mut rhs = self.y.clone();
@@ -153,7 +153,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
     pub fn point_from_xy(
         curve: &'a WeierstrassCurve<'a, C>,
-        x: C::BaseFieldElement, 
+        x: C::BaseFieldElement,
         y: C::BaseFieldElement,
     ) -> CurvePoint<'a, C> {
         if x.is_zero() && y.is_zero() {
@@ -164,7 +164,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
             curve: curve,
             x: x,
             y: y,
-            z: C::BaseFieldElement::one(curve.params.params())
+            z: C::BaseFieldElement::one(curve.params.params()),
         }
     }
 
@@ -174,7 +174,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         }
 
         let one = C::BaseFieldElement::one(self.curve.params.params());
-        
+
         self.z == one
     }
 
@@ -200,7 +200,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
                 self.y.mul_assign(&zinv_powered);
 
                 self.z = one;
-            },
+            }
             None => {
                 self.z = C::BaseFieldElement::zero(self.curve.params.params());
             }
@@ -209,8 +209,10 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
     pub fn into_xy(&self) -> (C::BaseFieldElement, C::BaseFieldElement) {
         if self.is_zero() {
-            return (C::BaseFieldElement::zero(self.curve.params.params()),
-                    C::BaseFieldElement::zero(self.curve.params.params()));
+            return (
+                C::BaseFieldElement::zero(self.curve.params.params()),
+                C::BaseFieldElement::zero(self.curve.params.params()),
+            );
         }
 
         let mut point = self.clone();
@@ -225,11 +227,16 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
     pub fn into_xy_from_homogenious(&self) -> (C::BaseFieldElement, C::BaseFieldElement) {
         if self.is_zero() {
-            return (C::BaseFieldElement::zero(self.curve.params.params()),
-                    C::BaseFieldElement::zero(self.curve.params.params()) );
+            return (
+                C::BaseFieldElement::zero(self.curve.params.params()),
+                C::BaseFieldElement::zero(self.curve.params.params()),
+            );
         }
 
-        let z_inv = self.z.inverse().unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
+        let z_inv = self
+            .z
+            .inverse()
+            .unwrap_or_else(|| C::BaseFieldElement::zero(self.curve.params.params()));
 
         let mut x = self.x.clone();
         x.mul_assign(&z_inv);
@@ -239,7 +246,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
         (x, y)
     }
-    
+
     fn add_assign_generic_impl(&mut self, other: &Self) {
         if self.is_zero() {
             self.x = other.x.clone();
@@ -455,8 +462,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
         let mut found_one = false;
 
-        for i in BitIterator::new(exp)
-        {
+        for i in BitIterator::new(exp) {
             if found_one {
                 res.double();
             } else {
@@ -477,11 +483,15 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         self.wnaf_mul_with_window_size_impl(exp, WINDOW_SIZE)
     }
 
-    pub(crate) fn wnaf_mul_with_window_size_impl<S: crate::representation::IntoWnaf>(&self, exp: S, window_size: u32) -> Self {
+    pub(crate) fn wnaf_mul_with_window_size_impl<S: crate::representation::IntoWnaf>(
+        &self,
+        exp: S,
+        window_size: u32,
+    ) -> Self {
         assert!(window_size >= 2u32);
-        let mut precomp_table = vec![Self::zero(&self.curve); (1 << (window_size-1)) as usize];
+        let mut precomp_table = vec![Self::zero(&self.curve); (1 << (window_size - 1)) as usize];
 
-        let index_for_positive = (1 << (window_size-2)) as usize;
+        let index_for_positive = (1 << (window_size - 2)) as usize;
 
         let mut two_self = self.clone();
         two_self.double();
@@ -490,14 +500,14 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         precomp_table[index_for_positive] = precomp.clone();
         let mut neg_precomp = precomp.clone();
         neg_precomp.negate();
-        precomp_table[index_for_positive-1] = neg_precomp;
+        precomp_table[index_for_positive - 1] = neg_precomp;
 
         for i in 1..index_for_positive {
             precomp.add_assign(&two_self);
-            precomp_table[index_for_positive+i] = precomp.clone();
+            precomp_table[index_for_positive + i] = precomp.clone();
             let mut neg_precomp = precomp.clone();
             neg_precomp.negate();
-            precomp_table[index_for_positive-1-i] = neg_precomp;
+            precomp_table[index_for_positive - 1 - i] = neg_precomp;
         }
 
         // batch_normalize(&mut precomp_table);
@@ -522,7 +532,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
                 }
             }
         }
-        
+
         res
     }
 
@@ -531,8 +541,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
 
         let mut found_one = false;
 
-        for i in BitIterator::new(exp)
-        {
+        for i in BitIterator::new(exp) {
             if found_one {
                 res.double();
             } else {
@@ -610,7 +619,7 @@ impl<'a, C: CurveParameters> CurvePoint<'a, C> {
         self.z.sub_assign(&b);
         self.z.sub_assign(&z_2);
 
-        // Y3 = E*(D-X3)-8*C 
+        // Y3 = E*(D-X3)-8*C
         self.y = d;
         self.y.sub_assign(&self.x);
         self.y.mul_assign(&e);
@@ -692,7 +701,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 self.add_assign_generic_impl(&other);
-            },
+            }
         }
     }
 
@@ -700,7 +709,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 self.add_assign_mixed_generic_impl(&other);
-            },
+            }
         }
     }
 
@@ -714,7 +723,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 self.negate_impl();
-            },
+            }
         }
     }
 
@@ -722,7 +731,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 return self.mul_impl(exp);
-            },
+            }
         }
     }
 
@@ -730,7 +739,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 return self.is_zero_generic_impl();
-            },
+            }
         }
     }
 
@@ -738,11 +747,13 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             CurveType::Generic => {
                 self.double_generic_impl();
-            },
+            }
             CurveType::AIsZero => {
                 self.double_a_is_zero_impl();
             }
-            _ => {unimplemented!()}
+            _ => {
+                unimplemented!()
+            }
         }
     }
 
@@ -750,15 +761,19 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 return self.wnaf_mul_impl(exp);
-            },
+            }
         }
     }
 
-    fn wnaf_mul_with_window_size<S: crate::representation::IntoWnaf>(&self, exp: S, window_size: u32) -> Self {
+    fn wnaf_mul_with_window_size<S: crate::representation::IntoWnaf>(
+        &self,
+        exp: S,
+        window_size: u32,
+    ) -> Self {
         match self.curve.curve_type {
             _ => {
                 return self.wnaf_mul_with_window_size_impl(exp, window_size);
-            },
+            }
         }
     }
 
@@ -766,7 +781,7 @@ impl<'a, C: CurveParameters> Group for CurvePoint<'a, C> {
         match self.curve.curve_type {
             _ => {
                 return self.check_correct_subgroup_impl();
-            },
+            }
         }
     }
 }

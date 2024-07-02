@@ -1,15 +1,15 @@
+use crate::extension_towers::fp3::*;
+use crate::field::*;
+use crate::fp::*;
+use crate::integers::MaxFieldUint;
 use crate::pairings::TwistType;
 use crate::representation::*;
-use crate::field::*;
-use num_bigint::BigUint;
-use crate::integers::MaxFieldUint;
-use crate::fp::*;
-use crate::extension_towers::fp3::*;
 use crate::traits::*;
+use num_bigint::BigUint;
 use num_traits::Num;
 
 fn generate_mnt6_spec_params<FE: ElementRepr>(
-    modulus: BigUint, 
+    modulus: BigUint,
     a: BigUint,
     b: BigUint,
     main_subgroup_order: BigUint,
@@ -53,21 +53,29 @@ fn generate_mnt6_spec_params<FE: ElementRepr>(
     let mut b_fp3 = twist_cubed.clone();
     b_fp3.mul_by_fp(&b_fp);
 
-
     let g1_generator_x = Fp::from_be_bytes(&field, &generator_g1_x.to_bytes_be(), true).unwrap();
     let g1_generator_y = Fp::from_be_bytes(&field, &generator_g1_y.to_bytes_be(), true).unwrap();
 
-    let g1_generator_x_c0 = Fp::from_be_bytes(&field, &generator_g2_x_0.to_bytes_be(), true).unwrap();
-    let g1_generator_x_c1 = Fp::from_be_bytes(&field, &generator_g2_x_1.to_bytes_be(), true).unwrap();
-    let g1_generator_x_c2 = Fp::from_be_bytes(&field, &generator_g2_x_2.to_bytes_be(), true).unwrap();
-    let g1_generator_y_c0 = Fp::from_be_bytes(&field, &generator_g2_y_0.to_bytes_be(), true).unwrap();
-    let g1_generator_y_c1 = Fp::from_be_bytes(&field, &generator_g2_y_1.to_bytes_be(), true).unwrap();
-    let g1_generator_y_c2 = Fp::from_be_bytes(&field, &generator_g2_y_2.to_bytes_be(), true).unwrap();
+    let g1_generator_x_c0 =
+        Fp::from_be_bytes(&field, &generator_g2_x_0.to_bytes_be(), true).unwrap();
+    let g1_generator_x_c1 =
+        Fp::from_be_bytes(&field, &generator_g2_x_1.to_bytes_be(), true).unwrap();
+    let g1_generator_x_c2 =
+        Fp::from_be_bytes(&field, &generator_g2_x_2.to_bytes_be(), true).unwrap();
+    let g1_generator_y_c0 =
+        Fp::from_be_bytes(&field, &generator_g2_y_0.to_bytes_be(), true).unwrap();
+    let g1_generator_y_c1 =
+        Fp::from_be_bytes(&field, &generator_g2_y_1.to_bytes_be(), true).unwrap();
+    let g1_generator_y_c2 =
+        Fp::from_be_bytes(&field, &generator_g2_y_2.to_bytes_be(), true).unwrap();
     println!("Weierstrass curve parameters with k=6");
     println!("Base field modulus = {}", field.modulus());
     println!("A coefficient = {}", a_fp);
     println!("B coefficient = {}", b_fp);
-    println!("Main subgroup order = 0x{}", main_subgroup_order.to_str_radix(16));
+    println!(
+        "Main subgroup order = 0x{}",
+        main_subgroup_order.to_str_radix(16)
+    );
 
     println!("Extension tower:");
     println!("Fp3 construction:");
@@ -95,19 +103,29 @@ fn generate_mnt6_spec_params<FE: ElementRepr>(
     println!("Y c2 = {}", g1_generator_y_c2);
 
     println!("Pairing parameters:");
-    println!("|ate_loop_scalar| (miller loop scalar) = 0x{}", ate_loop_scalar.to_str_radix(16));
-    println!("ate_loop_scalar is negative = {}", ate_loop_scalar_is_negative);
+    println!(
+        "|ate_loop_scalar| (miller loop scalar) = 0x{}",
+        ate_loop_scalar.to_str_radix(16)
+    );
+    println!(
+        "ate_loop_scalar is negative = {}",
+        ate_loop_scalar_is_negative
+    );
 
-    println!("final_exp_scalar (final exponentiation power) = 0x{}", final_exp_scalar.to_str_radix(16));
+    println!(
+        "final_exp_scalar (final exponentiation power) = 0x{}",
+        final_exp_scalar.to_str_radix(16)
+    );
 
-    println!("Breaking final exponentiation hard part into the two parts (usually labeled w0 and w1)");
+    println!(
+        "Breaking final exponentiation hard part into the two parts (usually labeled w0 and w1)"
+    );
 
     println!("|w0| = 0x{}", w0_exp_scalar.to_str_radix(16));
     println!("w0 is negative = {}", w0_exp_scalar_is_negative);
 
     println!("|w1| = 0x{}", w1_exp_scalar.to_str_radix(16));
 }
-
 
 #[test]
 fn print_ey_pendulum_parameters() {
@@ -159,7 +177,7 @@ fn print_ey_pendulum_parameters() {
         final_exp,
         w0,
         w0_is_negative,
-        w1
+        w1,
     );
 }
 
@@ -213,6 +231,6 @@ fn print_ey_sw6_bis_parameters() {
         final_exp,
         w0,
         w0_is_negative,
-        w1
+        w1,
     );
 }

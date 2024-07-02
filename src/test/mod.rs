@@ -1,25 +1,31 @@
-pub(crate) mod pairings;
-pub(crate) mod g2_ops;
+pub(crate) mod arithmetic_tests;
 pub(crate) mod g1_ops;
+pub(crate) mod g2_ops;
+pub(crate) mod pairings;
 pub(crate) mod parsers;
 pub(crate) mod public_api;
 pub(crate) mod spec_generator;
-pub(crate) mod arithmetic_tests;
 
 mod fields;
 // mod fuzzing;
 mod gas_meter;
 
 use num_bigint::BigUint;
-use num_traits::Zero;
 use num_traits::cast::ToPrimitive;
+use num_traits::Zero;
 
 use crate::errors::ApiError;
 
 pub(crate) fn num_limbs_for_modulus(modulus: &BigUint) -> Result<usize, ApiError> {
     use crate::field::calculate_num_limbs;
 
-    let modulus_limbs = calculate_num_limbs(modulus.bits()).map_err(|_| ApiError::InputError(format!("Modulus is too large, file {}, line {}", file!(), line!())) )?;
+    let modulus_limbs = calculate_num_limbs(modulus.bits()).map_err(|_| {
+        ApiError::InputError(format!(
+            "Modulus is too large, file {}, line {}",
+            file!(),
+            line!()
+        ))
+    })?;
 
     Ok(modulus_limbs)
 }
@@ -27,7 +33,11 @@ pub(crate) fn num_limbs_for_modulus(modulus: &BigUint) -> Result<usize, ApiError
 pub(crate) fn num_units_for_group_order(order: &BigUint) -> Result<usize, ApiError> {
     let limbs = (order.bits() + 63) / 64;
     if limbs > 16 {
-        return Err(ApiError::InputError(format!("Group order is too large, file {}, line {}", file!(), line!())));
+        return Err(ApiError::InputError(format!(
+            "Group order is too large, file {}, line {}",
+            file!(),
+            line!()
+        )));
     }
 
     Ok(limbs)
@@ -47,9 +57,8 @@ pub(crate) fn calculate_num_limbs(modulus: &BigUint) -> Result<usize, ()> {
 
     Ok(num_limbs)
 }
-    
-pub(crate) fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
 
+pub(crate) fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
     let m = BigUint::from(1u64) << 64;
     let mut ret = Vec::with_capacity((v.bits() / 64) + 1);
 
@@ -80,10 +89,9 @@ mod test {
         const RUNS_PER_WORK_UNIT: usize = 100000;
         const PARALLEL_WORKS: usize = 50;
 
-        use parity_crypto::publickey::{Signature, recover as ec_recover};
-        use ethereum_types::{H256};
+        use ethereum_types::H256;
         use keccak_hash::keccak;
-
+        use parity_crypto::publickey::{recover as ec_recover, Signature};
 
         // let mut multiexp_len = vec![0, 2, 4, 8, 16, 32, 64, 128];
         let mut multiexp_len = vec![2, 4, 8, 16, 32, 64, 128];
@@ -93,9 +101,11 @@ mod test {
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         let mut parameters_space = vec![];
         let (tx, rx) = channel();
@@ -161,10 +171,10 @@ mod test {
             match subres {
                 Ok(r) => {
                     sum += r.0;
-                },
+                }
                 Err(TryRecvError::Empty) => {
                     std::thread::sleep(std::time::Duration::from_millis(1000u64));
-                },
+                }
                 Err(TryRecvError::Disconnected) => {
                     handler.join().unwrap();
                     break;
@@ -180,7 +190,10 @@ mod test {
 
         let gas_per_second = 1_000_000 * 1_000 * ECRECOVER_GAS / ns_per_run;
 
-        println!("MGAS per second on the current PC = {}", (gas_per_second as f64) / 1_000_000f64);
+        println!(
+            "MGAS per second on the current PC = {}",
+            (gas_per_second as f64) / 1_000_000f64
+        );
     }
 
     #[test]
@@ -200,15 +213,17 @@ mod test {
         const RUNS_PER_WORK_UNIT: usize = 1000;
         const PARALLEL_WORKS: usize = 50;
 
-        use ethereum_types::{U256};
+        use ethereum_types::U256;
 
         use indicatif::{ProgressBar, ProgressStyle};
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         let mut parameters_space = vec![];
         let (tx, rx) = channel();
@@ -281,7 +296,7 @@ mod test {
 
                     let mut buf = [0u8; 32];
                     ret_val.to_big_endian(&mut buf);
-                    
+
                     let elapsed_nanos = start.elapsed().as_nanos();
                     tx.send((elapsed_nanos, buf)).unwrap();
 
@@ -297,10 +312,10 @@ mod test {
             match subres {
                 Ok(r) => {
                     sum += r.0;
-                },
+                }
                 Err(TryRecvError::Empty) => {
                     std::thread::sleep(std::time::Duration::from_millis(1000u64));
-                },
+                }
                 Err(TryRecvError::Disconnected) => {
                     handler.join().unwrap();
                     break;
@@ -316,6 +331,9 @@ mod test {
 
         let gas_per_second = 1_000_000 * 1_000 * BN_PAIRING_10_POINTS_GAS / ns_per_run;
 
-        println!("MGAS per second on the current PC = {}", (gas_per_second as f64) / 1_000_000f64);
+        println!(
+            "MGAS per second on the current PC = {}",
+            (gas_per_second as f64) / 1_000_000f64
+        );
     }
 }

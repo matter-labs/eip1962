@@ -1,15 +1,15 @@
-use crate::weierstrass::*;
-use crate::weierstrass::curve::*;
 use crate::integers::MaxGroupSizeUint;
 use crate::traits::*;
+use crate::weierstrass::curve::*;
+use crate::weierstrass::*;
 
 // define the test processor
 
 pub(crate) struct ArithmeticProcessor<
-    'a, 
-    'b: 'a, 
+    'a,
+    'b: 'a,
     FE: FieldElement + ZeroAndOne + 'a,
-    CP: CurveParameters<BaseFieldElement = FE> + 'a
+    CP: CurveParameters<BaseFieldElement = FE> + 'a,
 > {
     curve: &'b WeierstrassCurve<'a, CP>,
     generator: &'b CurvePoint<'a, CP>,
@@ -17,11 +17,12 @@ pub(crate) struct ArithmeticProcessor<
 }
 
 impl<
-    'a, 
-    'b: 'a, 
-    FE: FieldElement + ZeroAndOne + 'a,
-    CP: CurveParameters<BaseFieldElement = FE> + 'a
-> ArithmeticProcessor<'a, 'b, FE, CP> {
+        'a,
+        'b: 'a,
+        FE: FieldElement + ZeroAndOne + 'a,
+        CP: CurveParameters<BaseFieldElement = FE> + 'a,
+    > ArithmeticProcessor<'a, 'b, FE, CP>
+{
     fn a_plus_a_equal_to_2a(&self) {
         let mut a_plus_a = self.generator.clone();
         let other_a = self.generator.clone();
@@ -134,8 +135,8 @@ impl<
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::engines::bls12_381::*;
     use crate::engines::bls12_377::*;
+    use crate::engines::bls12_381::*;
 
     #[test]
     fn test_bls12_381_g1() {

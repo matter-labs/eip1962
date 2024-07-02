@@ -1,28 +1,28 @@
-use crate::representation::{ElementRepr, RepresentationDecodingError};
-use crate::traits::FieldElement;
-use crate::traits::BitIterator;
-use crate::traits::FieldExtension;
 use crate::field::SizedPrimeField;
+use crate::representation::{ElementRepr, RepresentationDecodingError};
+use crate::traits::BitIterator;
+use crate::traits::FieldElement;
+use crate::traits::FieldExtension;
 use crate::traits::ZeroAndOne;
 
-pub struct Fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > {
+pub struct Fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> {
     pub(crate) repr: E,
     pub(crate) field: &'a F,
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Clone for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Clone for Fp<'a, E, F> {
     #[inline(always)]
     fn clone(&self) -> Self {
         Self {
             field: &self.field,
-            repr: self.repr
+            repr: self.repr,
         }
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Copy for Fp<'a, E, F> {}
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Copy for Fp<'a, E, F> {}
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Ord for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Ord for Fp<'a, E, F> {
     #[inline(always)]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // use non-montgommery form
@@ -32,9 +32,9 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Ord for Fp<'a, E, F> {
         let that = other.repr.into_normal_repr(&modulus, mont_inv);
         for (a, b) in this.as_ref().iter().rev().zip(that.as_ref().iter().rev()) {
             if a < b {
-                return std::cmp::Ordering::Less
+                return std::cmp::Ordering::Less;
             } else if a > b {
-                return std::cmp::Ordering::Greater
+                return std::cmp::Ordering::Greater;
             }
         }
 
@@ -42,10 +42,16 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Ord for Fp<'a, E, F> {
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PartialEq for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> PartialEq for Fp<'a, E, F> {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
-        for (a, b) in self.repr.as_ref().iter().rev().zip(other.repr.as_ref().iter().rev()) {
+        for (a, b) in self
+            .repr
+            .as_ref()
+            .iter()
+            .rev()
+            .zip(other.repr.as_ref().iter().rev())
+        {
             if a != b {
                 return false;
             }
@@ -55,18 +61,16 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PartialEq for Fp<'a, E, 
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Eq for Fp<'a, E, F> {
-}
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Eq for Fp<'a, E, F> {}
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > PartialOrd for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> PartialOrd for Fp<'a, E, F> {
     #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Debug for Fp<'a, E, F>
-{
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> std::fmt::Debug for Fp<'a, E, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "0x")?;
         // for i in self.repr.as_ref().iter().rev() {
@@ -78,7 +82,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Debug for Fp<'
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Display for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> std::fmt::Display for Fp<'a, E, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "0x")?;
         // for i in self.repr.as_ref().iter().rev() {
@@ -90,7 +94,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > std::fmt::Display for Fp
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> Fp<'a, E, F> {
     // #[inline(always)]
     // pub fn zero(field: &'a F) -> Self {
     //     Self {
@@ -111,12 +115,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         if field.is_valid_repr(&repr) {
             let mut r = Self {
                 field: field,
-                repr: repr
+                repr: repr,
             };
 
             let r2 = Self {
                 field: field,
-                repr: *field.mont_r2()
+                repr: *field.mont_r2(),
             };
 
             r.mul_assign(&r2);
@@ -131,7 +135,7 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         if field.is_valid_repr(&repr) {
             let r = Self {
                 field: field,
-                repr: repr
+                repr: repr,
             };
 
             Ok(r)
@@ -146,27 +150,46 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
         self.repr.into_normal_repr(&modulus, mont_inv)
     }
 
-    pub fn from_be_bytes(field: &'a F, bytes: &[u8], allow_padding: bool) -> Result<Self, RepresentationDecodingError> {
+    pub fn from_be_bytes(
+        field: &'a F,
+        bytes: &[u8],
+        allow_padding: bool,
+    ) -> Result<Self, RepresentationDecodingError> {
         let mut repr = E::default();
         if bytes.len() >= repr.as_ref().len() * 8 {
-            repr.read_be(bytes).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+            repr.read_be(bytes).map_err(|e| {
+                RepresentationDecodingError::NotInField(format!(
+                    "Failed to read big endian bytes, {}",
+                    e
+                ))
+            })?;
         } else {
             if allow_padding {
                 let mut padded = vec![0u8; repr.as_ref().len() * 8 - bytes.len()];
                 padded.extend_from_slice(bytes);
-                repr.read_be(&padded[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+                repr.read_be(&padded[..]).map_err(|e| {
+                    RepresentationDecodingError::NotInField(format!(
+                        "Failed to read big endian bytes, {}",
+                        e
+                    ))
+                })?;
             } else {
-                repr.read_be(&bytes[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes without padding, {}", e)))?;
+                repr.read_be(&bytes[..]).map_err(|e| {
+                    RepresentationDecodingError::NotInField(format!(
+                        "Failed to read big endian bytes without padding, {}",
+                        e
+                    ))
+                })?;
             }
         }
         Self::from_repr(field, repr)
     }
 
     pub fn from_be_bytes_with_padding(
-        field: &'a F, 
-        bytes: &[u8], 
-        pad_beginning: bool, 
-        expect_prepadded_beginning: bool
+        field: &'a F,
+        bytes: &[u8],
+        pad_beginning: bool,
+        expect_prepadded_beginning: bool,
     ) -> Result<Self, RepresentationDecodingError> {
         let mut repr = E::default();
         let necessary_length = repr.as_ref().len() * 8;
@@ -175,23 +198,47 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
                 let start = bytes.len() - necessary_length;
                 for &b in bytes[..start].iter() {
                     if b != 0u8 {
-                        return Err(RepresentationDecodingError::NotInField("top bytes of the padded BE encoding are NOT zeroes".to_owned()));
+                        return Err(RepresentationDecodingError::NotInField(
+                            "top bytes of the padded BE encoding are NOT zeroes".to_owned(),
+                        ));
                     }
                 }
-                repr.read_be(&bytes[start..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+                repr.read_be(&bytes[start..]).map_err(|e| {
+                    RepresentationDecodingError::NotInField(format!(
+                        "Failed to read big endian bytes, {}",
+                        e
+                    ))
+                })?;
             } else {
                 if bytes.len() != necessary_length {
-                    return Err(RepresentationDecodingError::NotInField("supplied encoding is longer than expected".to_owned()));
+                    return Err(RepresentationDecodingError::NotInField(
+                        "supplied encoding is longer than expected".to_owned(),
+                    ));
                 }
-                repr.read_be(&bytes[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+                repr.read_be(&bytes[..]).map_err(|e| {
+                    RepresentationDecodingError::NotInField(format!(
+                        "Failed to read big endian bytes, {}",
+                        e
+                    ))
+                })?;
             }
         } else {
             if pad_beginning {
                 let mut padded = vec![0u8; necessary_length - bytes.len()];
                 padded.extend_from_slice(bytes);
-                repr.read_be(&padded[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes, {}", e)))?;
+                repr.read_be(&padded[..]).map_err(|e| {
+                    RepresentationDecodingError::NotInField(format!(
+                        "Failed to read big endian bytes, {}",
+                        e
+                    ))
+                })?;
             } else {
-                repr.read_be(&bytes[..]).map_err(|e| RepresentationDecodingError::NotInField(format!("Failed to read big endian bytes without padding, {}", e)))?;
+                repr.read_be(&bytes[..]).map_err(|e| {
+                    RepresentationDecodingError::NotInField(format!(
+                        "Failed to read big endian bytes without padding, {}",
+                        e
+                    ))
+                })?;
             }
         }
         Self::from_repr(field, repr)
@@ -214,11 +261,11 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
             let mut v = modulus;
             let mut b = Self {
                 field: &self.field,
-                repr: *self.field.mont_r2()
+                repr: *self.field.mont_r2(),
             }; // Avoids unnecessary reduction step.
             let mut c = Self::zero(&self.field);
 
-            let max_iterations = 2*self.field.mont_power();
+            let max_iterations = 2 * self.field.mont_power();
             let mut found = false;
 
             let mut iterations = 0;
@@ -331,26 +378,29 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > Fp<'a, E, F> {
     }
 
     #[inline]
-    fn mul_assign_with_partial_reduction(&mut self, other: &Self)
-    {
-        self.repr.mont_mul_assign_with_partial_reduction(&other.repr, &self.field.modulus(), self.field.mont_inv());
+    fn mul_assign_with_partial_reduction(&mut self, other: &Self) {
+        self.repr.mont_mul_assign_with_partial_reduction(
+            &other.repr,
+            &self.field.modulus(),
+            self.field.mont_inv(),
+        );
     }
 
     #[inline]
-    fn square_with_partial_reduction(&mut self)
-    {
-        self.repr.mont_square_with_partial_reduction(&self.field.modulus(), self.field.mont_inv());
+    fn square_with_partial_reduction(&mut self) {
+        self.repr
+            .mont_square_with_partial_reduction(&self.field.modulus(), self.field.mont_inv());
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> ZeroAndOne for Fp<'a, E, F> {
     type Params = &'a F;
 
     #[inline(always)]
     fn zero(field: &'a F) -> Self {
         Self {
             field: field,
-            repr: E::default()
+            repr: E::default(),
         }
     }
 
@@ -358,12 +408,12 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > ZeroAndOne for Fp<'a, E,
     fn one(field: &'a F) -> Self {
         Self {
             field: field,
-            repr: *field.mont_r()
+            repr: *field.mont_r(),
         }
     }
 }
 
-impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, E, F> {
+impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>> FieldElement for Fp<'a, E, F> {
     /// Returns true iff this element is zero.
     #[inline]
     fn is_zero(&self) -> bool {
@@ -414,15 +464,15 @@ impl<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> > FieldElement for Fp<'a, 
     }
 
     #[inline]
-    fn mul_assign(&mut self, other: &Self)
-    {
-        self.repr.mont_mul_assign(&other.repr, &self.field.modulus(), self.field.mont_inv());
+    fn mul_assign(&mut self, other: &Self) {
+        self.repr
+            .mont_mul_assign(&other.repr, &self.field.modulus(), self.field.mont_inv());
     }
 
     #[inline]
-    fn square(&mut self)
-    {
-        self.repr.mont_square(&self.field.modulus(), self.field.mont_inv());
+    fn square(&mut self) {
+        self.repr
+            .mont_square(&self.field.modulus(), self.field.mont_inv());
     }
 
     fn pow<S: AsRef<[u64]>>(&self, exp: S) -> Self {

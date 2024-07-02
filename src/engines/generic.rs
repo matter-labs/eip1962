@@ -1,37 +1,40 @@
+use crate::pairings::PairingEngine;
 use crate::traits::*;
-use crate::weierstrass::*;
 use crate::weierstrass::curve::*;
-use crate::pairings::{PairingEngine};
+use crate::weierstrass::*;
 
-pub struct Engine<'a,
+pub struct Engine<
+    'a,
     F: FieldElement + ZeroAndOne + 'a,
     FEXT: FieldElement + ZeroAndOne + 'a,
     GT: FieldElement + 'a,
     C: CurveParameters<BaseFieldElement = F> + 'a,
     CTW: CurveParameters<BaseFieldElement = FEXT> + 'a,
     P: PairingEngine<PairingResult = GT, G1 = CurvePoint<'a, C>, G2 = CurvePoint<'a, CTW>>,
-    AUX: Sized + 'a
+    AUX: Sized + 'a,
 > {
     pub curve: &'a WeierstrassCurve<'a, C>,
     pub twist: &'a WeierstrassCurve<'a, CTW>,
     pub g1_generator: P::G1,
     pub g2_generator: P::G2,
     pub pairing_engine: &'a P,
-    
+
     pub(crate) base_params: &'a C,
     pub(crate) twist_params: &'a CTW,
     pub(crate) aux: AUX,
 }
 
-impl<'a,
-F: FieldElement + ZeroAndOne + 'a,
-FEXT: FieldElement + ZeroAndOne + 'a,
-GT: FieldElement + 'a,
-C: CurveParameters<BaseFieldElement = F> + 'a,
-CTW: CurveParameters<BaseFieldElement = FEXT> + 'a,
-P: PairingEngine<PairingResult = GT, G1 = CurvePoint<'a, C>, G2 = CurvePoint<'a, CTW>>,
-AUX: Sized + 'a
-> Engine<'a, F, FEXT, GT, C, CTW, P, AUX> {
+impl<
+        'a,
+        F: FieldElement + ZeroAndOne + 'a,
+        FEXT: FieldElement + ZeroAndOne + 'a,
+        GT: FieldElement + 'a,
+        C: CurveParameters<BaseFieldElement = F> + 'a,
+        CTW: CurveParameters<BaseFieldElement = FEXT> + 'a,
+        P: PairingEngine<PairingResult = GT, G1 = CurvePoint<'a, C>, G2 = CurvePoint<'a, CTW>>,
+        AUX: Sized + 'a,
+    > Engine<'a, F, FEXT, GT, C, CTW, P, AUX>
+{
     pub fn get_base_field_params(&self) -> <F as ZeroAndOne>::Params {
         self.base_params.params()
     }
@@ -91,12 +94,10 @@ AUX: Sized + 'a
 
 //     //     (base_field, one)
 
-
-
 //     //     // // non-residue is u+9
 //     //     // let mut fp2_non_residue = Fp2::zero(&*extension_2);
 //     //     // let fp_9_repr = U256Repr::from(9u64);
-//     //     // let fp_9 = Fp::from_repr(&*base_field, fp_9_repr).unwrap(); 
+//     //     // let fp_9 = Fp::from_repr(&*base_field, fp_9_repr).unwrap();
 //     //     // fp2_non_residue.c0 = fp_9.clone();
 //     //     // fp2_non_residue.c1 = one.clone();
 
@@ -187,7 +188,7 @@ AUX: Sized + 'a
 //     //     // use crate::pairings::bn::*;
 
 //     //     // let aux = (
-//     //     //     Arc::clone(&group_order), 
+//     //     //     Arc::clone(&group_order),
 //     //     //     Arc::clone(&six_u_plus_2),
 //     //     //     Arc::clone(&base_field),
 //     //     //     Arc::clone(&extension_2),

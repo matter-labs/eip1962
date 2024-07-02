@@ -4,7 +4,9 @@ use crate::test::parsers::*;
 
 use super::*;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters) -> (Vec<u8>, usize, usize) {
+pub(crate) fn assemble_single_curve_params(
+    curve: JsonBnPairingCurveParameters,
+) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -104,12 +106,14 @@ pub(crate) fn assemble_single_points_addition_pair(
 
 #[test]
 fn test_g1_mul_from_vectors() {
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
     for (curve, filename) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g1_mul_vectors.into_iter() {
-            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
+            let (points_data, expected_result) =
+                assemble_single_point_scalar_pair(pair, modulus_len, group_len);
 
             let mut calldata = calldata.clone();
             calldata.extend(points_data);
@@ -126,31 +130,38 @@ fn test_g1_mul_from_vectors() {
     }
 }
 
-extern crate hex;
 extern crate csv;
+extern crate hex;
 
-use hex::{encode};
-use csv::{Writer};
+use csv::Writer;
+use hex::encode;
 
 #[test]
 #[ignore]
 fn dump_g1_mul_vectors() {
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    let mut writer = Writer::from_path("src/test/test_vectors/bn/g1_mul.csv").expect("must open a test file");
-    writer.write_record(&["input", "result"]).expect("must write header");
+    let mut writer =
+        Writer::from_path("src/test/test_vectors/bn/g1_mul.csv").expect("must open a test file");
+    writer
+        .write_record(&["input", "result"])
+        .expect("must write header");
     for (curve, _) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g1_mul_vectors.into_iter() {
-            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
+            let (points_data, expected_result) =
+                assemble_single_point_scalar_pair(pair, modulus_len, group_len);
             let mut input_data = vec![OPERATION_G1_MUL];
             input_data.extend(calldata.clone());
             input_data.extend(points_data);
 
-            writer.write_record(&[
-                prepend_0x(&encode(&input_data[..])), 
-                prepend_0x(&encode(&expected_result[..]))],
-            ).expect("must write a record");
+            writer
+                .write_record(&[
+                    prepend_0x(&encode(&input_data[..])),
+                    prepend_0x(&encode(&expected_result[..])),
+                ])
+                .expect("must write a record");
         }
     }
     writer.flush().expect("must finalize writing");
@@ -165,4 +176,3 @@ fn dump_g1_mul_vectors() {
 //         call_bls12_engine(&calldata[..]).expect("must use");
 //     });
 // }
-

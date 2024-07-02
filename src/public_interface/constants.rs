@@ -42,8 +42,8 @@ pub const NUM_GROUP_LIMBS_MAX: usize = 16;
 pub const MAX_MODULUS_BYTE_LEN: usize = 128;
 pub const MAX_GROUP_BYTE_LEN: usize = 128;
 
-use static_assertions::const_assert;
 use crate::integers::*;
+use static_assertions::const_assert;
 
 const_assert!(MAX_MODULUS_BYTE_LEN == NUM_LIMBS_MAX * 8);
 

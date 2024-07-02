@@ -30,10 +30,14 @@ impl fmt::Display for ApiError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
             ApiError::Overflow => write!(f, "overflow"),
-            ApiError::UnexpectedZero(descr) => write!(f, "parameter expected to be non-zero, {}", descr),
+            ApiError::UnexpectedZero(descr) => {
+                write!(f, "parameter expected to be non-zero, {}", descr)
+            }
             ApiError::InputError(descr) => write!(f, "invalid input parameters, {}", descr),
             ApiError::DivisionByZero => write!(f, "division by zero"),
-            ApiError::UnknownParameter(descr) => write!(f, "parameter has value out of bounds, {}", descr),
+            ApiError::UnknownParameter(descr) => {
+                write!(f, "parameter has value out of bounds, {}", descr)
+            }
             ApiError::OutputError(descr) => write!(f, "error outputing results, {}", descr),
             ApiError::MissingValue => write!(f, "missing value"),
         }

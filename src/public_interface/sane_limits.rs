@@ -12,7 +12,7 @@ pub const MAX_ATE_PAIRING_FINAL_EXP_W1_BIT_LENGTH: usize = 2032;
 
 pub const MAX_LOOP_PARAMETERS_BYTE_LEN: usize = MAX_ATE_PAIRING_FINAL_EXP_W0_BIT_LENGTH / 8;
 
-use static_assertions::const_assert;
 use crate::integers::*;
+use static_assertions::const_assert;
 
 const_assert!(std::mem::size_of::<MaxLoopParametersUint>() >= MAX_LOOP_PARAMETERS_BYTE_LEN);

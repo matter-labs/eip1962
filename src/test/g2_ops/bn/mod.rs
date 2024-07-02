@@ -1,11 +1,13 @@
-use crate::test::parsers::*;
 use crate::public_interface::constants::*;
+use crate::test::parsers::*;
 
 use super::*;
 
 const EXTENSION_DEGREE: usize = 2;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters) -> (Vec<u8>, usize, usize) {
+pub(crate) fn assemble_single_curve_params(
+    curve: JsonBnPairingCurveParameters,
+) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Extension degree
@@ -31,9 +33,15 @@ pub(crate) fn assemble_single_curve_params(curve: JsonBnPairingCurveParameters) 
     };
 
     let mut a_encoded = pad_for_len_be(curve.a_twist_0.to_bytes_be(), modulus_length);
-    a_encoded.extend(pad_for_len_be(curve.a_twist_1.to_bytes_be(), modulus_length));
+    a_encoded.extend(pad_for_len_be(
+        curve.a_twist_1.to_bytes_be(),
+        modulus_length,
+    ));
     let mut b_encoded = pad_for_len_be(curve.b_twist_0.to_bytes_be(), modulus_length);
-    b_encoded.extend(pad_for_len_be(curve.b_twist_1.to_bytes_be(), modulus_length));
+    b_encoded.extend(pad_for_len_be(
+        curve.b_twist_1.to_bytes_be(),
+        modulus_length,
+    ));
 
     // now we make two random scalars and do scalar multiplications in G1 and G2 to get pairs that should
     // at the end of the day pair to identity element
@@ -95,12 +103,14 @@ fn assemble_single_point_scalar_pair(
 
 #[test]
 fn test_g2_mul_from_vectors() {
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
     for (curve, _) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g2_mul_vectors.into_iter() {
-            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
+            let (points_data, expected_result) =
+                assemble_single_point_scalar_pair(pair, modulus_len, group_len);
 
             let mut calldata = calldata.clone();
             calldata.extend(points_data);
@@ -117,36 +127,42 @@ fn test_g2_mul_from_vectors() {
     }
 }
 
-extern crate hex;
 extern crate csv;
+extern crate hex;
 
-use hex::{encode};
-use csv::{Writer};
+use csv::Writer;
+use hex::encode;
 
 #[test]
 #[ignore]
 fn dump_g2_mul_vectors() {
-    let curves = read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
+    let curves =
+        read_dir_and_grab_curves::<JsonBnPairingCurveParameters>("src/test/test_vectors/bn/");
     assert!(curves.len() != 0);
-    let mut writer = Writer::from_path("src/test/test_vectors/bn/g2_mul.csv").expect("must open a test file");
-    writer.write_record(&["input", "result"]).expect("must write header");
+    let mut writer =
+        Writer::from_path("src/test/test_vectors/bn/g2_mul.csv").expect("must open a test file");
+    writer
+        .write_record(&["input", "result"])
+        .expect("must write header");
     for (curve, _) in curves.into_iter() {
         let (calldata, modulus_len, group_len) = assemble_single_curve_params(curve.clone());
         for pair in curve.g2_mul_vectors.into_iter() {
-            let (points_data, expected_result) = assemble_single_point_scalar_pair(pair, modulus_len, group_len);
+            let (points_data, expected_result) =
+                assemble_single_point_scalar_pair(pair, modulus_len, group_len);
             let mut input_data = vec![OPERATION_G2_MUL];
             input_data.extend(calldata.clone());
             input_data.extend(points_data);
 
-            writer.write_record(&[
-                prepend_0x(&encode(&input_data[..])), 
-                prepend_0x(&encode(&expected_result[..]))],
-            ).expect("must write a record");
+            writer
+                .write_record(&[
+                    prepend_0x(&encode(&input_data[..])),
+                    prepend_0x(&encode(&expected_result[..])),
+                ])
+                .expect("must write a record");
         }
     }
     writer.flush().expect("must finalize writing");
 }
-
 
 // use rust_test::Bencher;
 
@@ -157,4 +173,3 @@ fn dump_g2_mul_vectors() {
 //         call_bls12_engine(&calldata[..]).expect("must use");
 //     });
 // }
-

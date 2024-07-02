@@ -38,7 +38,7 @@ macro_rules! panic_on_overflow {
 #[doc(hidden)]
 macro_rules! impl_mul_from {
 	($name: ty, $other: ident) => {
-		impl $crate::core_::ops::Mul<$other> for $name {
+		impl core::ops::Mul<$other> for $name {
 			type Output = $name;
 
 			fn mul(self, other: $other) -> $name {
@@ -49,7 +49,7 @@ macro_rules! impl_mul_from {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Mul<&'a $other> for $name {
+		impl<'a> core::ops::Mul<&'a $other> for $name {
 			type Output = $name;
 
 			fn mul(self, other: &'a $other) -> $name {
@@ -60,7 +60,7 @@ macro_rules! impl_mul_from {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Mul<&'a $other> for &'a $name {
+		impl<'a> core::ops::Mul<&'a $other> for &'a $name {
 			type Output = $name;
 
 			fn mul(self, other: &'a $other) -> $name {
@@ -71,7 +71,7 @@ macro_rules! impl_mul_from {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Mul<$other> for &'a $name {
+		impl<'a> core::ops::Mul<$other> for &'a $name {
 			type Output = $name;
 
 			fn mul(self, other: $other) -> $name {
@@ -82,7 +82,7 @@ macro_rules! impl_mul_from {
 			}
 		}
 
-		impl $crate::core_::ops::MulAssign<$other> for $name {
+		impl core::ops::MulAssign<$other> for $name {
 			fn mul_assign(&mut self, other: $other) {
 				let result = *self * other;
 				*self = result
@@ -95,7 +95,7 @@ macro_rules! impl_mul_from {
 #[doc(hidden)]
 macro_rules! impl_mul_for_primitive {
 	($name: ty, $other: ident) => {
-		impl $crate::core_::ops::Mul<$other> for $name {
+		impl core::ops::Mul<$other> for $name {
 			type Output = $name;
 
 			fn mul(self, other: $other) -> $name {
@@ -105,7 +105,7 @@ macro_rules! impl_mul_for_primitive {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Mul<&'a $other> for $name {
+		impl<'a> core::ops::Mul<&'a $other> for $name {
 			type Output = $name;
 
 			fn mul(self, other: &'a $other) -> $name {
@@ -115,7 +115,7 @@ macro_rules! impl_mul_for_primitive {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Mul<&'a $other> for &'a $name {
+		impl<'a> core::ops::Mul<&'a $other> for &'a $name {
 			type Output = $name;
 
 			fn mul(self, other: &'a $other) -> $name {
@@ -125,7 +125,7 @@ macro_rules! impl_mul_for_primitive {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Mul<$other> for &'a $name {
+		impl<'a> core::ops::Mul<$other> for &'a $name {
 			type Output = $name;
 
 			fn mul(self, other: $other) -> $name {
@@ -135,7 +135,7 @@ macro_rules! impl_mul_for_primitive {
 			}
 		}
 
-		impl $crate::core_::ops::MulAssign<$other> for $name {
+		impl core::ops::MulAssign<$other> for $name {
 			fn mul_assign(&mut self, other: $other) {
 				let result = *self * (other as u64);
 				*self = result
@@ -154,7 +154,7 @@ macro_rules! construct_uint {
 	( $(#[$attr:meta])* $visibility:vis struct $name:ident ( $n_words:tt ); ) => {
 			$crate::construct_uint! { @construct $(#[$attr])* $visibility struct $name ($n_words); }
 
-			impl $crate::core_::convert::From<u128> for $name {
+			impl core::convert::From<u128> for $name {
 				fn from(value: u128) -> $name {
 					let mut ret = [0; $n_words];
 					ret[0] = value as u64;
@@ -217,7 +217,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::cmp::PartialEq for $name {
+		impl core::cmp::PartialEq for $name {
 			#[inline]
             fn eq(&self, other: &$name) -> bool {
                 for (a, b) in self.0.iter().rev().zip(other.0.iter().rev()) {
@@ -230,10 +230,10 @@ macro_rules! construct_uint {
             }
 		}
 
-		impl $crate::core_::cmp::Eq for $name {}
+		impl core::cmp::Eq for $name {}
 
-		impl $crate::core_::hash::Hash for $name {
-			fn hash<H: $crate::core_::hash::Hasher>(&self, state: &mut H) {
+		impl core::hash::Hash for $name {
+			fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
 				for a in self.0.iter() {
 					a.hash(state);
 				}
@@ -246,7 +246,7 @@ macro_rules! construct_uint {
 			pub const MAX: $name = $name([u64::max_value(); $n_words]);
 
 			// /// Convert from a decimal string.
-			// pub fn from_dec_str(value: &str) -> $crate::core_::result::Result<Self, $crate::FromDecStrErr> {
+			// pub fn from_dec_str(value: &str) -> core::result::Result<Self, $crate::FromDecStrErr> {
 			// 	if !value.bytes().all(|b| b >= 48 && b <= 57) {
 			// 		return Err($crate::FromDecStrErr::InvalidCharacter)
 			// 	}
@@ -600,7 +600,7 @@ macro_rules! construct_uint {
 			///
 			/// Panics if `other` is zero.
 			pub fn div_mod(mut self, mut other: Self) -> (Self, Self) {
-				use $crate::core_::cmp::Ordering;
+				use core::cmp::Ordering;
 
 				let my_bits = self.bits();
 				let your_bits = other.bits();
@@ -878,7 +878,7 @@ macro_rules! construct_uint {
 				}
 
 				// The safety of this is enforced by the compiler
-				let ret: [[u64; $n_words]; 2] = unsafe { $crate::core_::mem::transmute(result) };
+				let ret: [[u64; $n_words]; 2] = unsafe { core::mem::transmute(result) };
 
 				($name(ret[0]), Self::any_nonzero(&ret[1]))	
 			}
@@ -908,7 +908,7 @@ macro_rules! construct_uint {
 				}
 
 				// The safety of this is enforced by the compiler
-				let ret: [[u64; $n_words]; 2] = unsafe { $crate::core_::mem::transmute(result) };
+				let ret: [[u64; $n_words]; 2] = unsafe { core::mem::transmute(result) };
 
 				($name(ret[0]), Self::any_nonzero(&ret[1]))	
 			}
@@ -1081,7 +1081,7 @@ macro_rules! construct_uint {
 
 				let mut ret = [0; $n_words];
 				unsafe {
-					let ret_u8: &mut [u8; $n_words * 8] = $crate::core_::mem::transmute(&mut ret);
+					let ret_u8: &mut [u8; $n_words * 8] = core::mem::transmute(&mut ret);
 					let mut ret_ptr = ret_u8.as_mut_ptr();
 					let mut slice_ptr = slice.as_ptr().offset(slice.len() as isize - 1);
 					for _ in 0..slice.len() {
@@ -1100,7 +1100,7 @@ macro_rules! construct_uint {
 
 				let mut ret = [0; $n_words];
 				unsafe {
-					let ret_u8: &mut [u8; $n_words * 8] = $crate::core_::mem::transmute(&mut ret);
+					let ret_u8: &mut [u8; $n_words * 8] = core::mem::transmute(&mut ret);
 					ret_u8[0..slice.len()].copy_from_slice(&slice);
 				}
 
@@ -1108,7 +1108,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::convert::From<$name> for [u8; $n_words * 8] {
+		impl core::convert::From<$name> for [u8; $n_words * 8] {
 			fn from(number: $name) -> Self {
 				let mut arr = [0u8; $n_words * 8];
 				number.to_big_endian(&mut arr);
@@ -1116,25 +1116,25 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::convert::From<[u8; $n_words * 8]> for $name {
+		impl core::convert::From<[u8; $n_words * 8]> for $name {
 			fn from(bytes: [u8; $n_words * 8]) -> Self {
 				Self::from_big_endian(&bytes)
 			}
 		}
 
-		impl<'a> $crate::core_::convert::From<&'a [u8; $n_words * 8]> for $name {
+		impl<'a> core::convert::From<&'a [u8; $n_words * 8]> for $name {
 			fn from(bytes: &[u8; $n_words * 8]) -> Self {
 				Self::from_big_endian(&bytes[..])
 			}
 		}
 
-		impl $crate::core_::default::Default for $name {
+		impl core::default::Default for $name {
 			fn default() -> Self {
 				$name::zero()
 			}
 		}
 
-		impl $crate::core_::convert::From<u64> for $name {
+		impl core::convert::From<u64> for $name {
 			fn from(value: u64) -> $name {
 				let mut ret = [0; $n_words];
 				ret[0] = value;
@@ -1142,7 +1142,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::convert::From<&[u64]> for $name {
+		impl core::convert::From<&[u64]> for $name {
 			fn from(value: &[u64]) -> $name {
 				let mut ret = [0; $n_words];
 
@@ -1160,7 +1160,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// impl<T> $crate::core_::convert::From<T> for $name where T: AsRef<[u64]> {
+		// impl<T> core::convert::From<T> for $name where T: AsRef<[u64]> {
 		// 	fn from(value: T) -> $name {
 		// 		let mut ret = [0; $n_words];
 
@@ -1185,7 +1185,7 @@ macro_rules! construct_uint {
 		$crate::impl_map_from!($name, u32, u64);
 		$crate::impl_map_from!($name, usize, u64);
 
-		impl $crate::core_::convert::From<i64> for $name {
+		impl core::convert::From<i64> for $name {
 			fn from(value: i64) -> $name {
 				match value >= 0 {
 					true => From::from(value as u64),
@@ -1200,7 +1200,7 @@ macro_rules! construct_uint {
 		$crate::impl_map_from!($name, isize, i64);
 
 		// Converts from big endian representation.
-		// impl<'a> $crate::core_::convert::From<&'a [u8]> for $name {
+		// impl<'a> core::convert::From<&'a [u8]> for $name {
 		// 	fn from(bytes: &[u8]) -> $name {
 		// 		Self::from_big_endian(bytes)
 		// 	}
@@ -1217,7 +1217,7 @@ macro_rules! construct_uint {
 		// $crate::impl_try_from_for_primitive!($name, isize);
 		// $crate::impl_try_from_for_primitive!($name, i64);
 
-		// impl<T> $crate::core_::ops::Add<T> for $name where T: Into<$name> {
+		// impl<T> core::ops::Add<T> for $name where T: Into<$name> {
 		// 	type Output = $name;
 
 		// 	fn add(self, other: T) -> $name {
@@ -1227,7 +1227,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		// impl<'a, T> $crate::core_::ops::Add<T> for &'a $name where T: Into<$name> {
+		// impl<'a, T> core::ops::Add<T> for &'a $name where T: Into<$name> {
 		// 	type Output = $name;
 
 		// 	fn add(self, other: T) -> $name {
@@ -1235,7 +1235,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		impl $crate::core_::ops::Add<$name> for $name {
+		impl core::ops::Add<$name> for $name {
 			type Output = $name;
 
 			fn add(self, other: $name) -> $name {
@@ -1245,7 +1245,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::ops::AddAssign<$name> for $name {
+		impl core::ops::AddAssign<$name> for $name {
 			fn add_assign(&mut self, other: $name) {
 				let (result, overflow) = self.overflowing_add(other);
 				$crate::panic_on_overflow!(overflow);
@@ -1253,7 +1253,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// impl<T> $crate::core_::ops::Sub<T> for $name where T: Into<$name> {
+		// impl<T> core::ops::Sub<T> for $name where T: Into<$name> {
 		// 	type Output = $name;
 
 		// 	#[inline]
@@ -1264,7 +1264,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		// impl<'a, T> $crate::core_::ops::Sub<T> for &'a $name where T: Into<$name> {
+		// impl<'a, T> core::ops::Sub<T> for &'a $name where T: Into<$name> {
 		// 	type Output = $name;
 
 		// 	fn sub(self, other: T) -> $name {
@@ -1272,7 +1272,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		impl $crate::core_::ops::Sub<$name> for $name {
+		impl core::ops::Sub<$name> for $name {
 			type Output = $name;
 
 			#[inline]
@@ -1283,7 +1283,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::ops::SubAssign<$name> for $name {
+		impl core::ops::SubAssign<$name> for $name {
 			fn sub_assign(&mut self, other: $name) {
 				let (result, overflow) = self.overflowing_sub(other);
 				$crate::panic_on_overflow!(overflow);
@@ -1304,7 +1304,7 @@ macro_rules! construct_uint {
 		// $crate::impl_mul_for_primitive!($name, i64);
 		// $crate::impl_mul_for_primitive!($name, isize);
 
-		impl $crate::core_::ops::Div<$name> for $name {
+		impl core::ops::Div<$name> for $name {
 			type Output = $name;
 
 			fn div(self, other: $name) -> $name {
@@ -1312,7 +1312,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// impl<T> $crate::core_::ops::Div<T> for $name where T: Into<$name> {
+		// impl<T> core::ops::Div<T> for $name where T: Into<$name> {
 		// 	type Output = $name;
 
 		// 	fn div(self, other: T) -> $name {
@@ -1321,7 +1321,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		// impl<'a, T> $crate::core_::ops::Div<T> for &'a $name where T: Into<$name> {
+		// impl<'a, T> core::ops::Div<T> for &'a $name where T: Into<$name> {
 		// 	type Output = $name;
 
 		// 	fn div(self, other: T) -> $name {
@@ -1329,19 +1329,19 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		impl $crate::core_::ops::DivAssign<$name> for $name {
+		impl core::ops::DivAssign<$name> for $name {
 			fn div_assign(&mut self, other: $name) {
 				*self = *self / other;
 			}
 		}
 
-		// impl<T> $crate::core_::ops::DivAssign<T> for $name where T: Into<$name> {
+		// impl<T> core::ops::DivAssign<T> for $name where T: Into<$name> {
 		// 	fn div_assign(&mut self, other: T) {
 		// 		*self = *self / other.into();
 		// 	}
 		// }
 
-		impl $crate::core_::ops::Rem<$name> for $name {
+		impl core::ops::Rem<$name> for $name {
 			type Output = $name;
 
 			fn rem(self, other: $name) -> $name {
@@ -1351,7 +1351,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		// impl<T> $crate::core_::ops::Rem<T> for $name where T: Into<$name> + Copy {
+		// impl<T> core::ops::Rem<T> for $name where T: Into<$name> + Copy {
 		// 	type Output = $name;
 
 		// 	fn rem(self, other: T) -> $name {
@@ -1361,7 +1361,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		// impl<'a, T> $crate::core_::ops::Rem<T> for &'a $name where T: Into<$name>  + Copy {
+		// impl<'a, T> core::ops::Rem<T> for &'a $name where T: Into<$name>  + Copy {
 		// 	type Output = $name;
 
 		// 	fn rem(self, other: T) -> $name {
@@ -1369,14 +1369,14 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		impl $crate::core_::ops::RemAssign<$name> for $name {
+		impl core::ops::RemAssign<$name> for $name {
 			fn rem_assign(&mut self, other: $name) {
 				let rem = self.div_mod(other).1;
 				*self = rem;
 			}
 		}
 
-		// impl<T> $crate::core_::ops::RemAssign<T> for $name where T: Into<$name> + Copy {
+		// impl<T> core::ops::RemAssign<T> for $name where T: Into<$name> + Copy {
 		// 	fn rem_assign(&mut self, other: T) {
 		// 		let other: Self = other.into();
 		// 		let rem = self.div_mod(other).1;
@@ -1384,7 +1384,7 @@ macro_rules! construct_uint {
 		// 	}
 		// }
 
-		impl $crate::core_::ops::BitAnd<$name> for $name {
+		impl core::ops::BitAnd<$name> for $name {
 			type Output = $name;
 
 			#[inline]
@@ -1399,7 +1399,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::ops::BitXor<$name> for $name {
+		impl core::ops::BitXor<$name> for $name {
 			type Output = $name;
 
 			#[inline]
@@ -1414,7 +1414,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::ops::BitOr<$name> for $name {
+		impl core::ops::BitOr<$name> for $name {
 			type Output = $name;
 
 			#[inline]
@@ -1429,7 +1429,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::ops::Not for $name {
+		impl core::ops::Not for $name {
 			type Output = $name;
 
 			#[inline]
@@ -1443,7 +1443,7 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl $crate::core_::ops::Shl<u32> for $name {
+		impl core::ops::Shl<u32> for $name {
 			type Output = $name;
 
 			fn shl(self, shift: u32) -> $name {
@@ -1466,20 +1466,20 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Shl<u32> for &'a $name {
+		impl<'a> core::ops::Shl<u32> for &'a $name {
 			type Output = $name;
 			fn shl(self, shift: u32) -> $name {
 				*self << shift
 			}
 		}
 
-		impl $crate::core_::ops::ShlAssign<u32> for $name {
+		impl core::ops::ShlAssign<u32> for $name {
 			fn shl_assign(&mut self, shift: u32) {
 				*self = *self << shift;
 			}
 		}
 
-		impl $crate::core_::ops::Shr<u32> for $name {
+		impl core::ops::Shr<u32> for $name {
 			type Output = $name;
 
 			fn shr(self, shift: u32) -> $name {
@@ -1504,49 +1504,49 @@ macro_rules! construct_uint {
 			}
 		}
 
-		impl<'a> $crate::core_::ops::Shr<u32> for &'a $name {
+		impl<'a> core::ops::Shr<u32> for &'a $name {
 			type Output = $name;
 			fn shr(self, shift: u32) -> $name {
 				*self >> shift
 			}
 		}
 
-		impl $crate::core_::ops::ShrAssign<u32> for $name {
+		impl core::ops::ShrAssign<u32> for $name {
 			fn shr_assign(&mut self, shift: u32) {
 				*self = *self >> shift;
 			}
 		}
 
-		impl $crate::core_::cmp::Ord for $name {
-			fn cmp(&self, other: &$name) -> $crate::core_::cmp::Ordering {
+		impl core::cmp::Ord for $name {
+			fn cmp(&self, other: &$name) -> core::cmp::Ordering {
 				let &$name(ref me) = self;
 				let &$name(ref you) = other;
 				let mut i = $n_words;
 				while i > 0 {
 					i -= 1;
-					if me[i] < you[i] { return $crate::core_::cmp::Ordering::Less; }
-					if me[i] > you[i] { return $crate::core_::cmp::Ordering::Greater; }
+					if me[i] < you[i] { return core::cmp::Ordering::Less; }
+					if me[i] > you[i] { return core::cmp::Ordering::Greater; }
 				}
-				$crate::core_::cmp::Ordering::Equal
+				core::cmp::Ordering::Equal
 			}
 		}
 
-		impl $crate::core_::cmp::PartialOrd for $name {
-			fn partial_cmp(&self, other: &$name) -> Option<$crate::core_::cmp::Ordering> {
+		impl core::cmp::PartialOrd for $name {
+			fn partial_cmp(&self, other: &$name) -> Option<core::cmp::Ordering> {
 				Some(self.cmp(other))
 			}
 		}
 
-		impl $crate::core_::fmt::Debug for $name {
-			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
-				$crate::core_::fmt::Display::fmt(self, f)
+		impl core::fmt::Debug for $name {
+			fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+				core::fmt::Display::fmt(self, f)
 			}
 		}
 
-		impl $crate::core_::fmt::Display for $name {
-			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
+		impl core::fmt::Display for $name {
+			fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 				if self.is_zero() {
-					return $crate::core_::write!(f, "0");
+					return core::write!(f, "0");
 				}
 
 				let mut buf = [0_u8; $n_words*20];
@@ -1566,21 +1566,21 @@ macro_rules! construct_uint {
 
 				// sequence of `'0'..'9'` chars is guaranteed to be a valid UTF8 string
 				let s = unsafe {
-					$crate::core_::str::from_utf8_unchecked(&buf[i..])
+					core::str::from_utf8_unchecked(&buf[i..])
 				};
 				f.write_str(s)
 			}
 		}
 
-		impl $crate::core_::fmt::LowerHex for $name {
-			fn fmt(&self, f: &mut $crate::core_::fmt::Formatter) -> $crate::core_::fmt::Result {
+		impl core::fmt::LowerHex for $name {
+			fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 				let &$name(ref data) = self;
 				if f.alternate() {
-					$crate::core_::write!(f, "0x")?;
+					core::write!(f, "0x")?;
 				}
 				// special case.
 				if self.is_zero() {
-					return $crate::core_::write!(f, "0");
+					return core::write!(f, "0");
 				}
 
 				let mut latch = false;
@@ -1592,7 +1592,7 @@ macro_rules! construct_uint {
 						}
 
 						if latch {
-							$crate::core_::write!(f, "{:x}", nibble)?;
+							core::write!(f, "{:x}", nibble)?;
 						}
 					}
 				}
@@ -1612,10 +1612,10 @@ macro_rules! construct_uint {
 #[doc(hidden)]
 macro_rules! impl_std_for_uint {
 	($name: ident, $n_words: tt) => {
-		impl $crate::core_::str::FromStr for $name {
+		impl core::str::FromStr for $name {
 			type Err = $crate::rustc_hex::FromHexError;
 
-			fn from_str(value: &str) -> $crate::core_::result::Result<$name, Self::Err> {
+			fn from_str(value: &str) -> core::result::Result<$name, Self::Err> {
 				use $crate::rustc_hex::FromHex;
 				let bytes: Vec<u8> = match value.len() % 2 == 0 {
 					true => value.from_hex()?,
@@ -1627,7 +1627,7 @@ macro_rules! impl_std_for_uint {
 			}
 		}
 
-		impl $crate::core_::convert::From<&'static str> for $name {
+		impl core::convert::From<&'static str> for $name {
 			fn from(s: &'static str) -> Self {
 				s.parse().unwrap()
 			}

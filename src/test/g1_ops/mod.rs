@@ -3,8 +3,8 @@ pub(crate) mod bn;
 pub(crate) mod mnt4;
 pub(crate) mod mnt6;
 
-use crate::public_interface::{G1Api, PublicG1Api};
 use crate::errors::ApiError;
+use crate::public_interface::{G1Api, PublicG1Api};
 
 pub(crate) fn call_g1_engine_add(bytes: &[u8]) -> Result<Vec<u8>, ApiError> {
     PublicG1Api::add_points(&bytes)

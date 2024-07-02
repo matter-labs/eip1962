@@ -1,23 +1,21 @@
+use crate::extension_towers::fp2::Fp2;
+use crate::field::*;
 use crate::fp::*;
 use crate::representation::*;
-use crate::field::*;
 use crate::traits::*;
-use crate::extension_towers::fp2::Fp2;
 
-pub mod simple_swu;
 pub mod isogeny;
 pub mod parameters;
+pub mod simple_swu;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Sign {
     Zero,
     SignPlus,
-    SignMinus
+    SignMinus,
 }
 
-fn sign_of_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
-    el: &Fp<'a, E, F>
-) -> Sign {
+fn sign_of_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(el: &Fp<'a, E, F>) -> Sign {
     if el.is_zero() {
         return Sign::Zero;
     }
@@ -32,17 +30,14 @@ fn sign_of_fp<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
     }
 }
 
-fn sign_of_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E> >(
-    el: &Fp2<'a, E, F>
-) -> Sign {
+fn sign_of_fp2<'a, E: ElementRepr, F: SizedPrimeField<Repr = E>>(el: &Fp2<'a, E, F>) -> Sign {
     // compare c_0 and then c_1
     let sign_from_c0 = sign_of_fp(&el.c0);
 
     match sign_from_c0 {
-        s @ Sign::SignMinus | 
-        s @ Sign::SignPlus => {
+        s @ Sign::SignMinus | s @ Sign::SignPlus => {
             return s;
-        },
+        }
         Sign::Zero => {
             return sign_of_fp(&el.c1);
         }
@@ -53,22 +48,31 @@ mod constants {
     use super::isogeny::*;
     use super::simple_swu::*;
     use crate::engines::bls12_381::*;
-    use crate::weierstrass::*;
+    use crate::extension_towers::fp2::{Extension2, Fp2};
     use crate::field::*;
+    use crate::fp::*;
     use crate::traits::*;
+    use crate::weierstrass::*;
     use num_bigint::BigUint;
     use num_traits::Num;
-    use crate::fp::*;
-    use crate::extension_towers::fp2::{Extension2, Fp2};
 
-    pub(crate) fn str_radix_into_field<'a>(s: &str, radix: u32, field: &'a PrimeField<U384Repr>) -> Fp<'a, U384Repr, PrimeField<U384Repr>> {
+    pub(crate) fn str_radix_into_field<'a>(
+        s: &str,
+        radix: u32,
+        field: &'a PrimeField<U384Repr>,
+    ) -> Fp<'a, U384Repr, PrimeField<U384Repr>> {
         let biguint = BigUint::from_str_radix(s, radix).unwrap();
         let el = Fp::from_be_bytes(field, &biguint.to_bytes_be(), true).unwrap();
 
         el
     }
 
-    pub(crate) fn str_radix_into_ext2<'a>(c0: &str, c1: &str, radix: u32, extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>) -> Fp2<'a, U384Repr, PrimeField<U384Repr>> {
+    pub(crate) fn str_radix_into_ext2<'a>(
+        c0: &str,
+        c1: &str,
+        radix: u32,
+        extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>,
+    ) -> Fp2<'a, U384Repr, PrimeField<U384Repr>> {
         let biguint_c0 = BigUint::from_str_radix(c0, radix).unwrap();
         let biguint_c1 = BigUint::from_str_radix(c1, radix).unwrap();
         let c0 = Fp::from_be_bytes(extension.field, &biguint_c0.to_bytes_be(), true).unwrap();
@@ -81,9 +85,11 @@ mod constants {
         el
     }
 
-    pub(crate) fn calculate_bls12_381_g1_mapping_params<'a>(field: &'a PrimeField<U384Repr>) -> (
+    pub(crate) fn calculate_bls12_381_g1_mapping_params<'a>(
+        field: &'a PrimeField<U384Repr>,
+    ) -> (
         SwuParameters<CurveOverFpParameters<'a, U384Repr, PrimeField<U384Repr>>>,
-        IsogenyParameters<CurveOverFpParameters<'a, U384Repr, PrimeField<U384Repr>>>
+        IsogenyParameters<CurveOverFpParameters<'a, U384Repr, PrimeField<U384Repr>>>,
     ) {
         let mut minus_z_inv = BLS12_381_G1_SWU_Z.inverse().unwrap();
         minus_z_inv.negate();
@@ -97,7 +103,7 @@ mod constants {
         let swu = SwuParameters::<_> {
             z: BLS12_381_G1_SWU_Z.clone(),
             minus_b_by_a,
-            minus_z_inv
+            minus_z_inv,
         };
 
         let mut iso = IsogenyParameters::<_> {
@@ -177,9 +183,11 @@ mod constants {
         (swu, iso)
     }
 
-    pub(crate) fn calculate_bls12_381_g2_mapping_params<'a>(extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>) -> (
+    pub(crate) fn calculate_bls12_381_g2_mapping_params<'a>(
+        extension: &'a Extension2<'a, U384Repr, PrimeField<U384Repr>>,
+    ) -> (
         SwuParameters<CurveOverFp2Parameters<'a, U384Repr, PrimeField<U384Repr>>>,
-        IsogenyParameters<CurveOverFp2Parameters<'a, U384Repr, PrimeField<U384Repr>>>
+        IsogenyParameters<CurveOverFp2Parameters<'a, U384Repr, PrimeField<U384Repr>>>,
     ) {
         let mut minus_z_inv = BLS12_381_G2_SWU_Z.inverse().unwrap();
         minus_z_inv.negate();
@@ -193,7 +201,7 @@ mod constants {
         let swu = SwuParameters::<_> {
             z: BLS12_381_G2_SWU_Z.clone(),
             minus_b_by_a,
-            minus_z_inv
+            minus_z_inv,
         };
 
         let mut iso = IsogenyParameters::<_> {
@@ -307,26 +315,26 @@ mod constants {
 
         (swu, iso)
     }
-
-    
 }
 
 #[cfg(test)]
 mod test {
     use super::constants::*;
     use super::isogeny::*;
+    use super::sign_of_fp2;
     use super::simple_swu::*;
     use crate::engines::bls12_381::*;
     use crate::weierstrass::curve::*;
-    use super::sign_of_fp2;
 
     #[test]
     fn test_sign_of_zero() {
         let zero = str_radix_into_ext2("0", "0", 10, &BLS12_381_EXTENSION_2_FIELD);
         let sgn = sign_of_fp2(&zero);
         match sgn {
-            super::Sign::Zero => {},
-            _ => {panic!("invalid sign of zero")}
+            super::Sign::Zero => {}
+            _ => {
+                panic!("invalid sign of zero")
+            }
         }
     }
 
@@ -335,18 +343,9 @@ mod test {
         let random_el = str_radix_into_field("42", 10, &BLS12_381_FIELD);
         let (swu, iso) = calculate_bls12_381_g1_mapping_params(&BLS12_381_FIELD);
 
-        let (x_prime, y_prime) = simplified_swu_fp(
-            &random_el, 
-            &swu, 
-            &BLS12_381_G1_CURVE_ISOGENY
-        );
+        let (x_prime, y_prime) = simplified_swu_fp(&random_el, &swu, &BLS12_381_G1_CURVE_ISOGENY);
 
-        let (x, y) = apply_isogeny_map(
-            &x_prime,
-            &y_prime,
-            &iso,
-            &BLS12_381_G1_CURVE_PARAMETERS
-        );
+        let (x, y) = apply_isogeny_map(&x_prime, &y_prime, &iso, &BLS12_381_G1_CURVE_PARAMETERS);
 
         let point = CurvePoint::point_from_xy(&BLS12_381_G1_CURVE, x, y);
         assert!(point.is_on_curve());
@@ -357,21 +356,11 @@ mod test {
         let random_el = str_radix_into_ext2("42", "42", 10, &BLS12_381_EXTENSION_2_FIELD);
         let (swu, iso) = calculate_bls12_381_g2_mapping_params(&BLS12_381_EXTENSION_2_FIELD);
 
-        let (x_prime, y_prime) = simplified_swu_fp2(
-            &random_el, 
-            &swu, 
-            &BLS12_381_G2_CURVE_ISOGENY
-        );
+        let (x_prime, y_prime) = simplified_swu_fp2(&random_el, &swu, &BLS12_381_G2_CURVE_ISOGENY);
 
-        let (x, y) = apply_isogeny_map(
-            &x_prime,
-            &y_prime,
-            &iso,
-            &BLS12_381_G2_CURVE_PARAMETERS
-        );
+        let (x, y) = apply_isogeny_map(&x_prime, &y_prime, &iso, &BLS12_381_G2_CURVE_PARAMETERS);
 
         let point = CurvePoint::point_from_xy(&BLS12_381_G2_CURVE, x, y);
         assert!(point.is_on_curve());
     }
-
 }

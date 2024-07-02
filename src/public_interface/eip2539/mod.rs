@@ -17,9 +17,9 @@ pub const SERIALIZED_PAIRING_RESULT_BYTE_LENGTH: usize = 32;
 use crate::public_interface::decode_g1;
 use crate::public_interface::decode_g2;
 
-use crate::weierstrass::Group;
 use crate::multiexp::peppinger;
 use crate::pairings::PairingEngine;
+use crate::weierstrass::Group;
 
 #[cfg(feature = "eip_2359_c_api")]
 pub mod c_api;
@@ -38,20 +38,38 @@ fn pairing_result_true() -> [u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH] {
 impl EIP2539Executor {
     pub fn g1_add<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
         if input.len() != SERIALIZED_G1_POINT_BYTE_LENGTH * 2 {
-            return Err(ApiError::InputError("invalid input length for G1 addition".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for G1 addition".to_owned(),
+            ));
         }
 
-        let (mut p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
-        let (p_1, _) = decode_g1::decode_g1_point_from_xy_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
+        let (mut p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(
+            input,
+            SERIALIZED_FP_BYTE_LENGTH,
+            &bls12_377::BLS12_377_G1_CURVE,
+        )?;
+        let (p_1, _) = decode_g1::decode_g1_point_from_xy_oversized(
+            rest,
+            SERIALIZED_FP_BYTE_LENGTH,
+            &bls12_377::BLS12_377_G1_CURVE,
+        )?;
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point 0 is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
         if !p_1.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point 1 is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
 
@@ -68,15 +86,25 @@ impl EIP2539Executor {
 
     pub fn g1_mul<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
         if input.len() != SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH {
-            return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for G1 multiplication".to_owned(),
+            ));
         }
 
-        let (p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
+        let (p_0, rest) = decode_g1::decode_g1_point_from_xy_oversized(
+            input,
+            SERIALIZED_FP_BYTE_LENGTH,
+            &bls12_377::BLS12_377_G1_CURVE,
+        )?;
         let (scalar, _) = decode_g1::decode_scalar_representation(rest, SCALAR_BYTE_LENGTH)?;
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
 
@@ -91,9 +119,13 @@ impl EIP2539Executor {
         Ok(output)
     }
 
-    pub fn g1_multiexp<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
+    pub fn g1_multiexp<'a>(
+        input: &'a [u8],
+    ) -> Result<[u8; SERIALIZED_G1_POINT_BYTE_LENGTH], ApiError> {
         if input.len() % (SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) != 0 {
-            return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for G1 multiplication".to_owned(),
+            ));
         }
         let num_pairs = input.len() / (SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
 
@@ -106,11 +138,20 @@ impl EIP2539Executor {
         let mut scalars = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
-            let (p, local_rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
-            let (scalar, local_rest) = decode_g1::decode_scalar_representation(local_rest, SCALAR_BYTE_LENGTH)?;
+            let (p, local_rest) = decode_g1::decode_g1_point_from_xy_oversized(
+                global_rest,
+                SERIALIZED_FP_BYTE_LENGTH,
+                &bls12_377::BLS12_377_G1_CURVE,
+            )?;
+            let (scalar, local_rest) =
+                decode_g1::decode_scalar_representation(local_rest, SCALAR_BYTE_LENGTH)?;
             if !p.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                    return Err(ApiError::InputError(format!(
+                        "Point is not on curve, file {}, line {}",
+                        file!(),
+                        line!()
+                    )));
                 }
             }
             bases.push(p);
@@ -119,8 +160,12 @@ impl EIP2539Executor {
         }
 
         if bases.len() != scalars.len() || bases.len() == 0 {
-            return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
-        } 
+            return Err(ApiError::InputError(format!(
+                "Multiexp with empty input pairs, file {}, line {}",
+                file!(),
+                line!()
+            )));
+        }
 
         let result = peppinger(&bases, scalars);
 
@@ -135,20 +180,38 @@ impl EIP2539Executor {
 
     pub fn g2_add<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
         if input.len() != SERIALIZED_G2_POINT_BYTE_LENGTH * 2 {
-            return Err(ApiError::InputError("invalid input length for G2 addition".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for G2 addition".to_owned(),
+            ));
         }
 
-        let (mut p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
-        let (p_1, _) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
+        let (mut p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(
+            input,
+            SERIALIZED_FP_BYTE_LENGTH,
+            &bls12_377::BLS12_377_G2_CURVE,
+        )?;
+        let (p_1, _) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(
+            rest,
+            SERIALIZED_FP_BYTE_LENGTH,
+            &bls12_377::BLS12_377_G2_CURVE,
+        )?;
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point 0 is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point 0 is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
         if !p_1.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point 1 is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point 1 is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
 
@@ -165,15 +228,25 @@ impl EIP2539Executor {
 
     pub fn g2_mul<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
         if input.len() != SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH {
-            return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for G1 multiplication".to_owned(),
+            ));
         }
 
-        let (p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(input, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
+        let (p_0, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(
+            input,
+            SERIALIZED_FP_BYTE_LENGTH,
+            &bls12_377::BLS12_377_G2_CURVE,
+        )?;
         let (scalar, _) = decode_g1::decode_scalar_representation(rest, SCALAR_BYTE_LENGTH)?;
 
         if !p_0.is_on_curve() {
             if !crate::features::in_fuzzing_or_gas_metering() {
-                return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                return Err(ApiError::InputError(format!(
+                    "Point is not on curve, file {}, line {}",
+                    file!(),
+                    line!()
+                )));
             }
         }
 
@@ -188,9 +261,13 @@ impl EIP2539Executor {
         Ok(output)
     }
 
-    pub fn g2_multiexp<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
+    pub fn g2_multiexp<'a>(
+        input: &'a [u8],
+    ) -> Result<[u8; SERIALIZED_G2_POINT_BYTE_LENGTH], ApiError> {
         if input.len() % (SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) != 0 {
-            return Err(ApiError::InputError("invalid input length for G1 multiplication".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for G1 multiplication".to_owned(),
+            ));
         }
         let num_pairs = input.len() / (SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
 
@@ -203,11 +280,20 @@ impl EIP2539Executor {
         let mut scalars = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
-            let (p, local_rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
-            let (scalar, local_rest) = decode_g1::decode_scalar_representation(local_rest, SCALAR_BYTE_LENGTH)?;
+            let (p, local_rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(
+                global_rest,
+                SERIALIZED_FP_BYTE_LENGTH,
+                &bls12_377::BLS12_377_G2_CURVE,
+            )?;
+            let (scalar, local_rest) =
+                decode_g1::decode_scalar_representation(local_rest, SCALAR_BYTE_LENGTH)?;
             if !p.is_on_curve() {
                 if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError(format!("Point is not on curve, file {}, line {}", file!(), line!())));
+                    return Err(ApiError::InputError(format!(
+                        "Point is not on curve, file {}, line {}",
+                        file!(),
+                        line!()
+                    )));
                 }
             }
             bases.push(p);
@@ -216,8 +302,12 @@ impl EIP2539Executor {
         }
 
         if bases.len() != scalars.len() || bases.len() == 0 {
-            return Err(ApiError::InputError(format!("Multiexp with empty input pairs, file {}, line {}", file!(), line!())));
-        } 
+            return Err(ApiError::InputError(format!(
+                "Multiexp with empty input pairs, file {}, line {}",
+                file!(),
+                line!()
+            )));
+        }
 
         let result = peppinger(&bases, scalars);
 
@@ -230,11 +320,16 @@ impl EIP2539Executor {
         Ok(output)
     }
 
-    pub fn pair<'a>(input: &'a [u8]) -> Result<[u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH], ApiError> {
+    pub fn pair<'a>(
+        input: &'a [u8],
+    ) -> Result<[u8; SERIALIZED_PAIRING_RESULT_BYTE_LENGTH], ApiError> {
         if input.len() % (SERIALIZED_G2_POINT_BYTE_LENGTH + SERIALIZED_G1_POINT_BYTE_LENGTH) != 0 {
-            return Err(ApiError::InputError("invalid input length for pairing".to_owned()));
+            return Err(ApiError::InputError(
+                "invalid input length for pairing".to_owned(),
+            ));
         }
-        let num_pairs = input.len() / (SERIALIZED_G2_POINT_BYTE_LENGTH + SERIALIZED_G1_POINT_BYTE_LENGTH);
+        let num_pairs =
+            input.len() / (SERIALIZED_G2_POINT_BYTE_LENGTH + SERIALIZED_G1_POINT_BYTE_LENGTH);
 
         if num_pairs == 0 {
             return Err(ApiError::InputError("Invalid number of pairs".to_owned()));
@@ -246,8 +341,16 @@ impl EIP2539Executor {
         let mut g2_points = Vec::with_capacity(num_pairs);
 
         for _ in 0..num_pairs {
-            let (g1, rest) = decode_g1::decode_g1_point_from_xy_oversized(global_rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G1_CURVE)?;
-            let (g2, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(rest, SERIALIZED_FP_BYTE_LENGTH, &bls12_377::BLS12_377_G2_CURVE)?;
+            let (g1, rest) = decode_g1::decode_g1_point_from_xy_oversized(
+                global_rest,
+                SERIALIZED_FP_BYTE_LENGTH,
+                &bls12_377::BLS12_377_G1_CURVE,
+            )?;
+            let (g2, rest) = decode_g2::decode_g2_point_from_xy_in_fp2_oversized(
+                rest,
+                SERIALIZED_FP_BYTE_LENGTH,
+                &bls12_377::BLS12_377_G2_CURVE,
+            )?;
 
             global_rest = rest;
 
@@ -263,15 +366,27 @@ impl EIP2539Executor {
                 }
             }
             // "fast" subgroup checks using empirical data
-            if g1.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
+            if g1
+                .wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5)
+                .is_zero()
+                == false
+            {
                 if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G1 point is not in the expected subgroup".to_owned()));
+                    return Err(ApiError::InputError(
+                        "G1 point is not in the expected subgroup".to_owned(),
+                    ));
                 }
             }
 
-            if g2.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
+            if g2
+                .wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5)
+                .is_zero()
+                == false
+            {
                 if !crate::features::in_fuzzing_or_gas_metering() {
-                    return Err(ApiError::InputError("G2 point is not in the expected subgroup".to_owned()));
+                    return Err(ApiError::InputError(
+                        "G2 point is not in the expected subgroup".to_owned(),
+                    ));
                 }
             }
 
@@ -292,7 +407,9 @@ impl EIP2539Executor {
         let pairing_result = engine.pair(&g1_points, &g2_points);
 
         if pairing_result.is_none() {
-            return Err(ApiError::UnknownParameter("Pairing engine returned no value".to_owned()));
+            return Err(ApiError::UnknownParameter(
+                "Pairing engine returned no value".to_owned(),
+            ));
         }
 
         use crate::extension_towers::fp12_as_2_over3_over_2::Fp12;
@@ -343,32 +460,57 @@ impl EIP2539Executor {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand::{Rng};
-    use rand::{SeedableRng};
-    use rand_xorshift::XorShiftRng;
     use crate::public_interface::decode_fp;
+    use rand::Rng;
+    use rand::SeedableRng;
+    use rand_xorshift::XorShiftRng;
 
     use indicatif::{ProgressBar, ProgressStyle};
 
     use csv::Writer;
     use hex;
 
+    use crate::fp::Fp;
+    use crate::square_root::*;
+    use crate::traits::{FieldElement, ZeroAndOne};
     use num_bigint::BigUint;
     use num_traits::Num;
-    use crate::fp::Fp;
-    use crate::traits::{ZeroAndOne, FieldElement};
-    use crate::square_root::*;
 
     type Scalar = crate::integers::MaxGroupSizeUint;
 
-    type FpElement = crate::fp::Fp<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>;
-    type Fp2Element = crate::extension_towers::fp2::Fp2<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>;
+    type FpElement = crate::fp::Fp<
+        'static,
+        crate::field::U384Repr,
+        crate::field::PrimeField<crate::field::U384Repr>,
+    >;
+    type Fp2Element = crate::extension_towers::fp2::Fp2<
+        'static,
+        crate::field::U384Repr,
+        crate::field::PrimeField<crate::field::U384Repr>,
+    >;
 
-    type G1 = crate::weierstrass::curve::CurvePoint<'static, crate::weierstrass::CurveOverFpParameters<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>>;
-    type G2 = crate::weierstrass::curve::CurvePoint<'static, crate::weierstrass::CurveOverFp2Parameters<'static, crate::field::U384Repr, crate::field::PrimeField<crate::field::U384Repr>>>;
+    type G1 = crate::weierstrass::curve::CurvePoint<
+        'static,
+        crate::weierstrass::CurveOverFpParameters<
+            'static,
+            crate::field::U384Repr,
+            crate::field::PrimeField<crate::field::U384Repr>,
+        >,
+    >;
+    type G2 = crate::weierstrass::curve::CurvePoint<
+        'static,
+        crate::weierstrass::CurveOverFp2Parameters<
+            'static,
+            crate::field::U384Repr,
+            crate::field::PrimeField<crate::field::U384Repr>,
+        >,
+    >;
 
-    fn make_random_fp_with_encoding<R: Rng>(rng: &mut R, modulus: &BigUint) -> (FpElement, Vec<u8>) {
-        let mut buff = vec![0u8; 48*3];
+    fn make_random_fp_with_encoding<R: Rng>(
+        rng: &mut R,
+        modulus: &BigUint,
+    ) -> (FpElement, Vec<u8>) {
+        let mut buff = vec![0u8; 48 * 3];
         rng.fill_bytes(&mut buff);
 
         let num = BigUint::from_bytes_be(&buff);
@@ -384,8 +526,12 @@ mod test {
         (x, as_vec)
     }
 
-    fn make_invalid_encoding_fp<R: Rng>(rng: &mut R, modulus: &BigUint, use_overflow: bool) -> Vec<u8> {
-        let mut buff = vec![0u8; 48*3];
+    fn make_invalid_encoding_fp<R: Rng>(
+        rng: &mut R,
+        modulus: &BigUint,
+        use_overflow: bool,
+    ) -> Vec<u8> {
+        let mut buff = vec![0u8; 48 * 3];
         rng.fill_bytes(&mut buff);
 
         let num = BigUint::from_bytes_be(&buff);
@@ -396,7 +542,7 @@ mod test {
         }
 
         let as_be = num.to_bytes_be();
-        let mut encoding = vec![0u8; 64 - as_be.len()]; 
+        let mut encoding = vec![0u8; 64 - as_be.len()];
 
         if !use_overflow {
             rng.fill_bytes(&mut encoding);
@@ -407,7 +553,10 @@ mod test {
         encoding
     }
 
-    fn make_random_fp2_with_encoding<R: Rng>(rng: &mut R, modulus: &BigUint) -> (Fp2Element, Vec<u8>) {
+    fn make_random_fp2_with_encoding<R: Rng>(
+        rng: &mut R,
+        modulus: &BigUint,
+    ) -> (Fp2Element, Vec<u8>) {
         let mut encoding = Vec::with_capacity(SERIALIZED_FP2_BYTE_LENGTH);
 
         let (c0, c0_encoding) = make_random_fp_with_encoding(rng, &modulus);
@@ -425,7 +574,11 @@ mod test {
         (fe, encoding)
     }
 
-    fn make_invalid_encoding_fp2<R: Rng>(rng: &mut R, modulus: &BigUint, use_overflow: bool) -> Vec<u8> {
+    fn make_invalid_encoding_fp2<R: Rng>(
+        rng: &mut R,
+        modulus: &BigUint,
+        use_overflow: bool,
+    ) -> Vec<u8> {
         let mut encoding = Vec::with_capacity(SERIALIZED_FP2_BYTE_LENGTH);
         encoding.extend(make_invalid_encoding_fp(rng, modulus, use_overflow));
         encoding.extend(make_invalid_encoding_fp(rng, modulus, use_overflow));
@@ -444,13 +597,14 @@ mod test {
     }
 
     fn encode_g2(point: &G2) -> Vec<u8> {
-        let as_vec = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point).unwrap();
+        let as_vec =
+            decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &point).unwrap();
 
         assert!(as_vec.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
         as_vec
     }
-    
+
     fn make_random_g1_with_encoding<R: Rng>(rng: &mut R) -> (G1, Vec<u8>) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
 
@@ -477,12 +631,15 @@ mod test {
         let mut buff = vec![0u8; SCALAR_BYTE_LENGTH];
         rng.fill_bytes(&mut buff);
 
-        let (scalar, _) = decode_g1::decode_scalar_representation(&buff, SCALAR_BYTE_LENGTH).unwrap();
+        let (scalar, _) =
+            decode_g1::decode_scalar_representation(&buff, SCALAR_BYTE_LENGTH).unwrap();
 
         (scalar, buff)
     }
 
-    fn make_random_g1_and_negated_with_encoding<R: Rng>(rng: &mut R) -> ((G1, G1), (Vec<u8>, Vec<u8>)) {
+    fn make_random_g1_and_negated_with_encoding<R: Rng>(
+        rng: &mut R,
+    ) -> ((G1, G1), (Vec<u8>, Vec<u8>)) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
         let p = bls12_377::BLS12_377_G1_GENERATOR.mul(&scalar);
 
@@ -495,7 +652,8 @@ mod test {
         assert_eq!(&as_vec[..16], &[0u8; 16]);
         assert_eq!(&as_vec[64..80], &[0u8; 16]);
 
-        let as_vec_negated = decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &minus_p).unwrap();
+        let as_vec_negated =
+            decode_g1::serialize_g1_point(SERIALIZED_FP_BYTE_LENGTH, &minus_p).unwrap();
 
         assert!(as_vec_negated.len() == SERIALIZED_G1_POINT_BYTE_LENGTH);
         assert_eq!(&as_vec_negated[..16], &[0u8; 16]);
@@ -504,7 +662,9 @@ mod test {
         ((p, minus_p), (as_vec, as_vec_negated))
     }
 
-    fn make_random_g2_and_negated_with_encoding<R: Rng>(rng: &mut R) -> ((G2, G2), (Vec<u8>, Vec<u8>)) {
+    fn make_random_g2_and_negated_with_encoding<R: Rng>(
+        rng: &mut R,
+    ) -> ((G2, G2), (Vec<u8>, Vec<u8>)) {
         let (scalar, _) = make_random_scalar_with_encoding(rng);
         let p = bls12_377::BLS12_377_G2_GENERATOR.mul(&scalar);
 
@@ -515,7 +675,8 @@ mod test {
 
         assert!(as_vec.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
-        let as_vec_negated = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &minus_p).unwrap();
+        let as_vec_negated =
+            decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &minus_p).unwrap();
 
         assert!(as_vec_negated.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
@@ -525,7 +686,9 @@ mod test {
     fn make_csv_writer(path: &str) -> Option<Writer<std::fs::File>> {
         if WRITE_VECTORS {
             let mut writer = Writer::from_path(path).expect("must open a test file");
-            writer.write_record(&["input", "result"]).expect("must write header");
+            writer
+                .write_record(&["input", "result"])
+                .expect("must write header");
 
             Some(writer)
         } else {
@@ -541,7 +704,7 @@ mod test {
             if p.is_on_curve() == false {
                 break;
             }
-        }   
+        }
     }
 
     fn make_point_not_on_curve_g2(p: &mut G2) {
@@ -552,7 +715,7 @@ mod test {
             if p.is_on_curve() == false {
                 break;
             }
-        }   
+        }
     }
 
     fn make_g1_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G1 {
@@ -571,16 +734,21 @@ mod test {
             let leg = legendre_symbol_fp(&rhs);
             if leg == LegendreSymbol::QuadraticResidue {
                 let y = sqrt_for_three_mod_four(&rhs).unwrap();
-                let point = G1::point_from_xy(&bls12_377::BLS12_377_G1_CURVE, fp_candidate.clone(), y);
+                let point =
+                    G1::point_from_xy(&bls12_377::BLS12_377_G1_CURVE, fp_candidate.clone(), y);
 
-                if point.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                if point
+                    .wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5)
+                    .is_zero()
+                    == false
+                {
                     return point;
                 }
             } else {
                 fp_candidate.add_assign(&one);
             }
         }
-    }  
+    }
 
     fn make_g2_in_invalid_subgroup<R: Rng>(rng: &mut R) -> G2 {
         let modulus = BigUint::from_str_radix("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787", 10).unwrap();
@@ -598,16 +766,21 @@ mod test {
             let leg = legendre_symbol_fp2(&rhs);
             if leg == LegendreSymbol::QuadraticResidue {
                 let y = sqrt_for_three_mod_four_ext2(&rhs).unwrap();
-                let point = G2::point_from_xy(&bls12_377::BLS12_377_G2_CURVE, fp_candidate.clone(), y);
+                let point =
+                    G2::point_from_xy(&bls12_377::BLS12_377_G2_CURVE, fp_candidate.clone(), y);
 
-                if point.wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5).is_zero() == false {
+                if point
+                    .wnaf_mul_with_window_size(&bls12_377::BLS12_377_SUBGROUP_ORDER[..], 5)
+                    .is_zero()
+                    == false
+                {
                     return point;
                 }
             } else {
                 fp_candidate.add_assign(&one);
             }
         }
-    }  
+    }
 
     const NUM_TESTS: usize = 100;
     const MULTIEXP_INPUT: usize = 16;
@@ -615,13 +788,16 @@ mod test {
 
     #[test]
     fn test_g1_add() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
@@ -646,12 +822,9 @@ mod test {
             assert_eq!(&expected[..], &api_result[..]);
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &hex::encode(&api_result[..])])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -662,20 +835,24 @@ mod test {
 
     #[test]
     fn test_g1_point_mul() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
         let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g1_mul.csv");
 
         for _ in 0..NUM_TESTS {
-            let mut encoding = Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
+            let mut encoding =
+                Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
 
             let (p0, e) = make_random_g1_with_encoding(&mut rng);
             encoding.extend(e);
@@ -693,12 +870,9 @@ mod test {
             assert_eq!(&expected[..], &api_result[..]);
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &hex::encode(&api_result[..])])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -709,20 +883,25 @@ mod test {
 
     #[test]
     fn test_g1_multiexp() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
         let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g1_multiexp.csv");
 
         for _ in 0..NUM_TESTS {
-            let mut encoding = Vec::with_capacity((SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) * MULTIEXP_INPUT);
+            let mut encoding = Vec::with_capacity(
+                (SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) * MULTIEXP_INPUT,
+            );
             let mut points = Vec::with_capacity(MULTIEXP_INPUT);
             let mut scalars = Vec::with_capacity(MULTIEXP_INPUT);
             for _ in 0..MULTIEXP_INPUT {
@@ -746,12 +925,9 @@ mod test {
             assert_eq!(&expected[..], &api_result[..]);
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &hex::encode(&api_result[..])])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -762,13 +938,16 @@ mod test {
 
     #[test]
     fn test_g2_add() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
@@ -785,7 +964,8 @@ mod test {
 
             p0.add_assign(&p1);
 
-            let expected = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p0).unwrap();
+            let expected =
+                decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p0).unwrap();
             assert!(expected.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
             let api_result = EIP2539Executor::g2_add(&encoding).unwrap();
@@ -793,12 +973,9 @@ mod test {
             assert_eq!(&expected[..], &api_result[..]);
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &hex::encode(&api_result[..])])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -809,20 +986,24 @@ mod test {
 
     #[test]
     fn test_g2_point_mul() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
         let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g2_mul.csv");
 
         for _ in 0..NUM_TESTS {
-            let mut encoding = Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
+            let mut encoding =
+                Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
 
             let (p0, e) = make_random_g2_with_encoding(&mut rng);
             encoding.extend(e);
@@ -832,7 +1013,8 @@ mod test {
 
             let p = p0.mul(&scalar);
 
-            let expected = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
+            let expected =
+                decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
             assert!(expected.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
             let api_result = EIP2539Executor::g2_mul(&encoding).unwrap();
@@ -840,12 +1022,9 @@ mod test {
             assert_eq!(&expected[..], &api_result[..]);
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &hex::encode(&api_result[..])])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -856,20 +1035,25 @@ mod test {
 
     #[test]
     fn test_g2_multiexp() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
         let mut writer = make_csv_writer("src/test/test_vectors/eip2539/g2_multiexp.csv");
 
         for _ in 0..NUM_TESTS {
-            let mut encoding = Vec::with_capacity((SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) * MULTIEXP_INPUT);
+            let mut encoding = Vec::with_capacity(
+                (SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH) * MULTIEXP_INPUT,
+            );
             let mut points = Vec::with_capacity(MULTIEXP_INPUT);
             let mut scalars = Vec::with_capacity(MULTIEXP_INPUT);
             for _ in 0..MULTIEXP_INPUT {
@@ -885,7 +1069,8 @@ mod test {
 
             let p = peppinger(&points, scalars);
 
-            let expected = decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
+            let expected =
+                decode_g2::serialize_g2_point_in_fp2(SERIALIZED_FP_BYTE_LENGTH, &p).unwrap();
             assert!(expected.len() == SERIALIZED_G2_POINT_BYTE_LENGTH);
 
             let api_result = EIP2539Executor::g2_multiexp(&encoding).unwrap();
@@ -893,12 +1078,9 @@ mod test {
             assert_eq!(&expected[..], &api_result[..]);
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &hex::encode(&api_result[..])
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &hex::encode(&api_result[..])])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -932,7 +1114,7 @@ mod test {
     //         if let Some(writer) = writer.as_mut() {
     //             writer.write_record(
     //                 &[
-    //                     &hex::encode(&input[..]), 
+    //                     &hex::encode(&input[..]),
     //                     &hex::encode(&api_result[..])
     //                 ],
     //             ).expect("must write a test vector");
@@ -969,7 +1151,7 @@ mod test {
     //         if let Some(writer) = writer.as_mut() {
     //             writer.write_record(
     //                 &[
-    //                     &hex::encode(&input[..]), 
+    //                     &hex::encode(&input[..]),
     //                     &hex::encode(&api_result[..])
     //                 ],
     //             ).expect("must write a test vector");
@@ -983,13 +1165,16 @@ mod test {
 
     #[test]
     fn generate_pairing_vectors() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
@@ -1000,9 +1185,11 @@ mod test {
         let len = num_pairs.len();
 
         for pairs in num_pairs.into_iter() {
-            for _ in 0..(NUM_TESTS/len) {
-                let (_, (g1_enc, minus_g1_enc)) = make_random_g1_and_negated_with_encoding(&mut rng);
-                let (_, (g2_enc, minus_g2_enc)) = make_random_g2_and_negated_with_encoding(&mut rng);
+            for _ in 0..(NUM_TESTS / len) {
+                let (_, (g1_enc, minus_g1_enc)) =
+                    make_random_g1_and_negated_with_encoding(&mut rng);
+                let (_, (g2_enc, minus_g2_enc)) =
+                    make_random_g2_and_negated_with_encoding(&mut rng);
 
                 let mut input = vec![];
                 let expect_identity = pairs % 2 == 0;
@@ -1030,12 +1217,9 @@ mod test {
                 }
 
                 if let Some(writer) = writer.as_mut() {
-                    writer.write_record(
-                        &[
-                            &hex::encode(&input[..]), 
-                            &hex::encode(&api_result[..])
-                        ],
-                    ).expect("must write a test vector");
+                    writer
+                        .write_record(&[&hex::encode(&input[..]), &hex::encode(&api_result[..])])
+                        .expect("must write a test vector");
                 }
 
                 pb.inc(1);
@@ -1047,17 +1231,22 @@ mod test {
 
     #[test]
     fn generate_negative_test_pairing_invalid_subgroup() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/invalid_subgroup_for_pairing.csv");
+        let mut writer = make_csv_writer(
+            "src/test/test_vectors/eip2539/negative/invalid_subgroup_for_pairing.csv",
+        );
         assert!(writer.is_some());
 
         for j in 0..NUM_TESTS {
@@ -1088,12 +1277,9 @@ mod test {
             let description = api_result.err().unwrap().to_string();
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&input[..]), 
-                        &description
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&input[..]), &description])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -1104,20 +1290,25 @@ mod test {
 
     #[test]
     fn test_not_on_curve_g1() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/g1_not_on_curve.csv");
+        let mut writer =
+            make_csv_writer("src/test/test_vectors/eip2539/negative/g1_not_on_curve.csv");
 
         for _ in 0..NUM_TESTS {
-            let mut encoding = Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
+            let mut encoding =
+                Vec::with_capacity(SERIALIZED_G1_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
 
             let (mut p0, _) = make_random_g1_with_encoding(&mut rng);
             make_point_not_on_curve_g1(&mut p0);
@@ -1126,15 +1317,15 @@ mod test {
             let (_, e) = make_random_scalar_with_encoding(&mut rng);
             encoding.extend(e);
 
-            let api_result = EIP2539Executor::g1_mul(&encoding).err().unwrap().to_string();
+            let api_result = EIP2539Executor::g1_mul(&encoding)
+                .err()
+                .unwrap()
+                .to_string();
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &api_result
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &api_result])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -1145,20 +1336,25 @@ mod test {
 
     #[test]
     fn test_not_on_curve_g2() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
         let pb = ProgressBar::new(1u64);
 
-        pb.set_style(ProgressStyle::default_bar()
-            .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
-            .progress_chars("##-"));
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}|{eta_precise}] {bar:50} {pos:>7}/{len:7} {msg}")
+                .progress_chars("##-"),
+        );
 
         pb.set_length(NUM_TESTS as u64);
 
-        let mut writer = make_csv_writer("src/test/test_vectors/eip2539/negative/g2_not_on_curve.csv");
+        let mut writer =
+            make_csv_writer("src/test/test_vectors/eip2539/negative/g2_not_on_curve.csv");
 
         for _ in 0..NUM_TESTS {
-            let mut encoding = Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
+            let mut encoding =
+                Vec::with_capacity(SERIALIZED_G2_POINT_BYTE_LENGTH + SCALAR_BYTE_LENGTH);
 
             let (mut p0, _) = make_random_g2_with_encoding(&mut rng);
             make_point_not_on_curve_g2(&mut p0);
@@ -1167,15 +1363,15 @@ mod test {
             let (_, e) = make_random_scalar_with_encoding(&mut rng);
             encoding.extend(e);
 
-            let api_result = EIP2539Executor::g2_mul(&encoding).err().unwrap().to_string();
+            let api_result = EIP2539Executor::g2_mul(&encoding)
+                .err()
+                .unwrap()
+                .to_string();
 
             if let Some(writer) = writer.as_mut() {
-                writer.write_record(
-                    &[
-                        &hex::encode(&encoding[..]), 
-                        &api_result
-                    ],
-                ).expect("must write a test vector");
+                writer
+                    .write_record(&[&hex::encode(&encoding[..]), &api_result])
+                    .expect("must write a test vector");
             }
 
             pb.inc(1);
@@ -1183,7 +1379,6 @@ mod test {
 
         pb.finish_with_message("Completed");
     }
-
 
     // #[test]
     // fn generate_invalid_fp_encoding_vectors() {
@@ -1210,7 +1405,7 @@ mod test {
     //         if let Some(writer) = writer.as_mut() {
     //             writer.write_record(
     //                 &[
-    //                     &hex::encode(&input[..]), 
+    //                     &hex::encode(&input[..]),
     //                     &api_result
     //                 ],
     //             ).expect("must write a test vector");
@@ -1247,7 +1442,7 @@ mod test {
     //         if let Some(writer) = writer.as_mut() {
     //             writer.write_record(
     //                 &[
-    //                     &hex::encode(&input[..]), 
+    //                     &hex::encode(&input[..]),
     //                     &api_result
     //                 ],
     //             ).expect("must write a test vector");
@@ -1271,20 +1466,25 @@ mod test {
             "g2_multiexp.csv",
             "pairing.csv",
             "fp_to_g1.csv",
-            "fp2_to_g2.csv"
+            "fp2_to_g2.csv",
         ];
 
         let mut counter = 0;
 
         for (b, f) in byte_idx.into_iter().zip(file_paths.into_iter()) {
-            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/{}", f)).unwrap();
+            let mut reader =
+                csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/{}", f)).unwrap();
             for r in reader.records() {
                 let r = r.unwrap();
                 let input = hex::decode(r.get(0).unwrap()).unwrap();
                 let mut output = vec![b];
                 output.extend(input);
                 let name = format!("vector_{}", counter);
-                std::fs::write(&format!("src/test/test_vectors/eip2539/fuzzing/{}", name), &output).unwrap();
+                std::fs::write(
+                    &format!("src/test/test_vectors/eip2539/fuzzing/{}", name),
+                    &output,
+                )
+                .unwrap();
 
                 counter += 1;
             }
@@ -1294,7 +1494,7 @@ mod test {
     fn run_on_test_inputs<F: Fn(&[u8]) -> Result<Vec<u8>, ApiError>>(
         file_path: &str,
         expect_success: bool,
-        test_function: F 
+        test_function: F,
     ) -> bool {
         let mut reader = csv::Reader::from_path(file_path).unwrap();
         for r in reader.records() {
@@ -1313,7 +1513,7 @@ mod test {
                     if expected_output != result {
                         return false;
                     }
-                },
+                }
                 Err(..) => {
                     if expect_success == true {
                         return false;
@@ -1328,7 +1528,7 @@ mod test {
     #[test]
     fn run_g1_add_on_vector() {
         let p = "src/test/test_vectors/eip2539/g1_add.csv";
-        
+
         let f = |input: &[u8]| EIP2539Executor::g1_add(input).map(|r| r.to_vec());
 
         let success = run_on_test_inputs(p, true, f);
@@ -1339,7 +1539,7 @@ mod test {
     // #[test]
     // fn test_external_fp_to_g1_vectors() {
     //     let p = "src/test/test_vectors/eip2539/extras/fp_to_g1.csv";
-        
+
     //     let f = |input: &[u8]| EIP2539Executor::map_fp_to_g1(input).map(|r| r.to_vec());
 
     //     let success = run_on_test_inputs(p, true, f);
@@ -1350,7 +1550,7 @@ mod test {
     // #[test]
     // fn test_external_fp2_to_g2_vectors() {
     //     let p = "src/test/test_vectors/eip2539/extras/fp2_to_g2.csv";
-        
+
     //     let f = |input: &[u8]| EIP2539Executor::map_fp2_to_g2(input).map(|r| r.to_vec());
 
     //     let success = run_on_test_inputs(p, true, f);
@@ -1361,7 +1561,7 @@ mod test {
     #[test]
     fn test_external_g2_multiexp_vectors() {
         let p = "src/test/test_vectors/eip2539/extras/g2_multiexp.csv";
-        
+
         let f = |input: &[u8]| EIP2539Executor::g2_multiexp(input).map(|r| r.to_vec());
 
         let success = run_on_test_inputs(p, true, f);
@@ -1369,27 +1569,28 @@ mod test {
         assert!(success);
     }
 
-
     #[test]
     fn dump_extra_vectors_into_fuzzing_corpus() {
         let byte_idx: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let file_paths = vec![
-            "g2_multiexp.csv",
-            "fp_to_g1.csv",
-            "fp2_to_g2.csv"
-        ];
+        let file_paths = vec!["g2_multiexp.csv", "fp_to_g1.csv", "fp2_to_g2.csv"];
 
         let mut counter = 0;
 
         for (b, f) in byte_idx.into_iter().zip(file_paths.into_iter()) {
-            let mut reader = csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/extras/{}", f)).unwrap();
+            let mut reader =
+                csv::Reader::from_path(&format!("src/test/test_vectors/eip2539/extras/{}", f))
+                    .unwrap();
             for r in reader.records() {
                 let r = r.unwrap();
                 let input = hex::decode(r.get(0).unwrap()).unwrap();
                 let mut output = vec![b];
                 output.extend(input);
                 let name = format!("extra_vector_{}", counter);
-                std::fs::write(&format!("src/test/test_vectors/eip2539/fuzzing/{}", name), &output).unwrap();
+                std::fs::write(
+                    &format!("src/test/test_vectors/eip2539/fuzzing/{}", name),
+                    &output,
+                )
+                .unwrap();
 
                 counter += 1;
             }
@@ -1412,7 +1613,7 @@ mod test {
 
         let mut pairing_cases = vec![];
 
-        for num_pairs in vec![2,4,6] {
+        for num_pairs in vec![2, 4, 6] {
             let mut enc = vec![];
             for _ in 0..num_pairs {
                 enc.extend_from_slice(&e_g1);
@@ -1422,23 +1623,34 @@ mod test {
             pairing_cases.push((num_pairs, enc));
         }
 
-        println!("G1 mul double and add worst case = \n{}", hex::encode(&g1_worst));
-        println!("G2 mul double and add worst case = \n{}", hex::encode(&g2_worst));
+        println!(
+            "G1 mul double and add worst case = \n{}",
+            hex::encode(&g1_worst)
+        );
+        println!(
+            "G2 mul double and add worst case = \n{}",
+            hex::encode(&g2_worst)
+        );
 
         for (num_pairs, enc) in pairing_cases {
-            println!("Pairing case for {} pairs = \n{}", num_pairs, hex::encode(&enc));
+            println!(
+                "Pairing case for {} pairs = \n{}",
+                num_pairs,
+                hex::encode(&enc)
+            );
         }
     }
 
     #[test]
     fn print_additions_vectors_eip_2539() {
-        let mut rng = XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let mut rng =
+            XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
-        let (_, e1_0) = make_random_g1_with_encoding(&mut rng); 
-        let (_, e1_1) = make_random_g1_with_encoding(&mut rng); 
+        let (_, e1_0) = make_random_g1_with_encoding(&mut rng);
+        let (_, e1_1) = make_random_g1_with_encoding(&mut rng);
 
-        let (_, e2_0) = make_random_g2_with_encoding(&mut rng); 
-        let (_, e2_1) = make_random_g2_with_encoding(&mut rng); 
+        let (_, e2_0) = make_random_g2_with_encoding(&mut rng);
+        let (_, e2_1) = make_random_g2_with_encoding(&mut rng);
 
         let mut g1 = vec![];
         g1.extend_from_slice(&e1_0);

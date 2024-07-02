@@ -2,9 +2,11 @@ use crate::public_interface::constants::*;
 
 use crate::test::parsers::*;
 
-use super::*; 
+use super::*;
 
-pub(crate) fn assemble_single_curve_params(curve: JsonMnt6PairingCurveParameters) -> (Vec<u8>, usize, usize) {
+pub(crate) fn assemble_single_curve_params(
+    curve: JsonMnt6PairingCurveParameters,
+) -> (Vec<u8>, usize, usize) {
     // - Lengths of modulus (in bytes)
     // - Field modulus
     // - Curve A
@@ -145,7 +147,7 @@ pub(crate) fn assemble_single_points_addition_pair(
 //             input_data.extend(points_data);
 
 //             writer.write_record(&[
-//                 prepend_0x(&encode(&input_data[..])), 
+//                 prepend_0x(&encode(&input_data[..])),
 //                 prepend_0x(&encode(&expected_result[..]))],
 //             ).expect("must write a record");
 //         }
@@ -162,4 +164,3 @@ pub(crate) fn assemble_single_points_addition_pair(
 //         call_bls12_engine(&calldata[..]).expect("must use");
 //     });
 // }
-

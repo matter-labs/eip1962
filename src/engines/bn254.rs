@@ -1,30 +1,32 @@
-use crate::field::*;
-use crate::traits::*;
-use crate::representation::*;
-use crate::fp::*;
+use super::generic::*;
+use crate::extension_towers::fp12_as_2_over3_over_2::*;
 use crate::extension_towers::fp2::*;
 use crate::extension_towers::fp6_as_3_over_2::*;
-use crate::extension_towers::fp12_as_2_over3_over_2::*;
-use crate::weierstrass::*;
-use crate::weierstrass::curve::*;
-use crate::pairings::{TwistType};
+use crate::field::*;
+use crate::fp::*;
 use crate::integers::MaxFieldUint;
-use super::generic::*;
 use crate::pairings::bn::*;
+use crate::pairings::TwistType;
+use crate::representation::*;
+use crate::traits::*;
+use crate::weierstrass::curve::*;
+use crate::weierstrass::*;
 
-type Bn254Engine<'a> = Engine<'a,
-    Fp<'a, U256Repr, PrimeField<U256Repr> >,
-    Fp2<'a, U256Repr, PrimeField<U256Repr> >,
-    Fp12<'a, U256Repr, PrimeField<U256Repr> >,
-    CurveOverFpParameters<'a, U256Repr, PrimeField<U256Repr> >,
-    CurveOverFp2Parameters<'a, U256Repr, PrimeField<U256Repr> >,
-    BnInstance<'a,
-        U256Repr, 
-        PrimeField<U256Repr>, 
-        CurveOverFpParameters<'a, U256Repr, PrimeField<U256Repr> >,
-        CurveOverFp2Parameters<'a, U256Repr, PrimeField<U256Repr> >
-        >,
-    ()
+type Bn254Engine<'a> = Engine<
+    'a,
+    Fp<'a, U256Repr, PrimeField<U256Repr>>,
+    Fp2<'a, U256Repr, PrimeField<U256Repr>>,
+    Fp12<'a, U256Repr, PrimeField<U256Repr>>,
+    CurveOverFpParameters<'a, U256Repr, PrimeField<U256Repr>>,
+    CurveOverFp2Parameters<'a, U256Repr, PrimeField<U256Repr>>,
+    BnInstance<
+        'a,
+        U256Repr,
+        PrimeField<U256Repr>,
+        CurveOverFpParameters<'a, U256Repr, PrimeField<U256Repr>>,
+        CurveOverFp2Parameters<'a, U256Repr, PrimeField<U256Repr>>,
+    >,
+    (),
 >;
 use once_cell::sync::Lazy;
 
@@ -32,7 +34,11 @@ pub static BN254_MODULUS: Lazy<MaxFieldUint> = Lazy::new(|| {
     use num_bigint::BigUint;
     use num_traits::*;
 
-    let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
+    let modulus = BigUint::from_str_radix(
+        "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+        10,
+    )
+    .unwrap();
     let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
     modulus
@@ -42,7 +48,11 @@ pub static BN254_SUBGROUP_ORDER: Lazy<[u64; 4]> = Lazy::new(|| {
     use num_bigint::BigUint;
     use num_traits::*;
 
-    let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+    let group_order = BigUint::from_str_radix(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+        10,
+    )
+    .unwrap();
     let group_order_uint = MaxFieldUint::from_big_endian(&group_order.to_bytes_be());
 
     let mut group_order = [0u64; 4];
@@ -51,69 +61,82 @@ pub static BN254_SUBGROUP_ORDER: Lazy<[u64; 4]> = Lazy::new(|| {
     group_order
 });
 
-pub static BN254_BASE_FIELD: Lazy<PrimeField<U256Repr>> = Lazy::new(|| {
-    field_from_modulus(&*BN254_MODULUS).unwrap()
-});
+pub static BN254_BASE_FIELD: Lazy<PrimeField<U256Repr>> =
+    Lazy::new(|| field_from_modulus(&*BN254_MODULUS).unwrap());
 
-pub static BN254_EXT2_FIELD: Lazy<Extension2<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let mut fp_non_residue = Fp::one(&*BN254_BASE_FIELD);
-    fp_non_residue.negate(); // non-residue is -1
+pub static BN254_EXT2_FIELD: Lazy<Extension2<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let mut fp_non_residue = Fp::one(&*BN254_BASE_FIELD);
+        fp_non_residue.negate(); // non-residue is -1
 
-    use num_bigint::BigUint;
-    use num_traits::*;
+        use num_bigint::BigUint;
+        use num_traits::*;
 
-    let modulus = BigUint::from_str_radix("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-    let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
+        let modulus = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
+        let modulus = MaxFieldUint::from_big_endian(&modulus.to_bytes_be());
 
-    let mut extension_2 = Extension2::new(fp_non_residue);
-    extension_2.calculate_frobenius_coeffs(&modulus).expect("must work");
+        let mut extension_2 = Extension2::new(fp_non_residue);
+        extension_2
+            .calculate_frobenius_coeffs(&modulus)
+            .expect("must work");
 
-    extension_2
-});
+        extension_2
+    });
 
-pub static BN254_FP_NONRESIDUE: Lazy<Fp<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let mut fp_non_residue = Fp::one(&*BN254_BASE_FIELD);
-    fp_non_residue.negate(); // non-residue is -1
+pub static BN254_FP_NONRESIDUE: Lazy<Fp<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let mut fp_non_residue = Fp::one(&*BN254_BASE_FIELD);
+        fp_non_residue.negate(); // non-residue is -1
 
-    fp_non_residue
-});
+        fp_non_residue
+    });
 
-pub static BN254_FP2_NONRESIDUE: Lazy<Fp2<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let one = Fp::one(&*BN254_BASE_FIELD);
-    
-    // non-residue is u+9
-    let mut fp2_non_residue = Fp2::zero(&*BN254_EXT2_FIELD);
-    let fp_9_repr = U256Repr::from(9u64);
-    let fp_9 = Fp::from_repr(&*BN254_BASE_FIELD, fp_9_repr).unwrap(); 
-    fp2_non_residue.c0 = fp_9.clone();
-    fp2_non_residue.c1 = one.clone();
+pub static BN254_FP2_NONRESIDUE: Lazy<Fp2<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let one = Fp::one(&*BN254_BASE_FIELD);
 
-    fp2_non_residue
-});
+        // non-residue is u+9
+        let mut fp2_non_residue = Fp2::zero(&*BN254_EXT2_FIELD);
+        let fp_9_repr = U256Repr::from(9u64);
+        let fp_9 = Fp::from_repr(&*BN254_BASE_FIELD, fp_9_repr).unwrap();
+        fp2_non_residue.c0 = fp_9.clone();
+        fp2_non_residue.c1 = one.clone();
 
-pub static BN254_EXT6_FIELD: Lazy<Extension3Over2<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let one = Fp::one(&*BN254_BASE_FIELD);
-    
-    // non-residue is u+9
-    let mut fp2_non_residue = Fp2::zero(&*BN254_EXT2_FIELD);
-    let fp_9_repr = U256Repr::from(9u64);
-    let fp_9 = Fp::from_repr(&*BN254_BASE_FIELD, fp_9_repr).unwrap(); 
-    fp2_non_residue.c0 = fp_9.clone();
-    fp2_non_residue.c1 = one.clone();
+        fp2_non_residue
+    });
 
-    let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
-    extension_6.calculate_frobenius_coeffs_optimized(&*BN254_MODULUS).expect("must work");
+pub static BN254_EXT6_FIELD: Lazy<Extension3Over2<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let one = Fp::one(&*BN254_BASE_FIELD);
 
-    extension_6
-});
+        // non-residue is u+9
+        let mut fp2_non_residue = Fp2::zero(&*BN254_EXT2_FIELD);
+        let fp_9_repr = U256Repr::from(9u64);
+        let fp_9 = Fp::from_repr(&*BN254_BASE_FIELD, fp_9_repr).unwrap();
+        fp2_non_residue.c0 = fp_9.clone();
+        fp2_non_residue.c1 = one.clone();
 
-pub static BN254_EXT12_FIELD: Lazy<Extension2Over3Over2<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&*BN254_EXT6_FIELD));
-    extension_12.calculate_frobenius_coeffs_optimized(&*BN254_MODULUS).expect("must work");
+        let mut extension_6 = Extension3Over2::new(fp2_non_residue.clone());
+        extension_6
+            .calculate_frobenius_coeffs_optimized(&*BN254_MODULUS)
+            .expect("must work");
 
-    extension_12
-});
+        extension_6
+    });
 
+pub static BN254_EXT12_FIELD: Lazy<Extension2Over3Over2<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let mut extension_12 = Extension2Over3Over2::new(Fp6::zero(&*BN254_EXT6_FIELD));
+        extension_12
+            .calculate_frobenius_coeffs_optimized(&*BN254_MODULUS)
+            .expect("must work");
+
+        extension_12
+    });
 
 pub static BN254_G1_A_COEFF: Lazy<Fp<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
     let a_fp = Fp::zero(&*BN254_BASE_FIELD);
@@ -141,34 +164,54 @@ pub static BN254_G2_B_COEFF: Lazy<Fp2<'static, U256Repr, PrimeField<U256Repr>>> 
     b_fp2
 });
 
-pub static BN254_G1_PARAMS: Lazy<CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let fp_params = CurveOverFpParameters::new(&*BN254_BASE_FIELD);
+pub static BN254_G1_PARAMS: Lazy<CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let fp_params = CurveOverFpParameters::new(&*BN254_BASE_FIELD);
 
-    fp_params
-});
+        fp_params
+    });
 
-pub static BN254_G2_PARAMS: Lazy<CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
-    let fp2_params = CurveOverFp2Parameters::new(&*BN254_EXT2_FIELD);
+pub static BN254_G2_PARAMS: Lazy<CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>> =
+    Lazy::new(|| {
+        let fp2_params = CurveOverFp2Parameters::new(&*BN254_EXT2_FIELD);
 
-    fp2_params
-});
+        fp2_params
+    });
 
-pub static BN254_G1_CURVE: Lazy<WeierstrassCurve<'static, CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>>> = Lazy::new(|| {
-    let curve = WeierstrassCurve::new(&*BN254_SUBGROUP_ORDER, BN254_G1_A_COEFF.clone(), BN254_G1_B_COEFF.clone(), &*BN254_G1_PARAMS).unwrap();
-    
+pub static BN254_G1_CURVE: Lazy<
+    WeierstrassCurve<'static, CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>>,
+> = Lazy::new(|| {
+    let curve = WeierstrassCurve::new(
+        &*BN254_SUBGROUP_ORDER,
+        BN254_G1_A_COEFF.clone(),
+        BN254_G1_B_COEFF.clone(),
+        &*BN254_G1_PARAMS,
+    )
+    .unwrap();
+
     curve
 });
 
-pub static BN254_G2_CURVE: Lazy<WeierstrassCurve<'static, CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>>> = Lazy::new(|| {
-    let curve = WeierstrassCurve::new(&*BN254_SUBGROUP_ORDER, BN254_G2_A_COEFF.clone(), BN254_G2_B_COEFF.clone(), &*BN254_G2_PARAMS).unwrap();
-    
+pub static BN254_G2_CURVE: Lazy<
+    WeierstrassCurve<'static, CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>>,
+> = Lazy::new(|| {
+    let curve = WeierstrassCurve::new(
+        &*BN254_SUBGROUP_ORDER,
+        BN254_G2_A_COEFF.clone(),
+        BN254_G2_B_COEFF.clone(),
+        &*BN254_G2_PARAMS,
+    )
+    .unwrap();
+
     curve
 });
 
-pub static BN254_G1_GENERATOR: Lazy<CurvePoint<'static, CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>>> = Lazy::new(|| {
+pub static BN254_G1_GENERATOR: Lazy<
+    CurvePoint<'static, CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>>,
+> = Lazy::new(|| {
     use num_bigint::BigUint;
     use num_traits::*;
-    
+
     let p_x = BigUint::from_str_radix("1", 10).unwrap().to_bytes_be();
     let p_y = BigUint::from_str_radix("2", 10).unwrap().to_bytes_be();
 
@@ -180,14 +223,36 @@ pub static BN254_G1_GENERATOR: Lazy<CurvePoint<'static, CurveOverFpParameters<'s
     p
 });
 
-pub static BN254_G2_GENERATOR: Lazy<CurvePoint<'static, CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>>> = Lazy::new(|| {
+pub static BN254_G2_GENERATOR: Lazy<
+    CurvePoint<'static, CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>>,
+> = Lazy::new(|| {
     use num_bigint::BigUint;
     use num_traits::*;
 
-    let q_x_0 = BigUint::from_str_radix("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10).unwrap().to_bytes_be();
-    let q_x_1 = BigUint::from_str_radix("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10).unwrap().to_bytes_be();
-    let q_y_0 = BigUint::from_str_radix("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10).unwrap().to_bytes_be();
-    let q_y_1 = BigUint::from_str_radix("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10).unwrap().to_bytes_be();
+    let q_x_0 = BigUint::from_str_radix(
+        "10857046999023057135944570762232829481370756359578518086990519993285655852781",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
+    let q_x_1 = BigUint::from_str_radix(
+        "11559732032986387107991004021392285783925812861821192530917403151452391805634",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
+    let q_y_0 = BigUint::from_str_radix(
+        "8495653923123431417604973247489272438418190587263600148770280649306958101930",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
+    let q_y_1 = BigUint::from_str_radix(
+        "4082367875863433681332203403145435568316851327593401208105741076214120093531",
+        10,
+    )
+    .unwrap()
+    .to_bytes_be();
 
     let q_x_0 = Fp::from_be_bytes(&*BN254_BASE_FIELD, &q_x_0, true).unwrap();
     let q_x_1 = Fp::from_be_bytes(&*BN254_BASE_FIELD, &q_x_1, true).unwrap();
@@ -207,7 +272,9 @@ pub static BN254_G2_GENERATOR: Lazy<CurvePoint<'static, CurveOverFp2Parameters<'
     q
 });
 
-static BN254_FP2_NONRESIDUE_IN_P_MINUS_ONE_OVER_TWO: Lazy<Fp2<'static, U256Repr, PrimeField<U256Repr>>> = Lazy::new(|| {
+static BN254_FP2_NONRESIDUE_IN_P_MINUS_ONE_OVER_TWO: Lazy<
+    Fp2<'static, U256Repr, PrimeField<U256Repr>>,
+> = Lazy::new(|| {
     let mut minus_one_over_2 = Fp::one(&*BN254_BASE_FIELD);
     minus_one_over_2.negate();
     let mut two = Fp::one(&*BN254_BASE_FIELD);
@@ -240,13 +307,13 @@ static BN254_SIX_U_PLUS_TWO: Lazy<[u64; 2]> = Lazy::new(|| {
 pub const BN254_U: u64 = 4965661367192848881;
 
 pub static BN254_PAIRING_ENGINE: Lazy<
-BnInstance<
-    'static,
-    U256Repr, 
-    PrimeField<U256Repr>, 
-    CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr> >,
-    CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr> >
->
+    BnInstance<
+        'static,
+        U256Repr,
+        PrimeField<U256Repr>,
+        CurveOverFpParameters<'static, U256Repr, PrimeField<U256Repr>>,
+        CurveOverFp2Parameters<'static, U256Repr, PrimeField<U256Repr>>,
+    >,
 > = Lazy::new(|| {
     let engine = BnInstanceParams {
         u: &[BN254_U],
@@ -260,7 +327,7 @@ BnInstance<
         fp6_extension: &*BN254_EXT6_FIELD,
         fp12_extension: &*BN254_EXT12_FIELD,
         non_residue_in_p_minus_one_over_2: (&*BN254_FP2_NONRESIDUE_IN_P_MINUS_ONE_OVER_TWO).clone(),
-        force_no_naf: true
+        force_no_naf: true,
     };
 
     let engine = BnInstance::from_params(engine);

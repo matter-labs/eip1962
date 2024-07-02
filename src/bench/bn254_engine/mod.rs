@@ -1,16 +1,16 @@
 extern crate test as rust_test;
 use self::rust_test::Bencher;
 
-use num_bigint::BigUint;
-use num_traits::FromPrimitive;
-use num_integer::Integer;
-use crate::traits::{FieldElement};
-use crate::traits::ZeroAndOne;
-use num_traits::Num;
-use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
-use crate::weierstrass::{Group, CurveOverFpParameters, CurveOverFp2Parameters};
-use crate::pairings::{PairingEngine, TwistType};
 use crate::engines::bn254::*;
+use crate::pairings::{PairingEngine, TwistType};
+use crate::traits::FieldElement;
+use crate::traits::ZeroAndOne;
+use crate::weierstrass::curve::{CurvePoint, WeierstrassCurve};
+use crate::weierstrass::{CurveOverFp2Parameters, CurveOverFpParameters, Group};
+use num_bigint::BigUint;
+use num_integer::Integer;
+use num_traits::FromPrimitive;
+use num_traits::Num;
 
 #[bench]
 fn bench_bn254_engine_g1_double_and_add_worst_case(b: &mut Bencher) {

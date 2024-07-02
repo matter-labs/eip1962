@@ -1,17 +1,17 @@
 use crate::test::gas_meter::bls12;
 use crate::test::gas_meter::bn;
 
-use crate::public_interface::API;
 use crate::public_interface::constants::*;
 use crate::public_interface::sane_limits::*;
+use crate::public_interface::API;
 
 use crate::test::parsers::*;
 
 use crate::public_interface::constants::*;
 
-use rand::{Rng, thread_rng};
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
+use rand::{thread_rng, Rng};
 
 mod pseudo_curves;
 
@@ -125,7 +125,7 @@ extern crate pbr;
 //                     for r in reports.into_iter() {
 //                         bls12_writer.write_report(r);
 //                     }
-//                 }                
+//                 }
 //             },
 //             BN => {
 //                 let u_bits = u_bits_rng.sample(&mut rng);

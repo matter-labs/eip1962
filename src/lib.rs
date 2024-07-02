@@ -1,29 +1,33 @@
 #![allow(dead_code)]
-
 #![cfg_attr(feature = "benchmarks", feature(test))]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate byteorder;
-extern crate eth_pairings_repr_derive;
-extern crate fixed_width_field;
-extern crate fixed_width_group_and_loop;
+#[macro_use]
+#[cfg(not(feature = "std"))]
+extern crate alloc as std;
+
+// extern crate byteorder;
+// extern crate eth_pairings_repr_derive;
+// extern crate fixed_width_field;
+// extern crate fixed_width_group_and_loop;
 
 mod arithmetics;
-pub mod traits;
-pub mod representation;
+pub mod engines;
+mod errors;
+pub mod extension_towers;
+mod features;
 pub mod field;
 pub mod fp;
-pub mod weierstrass;
+pub mod integers;
 mod mont_inverse;
 mod multiexp;
-pub mod extension_towers;
 pub mod pairings;
+pub mod representation;
 mod sliding_window_exp;
-mod errors;
-pub mod integers;
-mod features;
-mod wnaf;
 pub mod square_root;
-pub mod engines;
+pub mod traits;
+pub mod weierstrass;
+mod wnaf;
 
 #[cfg(feature = "mappings")]
 mod mapping;
@@ -33,8 +37,8 @@ pub mod public_interface;
 #[cfg(feature = "gas_metering")]
 pub mod gas_meter;
 
-#[cfg(feature = "external_tests")]
-pub mod external_tests;
+// #[cfg(feature = "external_tests")]
+// pub mod external_tests;
 
 #[cfg(test)]
 mod test;
@@ -49,19 +53,19 @@ mod tests {
     extern crate rand_xorshift;
 
     use num_bigint::BigUint;
+    use num_traits::cast::ToPrimitive;
     use num_traits::Num;
     use num_traits::Zero;
-    use num_traits::cast::ToPrimitive;
 
     use crate::field::*;
     use crate::fp::Fp;
-    use crate::weierstrass::curve::*;
-    use crate::traits::FieldElement;
-    use crate::multiexp::{peppinger};
-    use crate::weierstrass::Group;
-    use crate::traits::ZeroAndOne;
-    use crate::weierstrass::{CurveOverFpParameters};
     use crate::integers::MaxGroupSizeUint;
+    use crate::multiexp::peppinger;
+    use crate::traits::FieldElement;
+    use crate::traits::ZeroAndOne;
+    use crate::weierstrass::curve::*;
+    use crate::weierstrass::CurveOverFpParameters;
+    use crate::weierstrass::Group;
 
     fn biguint_to_u64_vec(mut v: BigUint) -> Vec<u64> {
         let m = BigUint::from(1u64) << 64;
@@ -79,9 +83,21 @@ mod tests {
 
     #[test]
     fn test_multiplication_bn254() {
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
+        let group = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
+        let group_order = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
         let group_order = biguint_to_u64_vec(group_order);
         let one = Fp::one(&field);
         let a_coeff = Fp::zero(&field);
@@ -91,26 +107,20 @@ mod tests {
 
         let params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(
-            &group_order, 
-            a_coeff, 
-            b_coeff,
-            &params
-        ).unwrap();
+        let curve = WeierstrassCurve::new(&group_order, a_coeff, b_coeff, &params).unwrap();
 
         let mut two = one.clone();
         two.double();
 
-        let point = CurvePoint::point_from_xy(
-            &curve, 
-            one, 
-            two);
+        let point = CurvePoint::point_from_xy(&curve, one, two);
 
         // scalar is group order
-        let scalar = [0x43e1f593f0000001,
-                    0x2833e84879b97091,
-                    0xb85045b68181585d,
-                    0x30644e72e131a029];
+        let scalar = [
+            0x43e1f593f0000001,
+            0x2833e84879b97091,
+            0xb85045b68181585d,
+            0x30644e72e131a029,
+        ];
 
         let res = point.mul(&scalar);
 
@@ -123,10 +133,23 @@ mod tests {
         use rand::{RngCore, SeedableRng};
         use rand_xorshift::XorShiftRng;
 
-        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let group = new_field::<U256Repr>("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
-        let order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let rng =
+            &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
+        let group = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
+        let order = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
         let order = MaxGroupSizeUint::from_big_endian(&order.clone().to_bytes_be());
         // let group_order = biguint_to_u64_vec(order.clone()));
         let one = Fp::one(&field);
@@ -137,33 +160,25 @@ mod tests {
 
         let params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(
-            &order.as_ref(), 
-            a_coeff, 
-            b_coeff,
-            &params
-        ).unwrap();
+        let curve = WeierstrassCurve::new(&order.as_ref(), a_coeff, b_coeff, &params).unwrap();
 
         let mut two = one.clone();
         two.double();
 
-        let point = CurvePoint::point_from_xy(
-            &curve, 
-            one, 
-            two
-        );
+        let point = CurvePoint::point_from_xy(&curve, one, two);
 
         let bases = vec![point.clone(); MULTIEXP_NUM_POINTS];
 
-        let scalars: Vec<_> = (0..MULTIEXP_NUM_POINTS).map(|_| {
-            let mut bytes = vec![0u8; 32];
-            rng.fill_bytes(&mut bytes[..]);
-            let scalar = MaxGroupSizeUint::from_big_endian(&bytes);
-            let scalar = scalar % order;
+        let scalars: Vec<_> = (0..MULTIEXP_NUM_POINTS)
+            .map(|_| {
+                let mut bytes = vec![0u8; 32];
+                rng.fill_bytes(&mut bytes[..]);
+                let scalar = MaxGroupSizeUint::from_big_endian(&bytes);
+                let scalar = scalar % order;
 
-            scalar
-        }).collect();
-
+                scalar
+            })
+            .collect();
 
         let naive_res = {
             let mut acc = CurvePoint::zero(&curve);
@@ -190,7 +205,7 @@ mod tests {
         let mut bytes = vec![0u8; 32];
         bytes[31] = 175u8;
         // rng.fill_bytes(&mut bytes[1..]);
-        scalar.read_be(& bytes[..]).unwrap();
+        scalar.read_be(&bytes[..]).unwrap();
 
         println!("{:#b}", 175u8);
         let wnaf = scalar.wnaf(3);
@@ -204,9 +219,18 @@ mod tests {
         use rand::{RngCore, SeedableRng};
         use rand_xorshift::XorShiftRng;
 
-        let rng = &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-        let field = new_field::<U256Repr>("21888242871839275222246405745257275088696311157297823662689037894645226208583", 10).unwrap();
-        let group_order = BigUint::from_str_radix("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10).unwrap();
+        let rng =
+            &mut XorShiftRng::from_seed([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        let field = new_field::<U256Repr>(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583",
+            10,
+        )
+        .unwrap();
+        let group_order = BigUint::from_str_radix(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+            10,
+        )
+        .unwrap();
         let group_order = biguint_to_u64_vec(group_order);
         let one = Fp::one(&field);
         let a_coeff = Fp::zero(&field);
@@ -216,34 +240,26 @@ mod tests {
 
         let params = CurveOverFpParameters::new(&field);
 
-        let curve = WeierstrassCurve::new(
-            &group_order, 
-            a_coeff, 
-            b_coeff,
-            &params
-        ).unwrap();
+        let curve = WeierstrassCurve::new(&group_order, a_coeff, b_coeff, &params).unwrap();
 
         let mut two = one.clone();
         two.double();
 
-        let point = CurvePoint::point_from_xy(
-            &curve, 
-            one, 
-            two);
+        let point = CurvePoint::point_from_xy(&curve, one, two);
 
         for _ in 0..1000 {
             let mut scalar = U256Repr::default();
             let mut bytes = vec![0u8; 32];
             rng.fill_bytes(&mut bytes[1..]);
-            scalar.read_be(& bytes[..]).unwrap();
+            scalar.read_be(&bytes[..]).unwrap();
 
-            let res_double_and_add  = point.clone().mul(scalar).into_xy();
+            let res_double_and_add = point.clone().mul(scalar).into_xy();
             let wnaf_res = point.wnaf_mul(scalar).into_xy();
 
             assert!(res_double_and_add.0 == wnaf_res.0);
             assert!(res_double_and_add.1 == wnaf_res.1);
 
-            let res_double_and_add  = point.clone().mul(scalar).into_xy();
+            let res_double_and_add = point.clone().mul(scalar).into_xy();
             let scalar_ref: &[u64] = scalar.as_ref();
             let wnaf_res = point.wnaf_mul(scalar_ref).into_xy();
 
@@ -269,7 +285,6 @@ mod tests {
         let mont_inverse = fe.new_mont_inverse();
         assert!(mont_inverse.is_none());
     }
-
 
     #[test]
     fn calculator() {

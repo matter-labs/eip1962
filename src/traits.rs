@@ -1,15 +1,7 @@
 use std::fmt;
 
 /// This trait represents an element of a field.
-pub trait FieldElement:
-    Sized 
-    + Eq 
-    + Clone 
-    + Send 
-    + Sync 
-    + fmt::Debug 
-    + fmt::Display
-{
+pub trait FieldElement: Sized + Eq + Clone + Send + Sync + fmt::Debug + fmt::Display {
     /// Returns true iff this element is zero.
     fn is_zero(&self) -> bool;
 
@@ -90,7 +82,6 @@ impl<E: AsRef<[u64]>> Iterator for BitIterator<E> {
     }
 }
 
-
 // this bit iterator skips initial zeroes until reaches MSB
 #[derive(Debug)]
 pub struct MsbBitIterator<E> {
@@ -147,14 +138,14 @@ impl<E: AsRef<[u64]>> Iterator for MsbBitIterator<E> {
 pub struct LsbBitIterator<E> {
     t: E,
     n: usize,
-    max: usize
+    max: usize,
 }
 
 impl<E: AsRef<[u64]>> LsbBitIterator<E> {
     pub fn new(t: E) -> Self {
         let max = t.as_ref().len() * 64;
         let n = 0;
-        LsbBitIterator { t, n, max}
+        LsbBitIterator { t, n, max }
     }
 }
 
@@ -193,7 +184,6 @@ pub use crate::weierstrass::Group;
 //     QuadraticNonResidue = -1,
 // }
 
-
 #[cfg(test)]
 mod bit_iter_tests {
     #[test]
@@ -203,8 +193,6 @@ mod bit_iter_tests {
         let iter = MsbBitIterator::new([word, 0]);
         let bits: Vec<bool> = iter.collect();
         assert!(bits.len() == 9);
-        assert!(bits == vec![true,
-                            false, false, false, false,
-                            false, false, true, true]);
+        assert!(bits == vec![true, false, false, false, false, false, false, true, true]);
     }
 }

@@ -1,6 +1,11 @@
 #![recursion_limit = "1024"]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate byteorder;
+#[macro_use]
+#[cfg(not(feature = "std"))]
+extern crate alloc as std;
+
+// extern crate byteorder;
 
 extern crate proc_macro;
 extern crate proc_macro2;
@@ -9,7 +14,7 @@ extern crate syn;
 extern crate quote;
 
 use quote::TokenStreamExt;
-use std::str::FromStr;
+use core::str::FromStr;
 
 #[proc_macro_derive(ElementRepresentation, attributes(NumberOfLimbs))]
 pub fn element_repr(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -58,7 +63,7 @@ fn fetch_wrapped_ident(body: &syn::Data) -> Option<syn::Ident> {
 }
 
 /// Fetch an attribute string from the derived struct.
-fn fetch_attr(name: &str, attrs: &[syn::Attribute]) -> Option<String> {
+fn fetch_attr(name: &str, attrs: &[syn::Attribute]) -> Option<std::string::String> {
     for attr in attrs {
         if let Ok(meta) = attr.parse_meta() {
             match meta {
